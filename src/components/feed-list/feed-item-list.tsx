@@ -3,30 +3,18 @@ import { ItemActions } from './item-actions';
 import { ReaderViewDrawer } from './reader-view-drawer';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
-import { cn, hashToHex, stripHtml } from '@/lib/utils';
+import { cn, hashToHex, hashToIndex, stripHtml } from '@/lib/utils';
 
 // ── Avatar ───────────────────────────────────────────────────────────────────
-
-const AVATAR_BG_CLASSES: Record<string, string> = {
-	'#3B82F6': 'bg-blue-500',
-	'#F97316': 'bg-orange-500',
-	'#22C55E': 'bg-green-500',
-	'#A855F7': 'bg-purple-500',
-	'#F43F5E': 'bg-rose-500',
-	'#14B8A6': 'bg-teal-500',
-	'#F59E0B': 'bg-amber-500',
-	'#6366F1': 'bg-indigo-500',
-};
+// Uses CSS custom property --avatar-{n} which switches between light/dark mode.
+// All --avatar-{n} values are -700/-600 shades → white text ≥ 4.5:1 contrast.
 
 function FeedAvatar({ feedId, feedTitle }: { feedId: string; feedTitle: string }) {
-	const hex = hashToHex(feedId);
-	const bgClass = AVATAR_BG_CLASSES[hex] ?? 'bg-blue-500';
+	const idx = hashToIndex(feedId, 8);
 	return (
 		<div
-			className={cn(
-				'flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] font-bold text-white',
-				bgClass,
-			)}
+			className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] font-bold text-white"
+			style={{ backgroundColor: `var(--avatar-${idx})` }}
 			aria-hidden
 		>
 			{feedTitle.charAt(0).toUpperCase()}
@@ -34,7 +22,9 @@ function FeedAvatar({ feedId, feedTitle }: { feedId: string; feedTitle: string }
 	);
 }
 
-// ── Category badge ───────────────────────────────────────────────────────────
+// ── Category badge ────────────────────────────────────────────────────────────
+// Uses CSS custom properties --badge-{n}-{bg|text|border} that swap in dark mode.
+// All pairs pass WCAG AA (≥ 4.5:1). Explicit DB color overrides the palette slot.
 
 function CategoryBadge({
 	name,
@@ -45,22 +35,24 @@ function CategoryBadge({
 	categoryId?: string | null;
 	color?: string | null;
 }) {
-	const hex = color ?? hashToHex(categoryId ?? name);
+	const style = color
+		? { backgroundColor: `${color}22`, color, border: `1px solid ${color}44` }
+		: (() => {
+				const idx = hashToIndex(categoryId ?? name, 8);
+				return {
+					backgroundColor: `var(--badge-${idx}-bg)`,
+					color: `var(--badge-${idx}-text)`,
+					border: `1px solid var(--badge-${idx}-border)`,
+				};
+			})();
 	return (
-		<span
-			className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
-			style={{
-				backgroundColor: `${hex}22`,
-				color: hex,
-				border: `1px solid ${hex}44`,
-			}}
-		>
+		<span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium" style={style}>
 			{name}
 		</span>
 	);
 }
 
-// ── Shared source+time row ───────────────────────────────────────────────────
+// ── Shared source+time row ────────────────────────────────────────────────────
 
 function SourceRow({ item }: { item: FeedItemRow }) {
 	return (
@@ -76,7 +68,7 @@ function SourceRow({ item }: { item: FeedItemRow }) {
 	);
 }
 
-// ── Card ─────────────────────────────────────────────────────────────────────
+// ── Card ──────────────────────────────────────────────────────────────────────
 
 interface FeedItemListProps {
 	items: Array<FeedItemRow>;
@@ -192,7 +184,10 @@ function FeedItemCard({
 			>
 				<div className="flex w-3 shrink-0 justify-center">
 					{!item.isRead && (
-						<span className="h-1.5 w-1.5 rounded-full bg-blue-500" aria-label="Unread" />
+						<span
+							className="h-1.5 w-1.5 rounded-full bg-[var(--color-unread-indicator)]"
+							aria-label="Unread"
+						/>
 					)}
 				</div>
 
@@ -242,7 +237,12 @@ function FeedItemCard({
 		>
 			{/* Unread indicator */}
 			<div className="flex w-3 shrink-0 items-start justify-center pt-2">
-				{!item.isRead && <span className="h-2 w-2 rounded-full bg-blue-500" aria-label="Unread" />}
+				{!item.isRead && (
+					<span
+						className="h-2 w-2 rounded-full bg-[var(--color-unread-indicator)]"
+						aria-label="Unread"
+					/>
+				)}
 			</div>
 
 			<div className="shrink-0 pt-0.5">

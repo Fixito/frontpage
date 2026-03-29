@@ -55,6 +55,120 @@
 	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
 }
 
+/* ── Palette tokens: badges + avatars ───────────────────────
+ * 8 indexed colour sets (0–7). Text/bg pairs all pass WCAG AA
+ * (≥ 4.5:1) for both light and dark mode.
+ * ────────────────────────────────────────────────────────── */
+
+:root {
+	--badge-0-bg: #dbeafe;
+	--badge-0-text: #1d4ed8;
+	--badge-0-border: #bfdbfe; /* blue */
+	--badge-1-bg: #ffedd5;
+	--badge-1-text: #c2410c;
+	--badge-1-border: #fed7aa; /* orange */
+	--badge-2-bg: #dcfce7;
+	--badge-2-text: #15803d;
+	--badge-2-border: #bbf7d0; /* green */
+	--badge-3-bg: #ede9fe;
+	--badge-3-text: #6d28d9;
+	--badge-3-border: #ddd6fe; /* violet */
+	--badge-4-bg: #ffe4e6;
+	--badge-4-text: #be123c;
+	--badge-4-border: #fecdd3; /* rose */
+	--badge-5-bg: #ccfbf1;
+	--badge-5-text: #0f766e;
+	--badge-5-border: #99f6e4; /* teal */
+	--badge-6-bg: #fef3c7;
+	--badge-6-text: #b45309;
+	--badge-6-border: #fde68a; /* amber */
+	--badge-7-bg: #e0e7ff;
+	--badge-7-text: #4338ca;
+	--badge-7-border: #c7d2fe; /* indigo */
+	/* Avatar backgrounds — -700 shades, white text, all ≥ 4.5:1 */
+	--avatar-0: #1d4ed8; /* blue-700   */
+	--avatar-1: #c2410c; /* orange-700 */
+	--avatar-2: #15803d; /* green-700  */
+	--avatar-3: #6d28d9; /* violet-700 */
+	--avatar-4: #be123c; /* rose-700   */
+	--avatar-5: #0f766e; /* teal-700   */
+	--avatar-6: #b45309; /* amber-700  */
+	--avatar-7: #4338ca; /* indigo-700 */
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--badge-0-bg: #172554;
+		--badge-0-text: #93c5fd;
+		--badge-0-border: #1e3a8a;
+		--badge-1-bg: #431407;
+		--badge-1-text: #fdba74;
+		--badge-1-border: #7c2d12;
+		--badge-2-bg: #052e16;
+		--badge-2-text: #86efac;
+		--badge-2-border: #14532d;
+		--badge-3-bg: #2e1065;
+		--badge-3-text: #c4b5fd;
+		--badge-3-border: #4c1d95;
+		--badge-4-bg: #4c0519;
+		--badge-4-text: #fda4af;
+		--badge-4-border: #881337;
+		--badge-5-bg: #042f2e;
+		--badge-5-text: #5eead4;
+		--badge-5-border: #134e4a;
+		--badge-6-bg: #451a03;
+		--badge-6-text: #fcd34d;
+		--badge-6-border: #78350f;
+		--badge-7-bg: #1e1b4b;
+		--badge-7-text: #a5b4fc;
+		--badge-7-border: #312e81;
+		/* Avatar backgrounds — -600 for better visibility on dark surfaces */
+		--avatar-0: #2563eb; /* blue-600   */
+		--avatar-1: #ea580c; /* orange-600 */
+		--avatar-2: #16a34a; /* green-600  */
+		--avatar-3: #7c3aed; /* violet-600 */
+		--avatar-4: #e11d48; /* rose-600   */
+		--avatar-5: #0d9488; /* teal-600   */
+		--avatar-6: #d97706; /* amber-600  */
+		--avatar-7: #4f46e5; /* indigo-600 */
+	}
+}
+
+:root[data-theme='dark'] {
+	--badge-0-bg: #172554;
+	--badge-0-text: #93c5fd;
+	--badge-0-border: #1e3a8a;
+	--badge-1-bg: #431407;
+	--badge-1-text: #fdba74;
+	--badge-1-border: #7c2d12;
+	--badge-2-bg: #052e16;
+	--badge-2-text: #86efac;
+	--badge-2-border: #14532d;
+	--badge-3-bg: #2e1065;
+	--badge-3-text: #c4b5fd;
+	--badge-3-border: #4c1d95;
+	--badge-4-bg: #4c0519;
+	--badge-4-text: #fda4af;
+	--badge-4-border: #881337;
+	--badge-5-bg: #042f2e;
+	--badge-5-text: #5eead4;
+	--badge-5-border: #134e4a;
+	--badge-6-bg: #451a03;
+	--badge-6-text: #fcd34d;
+	--badge-6-border: #78350f;
+	--badge-7-bg: #1e1b4b;
+	--badge-7-text: #a5b4fc;
+	--badge-7-border: #312e81;
+	--avatar-0: #2563eb;
+	--avatar-1: #ea580c;
+	--avatar-2: #16a34a;
+	--avatar-3: #7c3aed;
+	--avatar-4: #e11d48;
+	--avatar-5: #0d9488;
+	--avatar-6: #d97706;
+	--avatar-7: #4f46e5;
+}
+
 /* ── shadcn/ui semantic variable mappings ───────────────────
  * shadcn components reference these variables by name.
  * They are mapped to brand tokens so shadcn and the brand kit

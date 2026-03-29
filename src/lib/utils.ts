@@ -15,24 +15,32 @@ export function stripHtml(html: string): string {
 }
 
 /**
- * Map any string to one of 8 brand-aligned accent hex colors deterministically.
- * Used for letter avatars and category badge fallbacks.
+ * Map any string to an integer in [0, max) deterministically.
+ * Used to pick a palette slot for avatars and badges.
  */
-const ACCENT_PALETTE = [
-	'#3B82F6', // blue-500
-	'#F97316', // orange-500
-	'#22C55E', // green-500
-	'#A855F7', // purple-500
-	'#F43F5E', // rose-500
-	'#14B8A6', // teal-500
-	'#F59E0B', // amber-500
-	'#6366F1', // indigo-500
-] as const;
-
-export function hashToHex(str: string): string {
+export function hashToIndex(str: string, max: number): number {
 	let hash = 0;
 	for (let i = 0; i < str.length; i++) {
 		hash = (hash * 31 + str.charCodeAt(i)) | 0;
 	}
-	return ACCENT_PALETTE[Math.abs(hash) % ACCENT_PALETTE.length] ?? '#3B82F6';
+	return Math.abs(hash) % max;
+}
+
+/**
+ * Map any string to one of 8 brand-aligned accent hex colors deterministically.
+ * Only for decorative use (e.g. card accent bar) — not for text on background.
+ */
+const ACCENT_PALETTE = [
+	'#3B82F6',
+	'#F97316',
+	'#22C55E',
+	'#A855F7',
+	'#F43F5E',
+	'#14B8A6',
+	'#F59E0B',
+	'#6366F1',
+] as const;
+
+export function hashToHex(str: string): string {
+	return ACCENT_PALETTE[hashToIndex(str, ACCENT_PALETTE.length)] ?? '#3B82F6';
 }
