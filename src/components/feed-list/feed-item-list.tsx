@@ -1,32 +1,72 @@
 import { useState } from 'react';
-import { Globe } from 'lucide-react';
 import { ItemActions } from './item-actions';
 import { ReaderViewDrawer } from './reader-view-drawer';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
 import { cn, stripHtml } from '@/lib/utils';
 
+// ── Avatar ───────────────────────────────────────────────────────────────────
+
+const AVATAR_COLORS = [
+	'bg-blue-500',
+	'bg-orange-500',
+	'bg-green-600',
+	'bg-violet-500',
+	'bg-rose-500',
+	'bg-teal-500',
+	'bg-amber-500',
+	'bg-indigo-500',
+] as const;
+
+function hashColor(str: string): string {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		hash = (hash * 31 + str.charCodeAt(i)) | 0;
+	}
+	return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length] ?? 'bg-blue-500';
+}
+
+function FeedAvatar({ feedId, feedTitle }: { feedId: string; feedTitle: string }) {
+	return (
+		<div
+			className={cn(
+				'flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] font-bold text-white',
+				hashColor(feedId),
+			)}
+			aria-hidden
+		>
+			{feedTitle.charAt(0).toUpperCase()}
+		</div>
+	);
+}
+
+// ── Category badge ───────────────────────────────────────────────────────────
+
+function CategoryBadge({ name, color }: { name: string; color?: string | null }) {
+	const style = color
+		? { backgroundColor: `${color}22`, color, border: `1px solid ${color}44` }
+		: undefined;
+
+	return (
+		<span
+			className={cn(
+				'inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+				!color && 'bg-muted text-muted-foreground border-border border',
+			)}
+			style={style}
+		>
+			{name}
+		</span>
+	);
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────────
+
 interface FeedItemListProps {
 	items: Array<FeedItemRow>;
 	layout: 'list' | 'compact' | 'cards';
 	onMarkRead: (itemId: string) => void;
 	onMarkBookmark: (itemId: string) => void;
-}
-
-function FeedFavicon({ url }: { url: string | null }) {
-	if (url) {
-		return (
-			<img
-				src={url}
-				alt=""
-				width={16}
-				height={16}
-				className="h-4 w-4 rounded-sm object-contain"
-				aria-hidden
-			/>
-		);
-	}
-	return <Globe size={14} className="text-muted-foreground shrink-0" aria-hidden />;
 }
 
 interface FeedItemCardProps {
@@ -47,110 +87,209 @@ function FeedItemCard({
 	const isCompact = layout === 'compact';
 	const isCards = layout === 'cards';
 
-	function handleTitleClick() {
+	function handleClick() {
 		onMarkRead(item.id);
 	}
 
-	return (
-		<article
-			className={cn(
-				'group relative',
-				isCompact && 'flex items-center gap-2 px-4 py-2',
-				!isCompact && !isCards && 'flex items-start gap-3 px-4 py-3',
-				isCards && 'flex flex-col gap-2 rounded-lg border p-4',
-				item.isRead && 'opacity-60',
-			)}
+	const readerButton = item.contentHtml ? (
+		<button
+			type="button"
+			onClick={() => onOpenReader(item)}
+			className="text-muted-foreground hover:text-foreground hover:bg-accent rounded px-1.5 py-0.5 text-xs transition-colors"
 		>
-			{/* Unread dot */}
-			{!item.isRead && !isCompact && (
-				<span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread" />
-			)}
+			Reader
+		</button>
+	) : null;
 
-			{/* Favicon + feed name */}
-			<div
+	// ── Cards layout ──────────────────────────────────────────────────────────
+	if (isCards) {
+		return (
+			<article
 				className={cn(
-					'flex items-center gap-1.5',
-					isCompact ? 'shrink-0' : isCards ? '' : 'mt-0.5 shrink-0',
+					'group hover:bg-accent/30 flex flex-col rounded-lg border p-4 transition-colors',
+					item.isRead && 'opacity-60',
 				)}
 			>
-				<FeedFavicon url={item.feedFaviconUrl} />
-				{!isCompact && (
-					<span className="text-muted-foreground max-w-30 truncate text-xs">{item.feedTitle}</span>
-				)}
-			</div>
-
-			{/* Content */}
-			<div className={cn('min-w-0 flex-1', isCompact && 'flex items-center gap-2')}>
-				{isCompact && (
-					<span className="text-muted-foreground mr-1 shrink-0 text-xs">{item.feedTitle}</span>
-				)}
-
-				<div className={cn('flex items-start gap-1.5', isCompact && 'flex-1 items-center')}>
-					{!item.isRead && isCompact && (
-						<span
-							className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
-							aria-label="Unread"
-						/>
+				{/* Header */}
+				<div className="mb-2 flex items-center gap-2">
+					<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
+					<p className="text-muted-foreground flex min-w-0 flex-1 items-center gap-1 text-xs">
+						<span className="text-foreground/70 truncate font-medium">{item.feedTitle}</span>
+						<span>·</span>
+						<time
+							title={formatAbsoluteDate(item.publishedAt)}
+							dateTime={item.publishedAt?.toISOString()}
+						>
+							{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
+						</time>
+					</p>
+					{!item.isRead && (
+						<span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread" />
 					)}
-					<a
-						href={item.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						onClick={handleTitleClick}
-						className={cn(
-							'hover:text-primary min-w-0 leading-snug font-medium transition-colors',
-							isCompact ? 'truncate text-sm' : 'text-sm',
-						)}
-					>
-						{item.title}
-					</a>
 				</div>
 
-				{/* Description — list layout only */}
-				{!isCompact && !isCards && item.description && (
-					<p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-relaxed">
+				{/* Title */}
+				<a
+					href={item.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={handleClick}
+					className="hover:text-primary text-sm leading-snug font-semibold transition-colors"
+				>
+					{item.title}
+				</a>
+
+				{/* Description */}
+				{item.description && (
+					<p className="text-muted-foreground mt-1.5 line-clamp-3 flex-1 text-sm leading-relaxed">
 						{stripHtml(item.description)}
 					</p>
 				)}
 
-				{/* Description — cards layout only (3 lines) */}
-				{isCards && item.description && (
-					<p className="text-muted-foreground mt-1 line-clamp-3 text-sm leading-relaxed">
-						{stripHtml(item.description)}
-					</p>
-				)}
-			</div>
+				{/* Footer */}
+				<div className="mt-3 flex items-center gap-2">
+					{item.categoryName && (
+						<CategoryBadge name={item.categoryName} color={item.categoryColor} />
+					)}
+					<div className="invisible ml-auto flex group-hover:visible">
+						<ItemActions
+							item={item}
+							onReadToggle={() => onMarkRead(item.id)}
+							onBookmarkToggle={() => onMarkBookmark(item.id)}
+						/>
+						{readerButton}
+					</div>
+				</div>
+			</article>
+		);
+	}
 
-			{/* Date + actions */}
-			<div className={cn('flex shrink-0 items-center gap-2', !isCompact && 'ml-auto')}>
+	// ── Compact layout ────────────────────────────────────────────────────────
+	if (isCompact) {
+		return (
+			<article
+				className={cn(
+					'group hover:bg-accent/30 flex items-center gap-2 px-4 py-2 transition-colors',
+					item.isRead && 'opacity-60',
+				)}
+			>
+				{/* Unread dot */}
+				<div className="flex w-3 shrink-0 justify-center">
+					{!item.isRead && (
+						<span className="h-1.5 w-1.5 rounded-full bg-blue-500" aria-label="Unread" />
+					)}
+				</div>
+
+				<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
+
+				<span className="text-muted-foreground w-28 shrink-0 truncate text-xs">
+					{item.feedTitle}
+				</span>
+
+				<a
+					href={item.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={handleClick}
+					className="hover:text-primary min-w-0 flex-1 truncate text-sm font-medium transition-colors"
+				>
+					{item.title}
+				</a>
+
 				<time
-					className="text-muted-foreground text-xs"
+					className="text-muted-foreground shrink-0 text-xs"
 					title={formatAbsoluteDate(item.publishedAt)}
 					dateTime={item.publishedAt?.toISOString()}
 				>
 					{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
 				</time>
 
-				<div className="invisible flex group-hover:visible">
+				<div className="invisible flex shrink-0 group-hover:visible">
 					<ItemActions
 						item={item}
 						onReadToggle={() => onMarkRead(item.id)}
 						onBookmarkToggle={() => onMarkBookmark(item.id)}
 					/>
-					{item.contentHtml && (
-						<button
-							type="button"
-							onClick={() => onOpenReader(item)}
-							className="text-muted-foreground hover:text-foreground hover:bg-accent ml-1 rounded px-1.5 py-0.5 text-xs transition-colors"
-						>
-							Reader
-						</button>
-					)}
+					{readerButton}
 				</div>
+			</article>
+		);
+	}
+
+	// ── List layout (default) ─────────────────────────────────────────────────
+	return (
+		<article
+			className={cn(
+				'group hover:bg-accent/30 flex gap-3 px-4 py-3 transition-colors',
+				item.isRead && 'opacity-60',
+			)}
+		>
+			{/* Unread indicator column */}
+			<div className="flex w-3 shrink-0 items-start justify-center pt-2">
+				{!item.isRead && <span className="h-2 w-2 rounded-full bg-blue-500" aria-label="Unread" />}
+			</div>
+
+			{/* Avatar */}
+			<div className="shrink-0 pt-0.5">
+				<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
+			</div>
+
+			{/* Content */}
+			<div className="min-w-0 flex-1">
+				{/* Source + time */}
+				<p className="text-muted-foreground mb-0.5 flex items-center gap-1 text-xs">
+					<span className="text-foreground/70 max-w-[10rem] truncate font-medium">
+						{item.feedTitle}
+					</span>
+					<span aria-hidden>·</span>
+					<time
+						title={formatAbsoluteDate(item.publishedAt)}
+						dateTime={item.publishedAt?.toISOString()}
+					>
+						{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
+					</time>
+				</p>
+
+				{/* Title */}
+				<a
+					href={item.url}
+					target="_blank"
+					rel="noopener noreferrer"
+					onClick={handleClick}
+					className="hover:text-primary text-sm leading-snug font-semibold transition-colors"
+				>
+					{item.title}
+				</a>
+
+				{/* Description */}
+				{item.description && (
+					<p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-relaxed">
+						{stripHtml(item.description)}
+					</p>
+				)}
+
+				{/* Category badge */}
+				{item.categoryName && (
+					<div className="mt-2">
+						<CategoryBadge name={item.categoryName} color={item.categoryColor} />
+					</div>
+				)}
+			</div>
+
+			{/* Actions (hover) */}
+			<div className="invisible flex shrink-0 items-start pt-0.5 group-hover:visible">
+				<ItemActions
+					item={item}
+					onReadToggle={() => onMarkRead(item.id)}
+					onBookmarkToggle={() => onMarkBookmark(item.id)}
+				/>
+				{readerButton}
 			</div>
 		</article>
 	);
 }
+
+// ── List container ────────────────────────────────────────────────────────────
 
 export function FeedItemList({ items, layout, onMarkRead, onMarkBookmark }: FeedItemListProps) {
 	const [readerItem, setReaderItem] = useState<FeedItemRow | null>(null);

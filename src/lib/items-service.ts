@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { and, count, desc, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { db } from './db';
-import { bookmark, feed, feedItem, readState } from '@/db/schema';
+import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,9 @@ export interface FeedItemRow {
 	aiSummary: string | null;
 	isRead: boolean;
 	isBookmarked: boolean;
+	categoryId: string | null;
+	categoryName: string | null;
+	categoryColor: string | null;
 }
 
 export interface GetItemsParams {
@@ -80,9 +83,13 @@ export async function getItems(params: GetItemsParams): Promise<GetItemsResult> 
 			aiSummary: feedItem.aiSummary,
 			isRead: sql<boolean>`(${rs.itemId} is not null)`,
 			isBookmarked: sql<boolean>`(${bm.itemId} is not null)`,
+			categoryId: feed.categoryId,
+			categoryName: category.name,
+			categoryColor: category.color,
 		})
 		.from(feedItem)
 		.innerJoin(feed, eq(feed.id, feedItem.feedId))
+		.leftJoin(category, eq(category.id, feed.categoryId))
 		.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
 		.leftJoin(bm, and(eq(bm.itemId, feedItem.id), eq(bm.userId, userId)))
 		.where(whereClause)
