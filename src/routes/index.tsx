@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import {
 	ArrowRight,
 	BookmarkCheck,
@@ -8,6 +8,7 @@ import {
 	Search,
 	Sparkles,
 } from 'lucide-react';
+import { enterGuestMode } from '#/lib/session';
 
 export const Route = createFileRoute('/')({ component: LandingPage });
 
@@ -51,6 +52,13 @@ const FEATURES = [
 ] as const;
 
 function LandingPage() {
+	const router = useRouter();
+
+	async function handleGuestMode() {
+		await enterGuestMode();
+		await router.navigate({ to: '/dashboard' });
+	}
+
 	return (
 		<div
 			style={{
@@ -195,8 +203,8 @@ function LandingPage() {
 						Get started free
 						<ArrowRight size={16} aria-hidden />
 					</Link>
-					<Link
-						to="/dashboard"
+					<button
+						onClick={handleGuestMode}
 						style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -208,10 +216,11 @@ function LandingPage() {
 							backgroundColor: 'var(--color-bg-tertiary)',
 							border: '1px solid var(--color-border)',
 							borderRadius: 'var(--radius-md)',
+							cursor: 'pointer',
 						}}
 					>
 						Try as guest
-					</Link>
+					</button>
 				</div>
 			</section>
 

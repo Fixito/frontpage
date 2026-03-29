@@ -11,8 +11,8 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"typecheck": "tsc",
-		"lint": "eslint .",
-		"lint:fix": "eslint . --fix",
+		"lint": "eslint . --cache",
+		"lint:fix": "eslint . --fix --cache",
 		"format:check": "prettier . --check --cache",
 		"format:write": "prettier . --write --cache",
 		"prepare": "husky"

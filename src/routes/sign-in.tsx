@@ -1,6 +1,7 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { authClient } from '#/lib/auth-client';
+import { enterGuestMode } from '#/lib/session';
 
 export const Route = createFileRoute('/sign-in')({
 	component: SignInPage,
@@ -10,6 +11,11 @@ function SignInPage() {
 	const router = useRouter();
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
+
+	async function handleGuestMode() {
+		await enterGuestMode();
+		await router.navigate({ to: '/dashboard' });
+	}
 
 	async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -67,9 +73,19 @@ function SignInPage() {
 					Sign up
 				</Link>
 				{' · '}
-				<Link to="/dashboard" style={{ color: 'var(--color-accent)' }}>
+				<button
+					onClick={handleGuestMode}
+					style={{
+						background: 'none',
+						border: 'none',
+						padding: 0,
+						color: 'var(--color-accent)',
+						cursor: 'pointer',
+						fontSize: 'inherit',
+					}}
+				>
 					Try as guest
-				</Link>
+				</button>
 			</p>
 		</AuthLayout>
 	);
