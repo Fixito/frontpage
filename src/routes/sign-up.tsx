@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
 import { AuthLayout, ErrorAlert, Field, SubmitButton } from './sign-in';
-import { authClient } from '#/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
 
 export const Route = createFileRoute('/sign-up')({
 	component: SignUpPage,
@@ -38,10 +38,7 @@ function SignUpPage() {
 
 	return (
 		<AuthLayout title="Create your account" subtitle="Start reading everything in one place">
-			<form
-				onSubmit={handleSubmit}
-				style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
-			>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 				{error && <ErrorAlert>{error}</ErrorAlert>}
 				<Field label="Name" name="name" autoComplete="name" required />
 				<Field label="Email" name="email" type="email" autoComplete="email" required />
@@ -54,22 +51,10 @@ function SignUpPage() {
 				/>
 				<SubmitButton loading={loading}>Create account</SubmitButton>
 			</form>
-			<p
-				style={{
-					marginTop: 'var(--space-6)',
-					textAlign: 'center',
-					fontSize: 'var(--text-sm)',
-					color: 'var(--color-text-secondary)',
-				}}
-			>
-				Already have an account?{' '}
-				<Link to="/sign-in" style={{ color: 'var(--color-accent)' }}>
-					Sign in
-				</Link>
+			<p className="mt-6 text-center text-sm text-muted-foreground">
+				Already have an account? <Link to="/sign-in">Sign in</Link>
 				{' · '}
-				<Link to="/dashboard" style={{ color: 'var(--color-accent)' }}>
-					Try as guest
-				</Link>
+				<Link to="/dashboard">Try as guest</Link>
 			</p>
 		</AuthLayout>
 	);

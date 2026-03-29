@@ -8,7 +8,9 @@ import {
 	Search,
 	Sparkles,
 } from 'lucide-react';
-import { enterGuestMode } from '#/lib/session';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { enterGuestMode } from '@/lib/session';
 
 export const Route = createFileRoute('/')({ component: LandingPage });
 
@@ -60,243 +62,65 @@ function LandingPage() {
 	}
 
 	return (
-		<div
-			style={{
-				backgroundColor: 'var(--color-bg-primary)',
-				color: 'var(--color-text-primary)',
-				minHeight: '100vh',
-			}}
-		>
+		<div className="min-h-screen bg-background text-foreground">
 			{/* ── Nav ── */}
-			<header
-				style={{
-					position: 'sticky',
-					top: 0,
-					zIndex: 50,
-					borderBottom: '1px solid var(--color-border-subtle)',
-					backgroundColor: 'var(--color-bg-primary)',
-					backdropFilter: 'blur(8px)',
-				}}
-			>
-				<nav
-					style={{
-						maxWidth: 'var(--page-max-width)',
-						margin: '0 auto',
-						padding: '0 var(--space-6)',
-						height: '3.5rem',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'space-between',
-					}}
-				>
-					<span
-						style={{
-							fontWeight: 'var(--font-bold)',
-							fontSize: 'var(--text-base)',
-							color: 'var(--color-text-primary)',
-						}}
-					>
-						Frontpage
-					</span>
-					<div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-						<Link
-							to="/sign-in"
-							style={{
-								padding: 'var(--space-2) var(--space-4)',
-								fontSize: 'var(--text-sm)',
-								fontWeight: 'var(--font-medium)',
-								color: 'var(--color-text-secondary)',
-								borderRadius: 'var(--radius-md)',
-							}}
-						>
-							Sign in
-						</Link>
-						<Link
-							to="/sign-up"
-							style={{
-								padding: 'var(--space-2) var(--space-4)',
-								fontSize: 'var(--text-sm)',
-								fontWeight: 'var(--font-semibold)',
-								color: '#fff',
-								backgroundColor: 'var(--color-accent)',
-								borderRadius: 'var(--radius-md)',
-							}}
-						>
-							Sign up
-						</Link>
+			<header className="sticky top-0 z-50 border-b border-border bg-background backdrop-blur-sm">
+				<nav className="mx-auto flex h-14 max-w-[var(--container-page)] items-center justify-between px-6">
+					<span className="text-base font-bold">Frontpage</span>
+					<div className="flex items-center gap-2">
+						<Button asChild variant="ghost">
+							<Link to="/sign-in">Sign in</Link>
+						</Button>
+						<Button asChild>
+							<Link to="/sign-up">Sign up</Link>
+						</Button>
 					</div>
 				</nav>
 			</header>
 
 			{/* ── Hero ── */}
-			<section
-				style={{
-					maxWidth: 'var(--page-max-width)',
-					margin: '0 auto',
-					padding: 'var(--space-20) var(--space-6) var(--space-16)',
-					textAlign: 'center',
-				}}
-			>
-				<p
-					style={{
-						display: 'inline-block',
-						marginBottom: 'var(--space-4)',
-						padding: 'var(--space-1) var(--space-3)',
-						fontSize: 'var(--text-xs)',
-						fontWeight: 'var(--font-semibold)',
-						letterSpacing: '0.08em',
-						textTransform: 'uppercase',
-						color: 'var(--color-accent)',
-						backgroundColor: 'var(--color-accent-subtle)',
-						borderRadius: 'var(--radius-full)',
-					}}
-				>
+			<section className="mx-auto max-w-[var(--container-page)] px-6 pb-16 pt-20 text-center">
+				<Badge variant="secondary" className="mb-4">
 					RSS feed reader
-				</p>
-				<h1
-					style={{
-						margin: '0 auto var(--space-6)',
-						maxWidth: '42rem',
-						fontSize: 'clamp(var(--text-2xl), 5vw, var(--text-3xl))',
-						fontWeight: 'var(--font-bold)',
-						lineHeight: 'var(--leading-tight)',
-						color: 'var(--color-text-primary)',
-					}}
-				>
+				</Badge>
+				<h1 className="mx-auto mb-6 max-w-2xl text-2xl font-bold leading-tight sm:text-3xl">
 					Your personalized front page for tech content
 				</h1>
-				<p
-					style={{
-						margin: '0 auto var(--space-10)',
-						maxWidth: '32rem',
-						fontSize: 'var(--text-base)',
-						lineHeight: 'var(--leading-loose)',
-						color: 'var(--color-text-secondary)',
-					}}
-				>
+				<p className="mx-auto mb-10 max-w-lg text-base leading-loose text-muted-foreground">
 					One calm, organized dashboard for all the blogs, newsletters, and publications you follow.
 					No more scattered tabs and forgotten links.
 				</p>
-				<div
-					style={{
-						display: 'flex',
-						gap: 'var(--space-3)',
-						justifyContent: 'center',
-						flexWrap: 'wrap',
-					}}
-				>
-					<Link
-						to="/sign-up"
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: 'var(--space-2)',
-							padding: 'var(--space-3) var(--space-6)',
-							fontSize: 'var(--text-sm)',
-							fontWeight: 'var(--font-semibold)',
-							color: '#fff',
-							backgroundColor: 'var(--color-accent)',
-							borderRadius: 'var(--radius-md)',
-							boxShadow: 'var(--shadow-sm)',
-						}}
-					>
-						Get started free
-						<ArrowRight size={16} aria-hidden />
-					</Link>
-					<button
-						onClick={handleGuestMode}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: 'var(--space-2)',
-							padding: 'var(--space-3) var(--space-6)',
-							fontSize: 'var(--text-sm)',
-							fontWeight: 'var(--font-semibold)',
-							color: 'var(--color-text-primary)',
-							backgroundColor: 'var(--color-bg-tertiary)',
-							border: '1px solid var(--color-border)',
-							borderRadius: 'var(--radius-md)',
-							cursor: 'pointer',
-						}}
-					>
+				<div className="flex flex-wrap justify-center gap-3">
+					<Button asChild size="lg">
+						<Link to="/sign-up">
+							Get started free
+							<ArrowRight aria-hidden />
+						</Link>
+					</Button>
+					<Button variant="outline" size="lg" onClick={handleGuestMode}>
 						Try as guest
-					</button>
+					</Button>
 				</div>
 			</section>
 
 			{/* ── Features ── */}
-			<section
-				style={{
-					maxWidth: 'var(--page-max-width)',
-					margin: '0 auto',
-					padding: '0 var(--space-6) var(--space-20)',
-				}}
-			>
-				<div
-					style={{
-						display: 'grid',
-						gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))',
-						gap: 'var(--space-4)',
-					}}
-				>
+			<section className="mx-auto max-w-[var(--container-page)] px-6 pb-20">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{FEATURES.map(({ icon: Icon, title, description }) => (
-						<article
-							key={title}
-							style={{
-								padding: 'var(--space-6)',
-								backgroundColor: 'var(--color-bg-secondary)',
-								border: '1px solid var(--color-border-subtle)',
-								borderRadius: 'var(--radius-lg)',
-							}}
-						>
-							<div
-								style={{
-									display: 'inline-flex',
-									padding: 'var(--space-2)',
-									marginBottom: 'var(--space-3)',
-									backgroundColor: 'var(--color-accent-subtle)',
-									borderRadius: 'var(--radius-md)',
-									color: 'var(--color-accent)',
-								}}
-							>
+						<article key={title} className="rounded-lg border border-border bg-muted p-6">
+							<div className="mb-3 inline-flex rounded-md bg-accent p-2 text-accent-foreground">
 								<Icon size={18} aria-hidden />
 							</div>
-							<h2
-								style={{
-									margin: '0 0 var(--space-2)',
-									fontSize: 'var(--text-base)',
-									fontWeight: 'var(--font-semibold)',
-									color: 'var(--color-text-primary)',
-								}}
-							>
-								{title}
-							</h2>
-							<p
-								style={{
-									margin: 0,
-									fontSize: 'var(--text-sm)',
-									lineHeight: 'var(--leading-relaxed)',
-									color: 'var(--color-text-secondary)',
-								}}
-							>
-								{description}
-							</p>
+							<h2 className="mb-2 text-base font-semibold">{title}</h2>
+							<p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
 						</article>
 					))}
 				</div>
 			</section>
 
 			{/* ── Footer ── */}
-			<footer
-				style={{
-					borderTop: '1px solid var(--color-border-subtle)',
-					padding: 'var(--space-8) var(--space-6)',
-					textAlign: 'center',
-					fontSize: 'var(--text-sm)',
-					color: 'var(--color-text-tertiary)',
-				}}
-			>
-				<p style={{ margin: 0 }}>
+			<footer className="border-t border-border px-6 py-8 text-center text-xs text-muted-foreground">
+				<p>
 					Built for{' '}
 					<a href="https://www.frontendmentor.io" target="_blank" rel="noopener noreferrer">
 						Frontend Mentor

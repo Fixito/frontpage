@@ -1,7 +1,10 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { authClient } from '#/lib/auth-client';
-import { enterGuestMode } from '#/lib/session';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { authClient } from '@/lib/auth-client';
+import { enterGuestMode } from '@/lib/session';
 
 export const Route = createFileRoute('/sign-in')({
 	component: SignInPage,
@@ -37,10 +40,7 @@ function SignInPage() {
 
 	return (
 		<AuthLayout title="Welcome back" subtitle="Sign in to your Frontpage account">
-			<form
-				onSubmit={handleSubmit}
-				style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}
-			>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 				{error && <ErrorAlert>{error}</ErrorAlert>}
 				<Field label="Email" name="email" type="email" autoComplete="email" required />
 				<Field
@@ -50,42 +50,17 @@ function SignInPage() {
 					autoComplete="current-password"
 					required
 				/>
-				<div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-					{/* <Link
-						to="/reset-password"
-						style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}
-					>
-						Forgot password?
-					</Link> */}
+				<div className="flex justify-end">
+					{/* <Link to="/reset-password" className="text-sm text-primary">Forgot password?</Link> */}
 				</div>
 				<SubmitButton loading={loading}>Sign in</SubmitButton>
 			</form>
-			<p
-				style={{
-					marginTop: 'var(--space-6)',
-					textAlign: 'center',
-					fontSize: 'var(--text-sm)',
-					color: 'var(--color-text-secondary)',
-				}}
-			>
-				No account?{' '}
-				<Link to="/sign-up" style={{ color: 'var(--color-accent)' }}>
-					Sign up
-				</Link>
+			<p className="mt-6 text-center text-sm text-muted-foreground">
+				No account? <Link to="/sign-up">Sign up</Link>
 				{' · '}
-				<button
-					onClick={handleGuestMode}
-					style={{
-						background: 'none',
-						border: 'none',
-						padding: 0,
-						color: 'var(--color-accent)',
-						cursor: 'pointer',
-						fontSize: 'inherit',
-					}}
-				>
+				<Button variant="link" onClick={handleGuestMode} className="h-auto p-0 text-sm">
 					Try as guest
-				</button>
+				</Button>
 			</p>
 		</AuthLayout>
 	);
@@ -103,60 +78,17 @@ export function AuthLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<div
-			style={{
-				minHeight: '100vh',
-				display: 'flex',
-				flexDirection: 'column',
-				alignItems: 'center',
-				justifyContent: 'center',
-				padding: 'var(--space-6)',
-				backgroundColor: 'var(--color-bg-primary)',
-			}}
-		>
-			<div style={{ width: '100%', maxWidth: '22rem' }}>
+		<div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+			<div className="w-full max-w-sm">
 				<Link
 					to="/"
-					style={{
-						display: 'block',
-						textAlign: 'center',
-						marginBottom: 'var(--space-8)',
-						fontWeight: 'var(--font-bold)',
-						fontSize: 'var(--text-base)',
-						color: 'var(--color-text-primary)',
-						textDecoration: 'none',
-					}}
+					className="mb-8 block text-center text-base font-bold text-foreground no-underline"
 				>
 					Frontpage
 				</Link>
-				<div
-					style={{
-						padding: 'var(--space-8)',
-						backgroundColor: 'var(--color-bg-secondary)',
-						border: '1px solid var(--color-border)',
-						borderRadius: 'var(--radius-xl)',
-						boxShadow: 'var(--shadow-md)',
-					}}
-				>
-					<h1
-						style={{
-							margin: '0 0 var(--space-2)',
-							fontSize: 'var(--text-xl)',
-							fontWeight: 'var(--font-semibold)',
-							lineHeight: 'var(--leading-snug)',
-						}}
-					>
-						{title}
-					</h1>
-					<p
-						style={{
-							margin: '0 0 var(--space-6)',
-							fontSize: 'var(--text-sm)',
-							color: 'var(--color-text-secondary)',
-						}}
-					>
-						{subtitle}
-					</p>
+				<div className="rounded-xl border border-border bg-card p-8 shadow-md">
+					<h1 className="mb-2 text-xl font-semibold leading-snug">{title}</h1>
+					<p className="mb-6 text-sm text-muted-foreground">{subtitle}</p>
 					{children}
 				</div>
 			</div>
@@ -166,20 +98,12 @@ export function AuthLayout({
 
 export function ErrorAlert({ children }: { children: React.ReactNode }) {
 	return (
-		<p
+		<div
 			role="alert"
-			style={{
-				margin: 0,
-				padding: 'var(--space-3)',
-				fontSize: 'var(--text-sm)',
-				color: 'var(--color-error)',
-				backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-				borderRadius: 'var(--radius-md)',
-				border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-			}}
+			className="rounded-md border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
 		>
 			{children}
-		</p>
+		</div>
 	);
 }
 
@@ -197,34 +121,9 @@ export function Field({
 	required?: boolean;
 }) {
 	return (
-		<div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
-			<label
-				htmlFor={name}
-				style={{
-					fontSize: 'var(--text-sm)',
-					fontWeight: 'var(--font-medium)',
-					color: 'var(--color-text-primary)',
-				}}
-			>
-				{label}
-			</label>
-			<input
-				id={name}
-				name={name}
-				type={type}
-				autoComplete={autoComplete}
-				required={required}
-				style={{
-					padding: 'var(--space-2) var(--space-3)',
-					fontSize: 'var(--text-sm)',
-					color: 'var(--color-text-primary)',
-					backgroundColor: 'var(--color-bg-primary)',
-					border: '1px solid var(--color-border)',
-					borderRadius: 'var(--radius-md)',
-					outline: 'none',
-					width: '100%',
-				}}
-			/>
+		<div className="flex flex-col gap-1">
+			<Label htmlFor={name}>{label}</Label>
+			<Input id={name} name={name} type={type} autoComplete={autoComplete} required={required} />
 		</div>
 	);
 }
@@ -237,22 +136,8 @@ export function SubmitButton({
 	children: React.ReactNode;
 }) {
 	return (
-		<button
-			type="submit"
-			disabled={loading}
-			style={{
-				padding: 'var(--space-2) var(--space-4)',
-				fontSize: 'var(--text-sm)',
-				fontWeight: 'var(--font-semibold)',
-				color: '#fff',
-				backgroundColor: loading ? 'var(--color-text-tertiary)' : 'var(--color-accent)',
-				border: 'none',
-				borderRadius: 'var(--radius-md)',
-				cursor: loading ? 'not-allowed' : 'pointer',
-				width: '100%',
-			}}
-		>
+		<Button type="submit" disabled={loading} className="w-full">
 			{loading ? 'Loading…' : children}
-		</button>
+		</Button>
 	);
 }

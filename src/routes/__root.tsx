@@ -3,8 +3,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 
 import appCss from '../styles.css?url';
-import type { AuthContext } from '#/lib/session';
-import { getAuthContext } from '#/lib/session';
+import type { AuthContext } from '@/lib/session';
+import { getAuthContext } from '@/lib/session';
 
 // Inline script to apply theme before first paint (no flash)
 const THEME_INIT_SCRIPT = `(function(){try{var stored=localStorage.getItem('theme');var prefersDark=matchMedia('(prefers-color-scheme: dark)').matches;var resolved=stored==='dark'||(!stored&&prefersDark)?'dark':'light';document.documentElement.setAttribute('data-theme',resolved);document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
