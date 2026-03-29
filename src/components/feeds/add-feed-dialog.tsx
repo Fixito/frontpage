@@ -42,7 +42,7 @@ export function AddFeedDialog({
 	const [step, setStep] = useState<Step>('url');
 	const [url, setUrl] = useState('');
 	const [preview, setPreview] = useState<FeedPreview | null>(null);
-	const [selectedCategoryId, setSelectedCategoryId] = useState('');
+	const [selectedCategoryId, setSelectedCategoryId] = useState('__none__');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function AddFeedDialog({
 		setStep('url');
 		setUrl('');
 		setPreview(null);
-		setSelectedCategoryId('');
+		setSelectedCategoryId('__none__');
 		setLoading(false);
 		setError(null);
 		setSuggestedCategory(null);
@@ -111,7 +111,7 @@ export function AddFeedDialog({
 				data: {
 					userId,
 					url: preview.finalUrl,
-					categoryId: selectedCategoryId || null,
+					categoryId: selectedCategoryId === '__none__' ? null : selectedCategoryId,
 				},
 			});
 			// Close the dialog first so the Radix portal finishes unmounting before
@@ -201,7 +201,7 @@ export function AddFeedDialog({
 								</div>
 
 								{/* AI category suggestion */}
-								{suggestedCategory && !suggestionDismissed && !selectedCategoryId && (
+								{suggestedCategory && !suggestionDismissed && selectedCategoryId === '__none__' && (
 									<div className="bg-accent/40 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
 										<Sparkles size={12} className="text-primary shrink-0" aria-hidden />
 										<span className="text-muted-foreground flex-1">
@@ -237,7 +237,7 @@ export function AddFeedDialog({
 											<SelectValue placeholder="No category" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="">No category</SelectItem>
+											<SelectItem value="__none__">No category</SelectItem>
 											{categories.map((cat) => (
 												<SelectItem key={cat.id} value={cat.id}>
 													{cat.name}

@@ -37,14 +37,14 @@ export function EditFeedDialog({
 	onSuccess,
 }: EditFeedDialogProps) {
 	const [title, setTitle] = useState(feed.title);
-	const [selectedCategoryId, setSelectedCategoryId] = useState(feed.categoryId ?? '');
+	const [selectedCategoryId, setSelectedCategoryId] = useState(feed.categoryId ?? '__none__');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (open) {
 			setTitle(feed.title);
-			setSelectedCategoryId(feed.categoryId ?? '');
+			setSelectedCategoryId(feed.categoryId ?? '__none__');
 			setError(null);
 		}
 	}, [open, feed.title, feed.categoryId]);
@@ -63,7 +63,7 @@ export function EditFeedDialog({
 					userId,
 					feedId: feed.id,
 					customTitle: trimmedTitle,
-					categoryId: selectedCategoryId || null,
+					categoryId: selectedCategoryId === '__none__' ? null : selectedCategoryId,
 				},
 			});
 			onOpenChange(false);
@@ -106,7 +106,7 @@ export function EditFeedDialog({
 								<SelectValue placeholder="No category" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="">No category</SelectItem>
+								<SelectItem value="__none__">No category</SelectItem>
 								{categories.map((cat) => (
 									<SelectItem key={cat.id} value={cat.id}>
 										{cat.name}
