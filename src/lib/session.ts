@@ -11,19 +11,22 @@ export type AuthUser = {
 export type AuthContext = {
 	user: AuthUser | null;
 	isGuest: boolean;
+	guestDemoUserId: string | null;
 };
 
 export const getAuthContext = createServerFn().handler(async (): Promise<AuthContext> => {
 	const request = getRequest();
 	const session = await auth.api.getSession({ headers: request.headers });
+	const guestDemoUserId = process.env['GUEST_DEMO_USER_ID'] ?? null;
 	if (session?.user) {
 		return {
 			user: { id: session.user.id, name: session.user.name, email: session.user.email },
 			isGuest: false,
+			guestDemoUserId,
 		};
 	}
 	const isGuest = getCookie('frontpage-guest') === '1';
-	return { user: null, isGuest };
+	return { user: null, isGuest, guestDemoUserId };
 });
 
 export const enterGuestMode = createServerFn({ method: 'POST' }).handler(() => {

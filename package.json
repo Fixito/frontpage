@@ -12,7 +12,8 @@
 		"lint:fix": "eslint . --fix --cache",
 		"format:check": "prettier . --check --cache",
 		"format:write": "prettier . --write --cache",
-		"prepare": "husky"
+		"prepare": "husky",
+		"seed": "tsx --env-file=.env src/scripts/seed-guest.ts"
 	},
 	"dependencies": {
 		"@neondatabase/serverless": "^1.0.2",

@@ -33,10 +33,22 @@ export const Route = createFileRoute('/dashboard')({
 		if (!context.user && !context.isGuest) {
 			throw redirect({ to: '/' });
 		}
-		return { user: context.user, isGuest: context.isGuest };
+		return {
+			user: context.user,
+			isGuest: context.isGuest,
+			guestDemoUserId: context.guestDemoUserId,
+		};
 	},
 	loader: async ({ context }) => {
-		if (!context.user) return { sidebarData: EMPTY_SIDEBAR_DATA };
+		if (!context.user) {
+			if (context.guestDemoUserId) {
+				const sidebarData = await getSidebarDataFn({
+					data: { userId: context.guestDemoUserId },
+				});
+				return { sidebarData };
+			}
+			return { sidebarData: EMPTY_SIDEBAR_DATA };
+		}
 		const sidebarData = await getSidebarDataFn({ data: { userId: context.user.id } });
 		return { sidebarData };
 	},
@@ -51,7 +63,7 @@ function getInitialLayout(): FeedLayout {
 }
 
 function DashboardPage() {
-	const { user, isGuest } = Route.useRouteContext();
+	const { user, isGuest, guestDemoUserId } = Route.useRouteContext();
 	const { sidebarData } = Route.useLoaderData();
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
@@ -191,6 +203,7 @@ function DashboardPage() {
 				<main id="main-content" className="flex flex-1 flex-col overflow-hidden">
 					<FeedContentArea
 						userId={user?.id ?? null}
+						guestDemoUserId={isGuest ? (guestDemoUserId ?? null) : null}
 						isGuest={isGuest}
 						feedId={feedId}
 						categoryId={categoryId}

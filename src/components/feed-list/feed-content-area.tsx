@@ -11,6 +11,7 @@ import { getItemsFn, markAllReadFn, markReadFn, toggleBookmarkFn } from '@/lib/i
 
 interface FeedContentAreaProps {
 	userId: string | null;
+	guestDemoUserId?: string | null;
 	isGuest: boolean;
 	feedId?: string;
 	categoryId?: string;
@@ -23,6 +24,7 @@ const PAGE_SIZE = 50;
 
 export function FeedContentArea({
 	userId,
+	guestDemoUserId,
 	isGuest,
 	feedId,
 	categoryId,
@@ -42,14 +44,22 @@ export function FeedContentArea({
 
 	const fetchItems = useCallback(
 		async (pageNum: number, append = false) => {
-			if (!userId) {
+			const effectiveUserId = userId ?? guestDemoUserId ?? null;
+			if (!effectiveUserId) {
 				setItems([]);
 				setLoading(false);
 				return;
 			}
 			try {
 				const result = await getItemsFn({
-					data: { userId, feedId, categoryId, view, page: pageNum, pageSize: PAGE_SIZE },
+					data: {
+						userId: effectiveUserId,
+						feedId,
+						categoryId,
+						view,
+						page: pageNum,
+						pageSize: PAGE_SIZE,
+					},
 				});
 				if (append) {
 					setItems((prev) => [...prev, ...result.items]);
@@ -63,7 +73,7 @@ export function FeedContentArea({
 				setError('Failed to load articles. Please try again.');
 			}
 		},
-		[userId, feedId, categoryId, view],
+		[userId, guestDemoUserId, feedId, categoryId, view],
 	);
 
 	// Refetch when filters change
@@ -122,13 +132,14 @@ export function FeedContentArea({
 	}, [userId, feedId, categoryId, onSidebarRefresh]);
 
 	const handleLoadMore = useCallback(async () => {
-		if (loadingMore || !hasMore || !userId) return;
+		const effectiveUserId = userId ?? guestDemoUserId ?? null;
+		if (loadingMore || !hasMore || !effectiveUserId) return;
 		setLoadingMore(true);
 		const nextPage = page + 1;
 		await fetchItems(nextPage, true);
 		setPage(nextPage);
 		setLoadingMore(false);
-	}, [loadingMore, hasMore, userId, page, fetchItems]);
+	}, [loadingMore, hasMore, userId, guestDemoUserId, page, fetchItems]);
 
 	const handleRetry = useCallback(() => {
 		setLoading(true);
@@ -203,7 +214,7 @@ export function FeedContentArea({
 			{/* Content */}
 			<div className="flex-1 overflow-y-auto">
 				{showEmptyState ? (
-					<EmptyState view={view} isGuest={isGuest} />
+					<EmptyState view={view} isGuest={isGuest} feedId={feedId} categoryId={categoryId} />
 				) : (
 					<>
 						<FeedItemList

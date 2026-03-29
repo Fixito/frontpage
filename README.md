@@ -188,6 +188,18 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 ---
 
+## Guest Demo Setup
+
+Run the seed script once to create the demo account used for the "Try as guest" experience:
+
+```bash
+pnpm seed
+```
+
+Copy the output `GUEST_DEMO_USER_ID=xxx` and add it to your `.env` file.
+
+---
+
 ## Running Locally
 
 ```bash
