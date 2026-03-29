@@ -47,23 +47,26 @@ export async function addFeed(
 	url: string,
 	categoryId: string | null = null,
 ): Promise<string> {
-	const preview = await validateAndPreviewFeed(url);
+	// Single fetch — parse once, store metadata + items without a second network call.
+	const result = await fetchFeed(url, { timeoutMs: 15_000 });
+	const parsed = parseFeed(result.xml);
+	const faviconUrl = getFaviconUrl(parsed.siteUrl ?? result.finalUrl);
 
 	const [inserted] = await db
 		.insert(feed)
 		.values({
 			userId,
-			url: preview.finalUrl,
-			title: preview.title,
-			description: preview.description,
-			faviconUrl: preview.faviconUrl,
+			url: result.finalUrl,
+			title: parsed.title,
+			description: parsed.description,
+			faviconUrl,
 			categoryId,
 			healthStatus: 'active',
 			lastFetchedAt: new Date(),
 		})
 		.returning({ id: feed.id });
 
-	await _storeItems(inserted.id, preview.finalUrl);
+	await _storeItems(inserted.id, result.finalUrl, parsed.items);
 	return inserted.id;
 }
 
