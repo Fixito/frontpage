@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { AuthLayout, ErrorAlert, Field, SubmitButton } from './sign-in';
+import { AuthLayout, ErrorAlert, Field, SubmitButton } from '@/components/auth';
 import { authClient } from '@/lib/auth-client';
 
 export const Route = createFileRoute('/sign-up')({
