@@ -5,6 +5,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools';
 import appCss from '../styles.css?url';
 import type { AuthContext } from '@/lib/session';
 import { getAuthContext } from '@/lib/session';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Inline script to apply theme before first paint (no flash)
 const THEME_INIT_SCRIPT = `(function(){try{var stored=localStorage.getItem('theme');var prefersDark=matchMedia('(prefers-color-scheme: dark)').matches;var resolved=stored==='dark'||(!stored&&prefersDark)?'dark':'light';document.documentElement.setAttribute('data-theme',resolved);document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
@@ -38,7 +39,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body>
-				{children}
+				<a
+					href="#main-content"
+					className="focus:bg-background focus:ring-ring sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-md focus:ring-2"
+				>
+					Skip to main content
+				</a>
+				<TooltipProvider>{children}</TooltipProvider>
 				<TanStackDevtools
 					config={{ position: 'bottom-right' }}
 					plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}

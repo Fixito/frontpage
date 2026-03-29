@@ -63,7 +63,7 @@ function SignUpPage() {
 					{loading ? 'Loading…' : 'Create account'}
 				</Button>
 			</form>
-			<p className="mt-6 text-center text-sm text-muted-foreground">
+			<p className="text-muted-foreground mt-6 text-center text-sm">
 				Already have an account? <Link to="/sign-in">Sign in</Link>
 				{' · '}
 				<Button variant="link" onClick={handleGuestMode} className="h-auto p-0 text-sm">

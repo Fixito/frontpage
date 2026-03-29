@@ -11,5 +11,12 @@
 	"files.associations": {
 		"*.css": "tailwindcss"
 	},
-	"css.validate": false
+	"editor.formatOnSave": true,
+	"editor.quickSuggestions": {
+		"strings": "on"
+	},
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "always"
+	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode"
 }

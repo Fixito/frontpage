@@ -1,17 +1,120 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
-@plugin "@tailwindcss/typography";
+@import './tokens.css';
+@plugin '@tailwindcss/typography';
 
-/* ── Tailwind v4 theme ──────────────────────────────────── */
+/* ── Dark mode overrides ────────────────────────────────────
+ * tokens.css defines light mode defaults.
+ * These blocks override the brand tokens for dark mode,
+ * supporting both system preference and the manual [data-theme] toggle.
+ * ────────────────────────────────────────────────────────── */
 
-/*
- * @theme inline: resolves CSS variables at runtime so that dark mode
- * colour changes (via :root[data-theme='dark']) propagate to Tailwind
- * utility classes (e.g. bg-primary, text-muted-foreground).
- * All variable names are shadcn/ui conventions — our brand tokens are
- * defined in :root below and mapped here via var().
- */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--color-bg-primary: #0d1117;
+		--color-bg-secondary: #161b22;
+		--color-bg-tertiary: #21262d;
+		--color-surface: #161b22;
+		--color-border: #30363d;
+		--color-border-subtle: #21262d;
+		--color-text-primary: #e6edf3;
+		--color-text-secondary: #8b949e;
+		--color-text-tertiary: #6e7681;
+		--color-accent: #58a6ff;
+		--color-accent-hover: #79c0ff;
+		--color-accent-subtle: #1a2332;
+		--color-success: #3fb950;
+		--color-warning: #d29922;
+		--color-error: #f85149;
+		--color-unread-indicator: #58a6ff;
+		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+		--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+		--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+	}
+}
+
+:root[data-theme='dark'] {
+	--color-bg-primary: #0d1117;
+	--color-bg-secondary: #161b22;
+	--color-bg-tertiary: #21262d;
+	--color-surface: #161b22;
+	--color-border: #30363d;
+	--color-border-subtle: #21262d;
+	--color-text-primary: #e6edf3;
+	--color-text-secondary: #8b949e;
+	--color-text-tertiary: #6e7681;
+	--color-accent: #58a6ff;
+	--color-accent-hover: #79c0ff;
+	--color-accent-subtle: #1a2332;
+	--color-success: #3fb950;
+	--color-warning: #d29922;
+	--color-error: #f85149;
+	--color-unread-indicator: #58a6ff;
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* ── shadcn/ui semantic variable mappings ───────────────────
+ * shadcn components reference these variables by name.
+ * They are mapped to brand tokens so shadcn and the brand kit
+ * stay in sync automatically.
+ *
+ * Naming convention:
+ *   --primary  = brand action colour (buttons, links, active states)
+ *   --accent   = subtle highlight bg (hover states, selected rows)
+ * ────────────────────────────────────────────────────────── */
+
+:root {
+	--background: var(--color-bg-primary);
+	--foreground: var(--color-text-primary);
+	--card: var(--color-surface);
+	--card-foreground: var(--color-text-primary);
+	--popover: var(--color-bg-primary);
+	--popover-foreground: var(--color-text-primary);
+	--primary: var(--color-accent);
+	--primary-foreground: #ffffff;
+	--secondary: var(--color-bg-tertiary);
+	--secondary-foreground: var(--color-text-primary);
+	--muted: var(--color-bg-secondary);
+	--muted-foreground: var(--color-text-secondary);
+	--accent: var(--color-accent-subtle);
+	--accent-foreground: var(--color-accent);
+	--destructive: var(--color-error);
+	--destructive-foreground: #ffffff;
+	--border: var(--color-border);
+	--input: var(--color-border);
+	--ring: var(--color-accent);
+	--radius: 0.5rem;
+	--sidebar: var(--color-bg-secondary);
+	--sidebar-foreground: var(--color-text-primary);
+	--sidebar-primary: var(--color-accent);
+	--sidebar-primary-foreground: #ffffff;
+	--sidebar-accent: var(--color-accent-subtle);
+	--sidebar-accent-foreground: var(--color-accent);
+	--sidebar-border: var(--color-border-subtle);
+	--sidebar-ring: var(--color-accent);
+}
+
 @theme inline {
+	/* Brand token utilities */
+	--color-bg-primary: var(--color-bg-primary);
+	--color-bg-secondary: var(--color-bg-secondary);
+	--color-bg-tertiary: var(--color-bg-tertiary);
+	--color-surface: var(--color-surface);
+	--color-border-base: var(--color-border);
+	--color-border-subtle: var(--color-border-subtle);
+	--color-text-primary: var(--color-text-primary);
+	--color-text-secondary: var(--color-text-secondary);
+	--color-text-tertiary: var(--color-text-tertiary);
+	--color-brand-accent: var(--color-accent);
+	--color-brand-accent-hover: var(--color-accent-hover);
+	--color-brand-accent-subtle: var(--color-accent-subtle);
+	--color-success: var(--color-success);
+	--color-warning: var(--color-warning);
+	--color-error: var(--color-error);
+	--color-unread: var(--color-unread-indicator);
+	/* shadcn semantic utilities */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -31,12 +134,6 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-	/* Extra semantic tokens (use directly as Tailwind classes) */
-	--color-success: var(--color-success);
-	--color-warning: var(--color-warning);
-	--color-error: var(--color-error);
-	--color-unread: var(--color-unread-indicator);
-	/* Sidebar */
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
 	--color-sidebar-primary: var(--sidebar-primary);
@@ -89,118 +186,11 @@
 	--radius-xl: 1rem;
 	--radius-full: 9999rem;
 
-	/* Named layout containers */
+	/* Named layout dimensions */
 	--spacing-sidebar: 16.25rem;
 	--container-content: 45rem;
 	--container-feed: 60rem;
 	--container-page: 80rem;
-}
-
-/* ── Brand tokens + shadcn variable mappings ────────────── */
-
-:root {
-	/* Brand colors — light mode */
-	--color-bg-primary: #ffffff;
-	--color-bg-secondary: #f8f9fa;
-	--color-bg-tertiary: #f1f3f5;
-	--color-surface: #ffffff;
-	--color-border: #e1e4e8;
-	--color-border-subtle: #eceef0;
-	--color-text-primary: #1a1d21;
-	--color-text-secondary: #57606a;
-	--color-text-tertiary: #8b949e;
-	--color-accent: #2563eb;
-	--color-accent-hover: #1d4ed8;
-	--color-accent-subtle: #eff6ff;
-	--color-success: #16a34a;
-	--color-warning: #ca8a04;
-	--color-error: #dc2626;
-	--color-unread-indicator: #2563eb;
-
-	/* Shadows — light mode */
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-
-	/* shadcn/ui variables — mapped to brand tokens */
-	--background: var(--color-bg-primary);
-	--foreground: var(--color-text-primary);
-	--card: var(--color-surface);
-	--card-foreground: var(--color-text-primary);
-	--popover: var(--color-bg-primary);
-	--popover-foreground: var(--color-text-primary);
-	--primary: var(--color-accent);
-	--primary-foreground: #ffffff;
-	--secondary: var(--color-bg-tertiary);
-	--secondary-foreground: var(--color-text-primary);
-	--muted: var(--color-bg-secondary);
-	--muted-foreground: var(--color-text-secondary);
-	--accent: var(--color-accent-subtle);
-	--accent-foreground: var(--color-accent);
-	--destructive: var(--color-error);
-	--destructive-foreground: #ffffff;
-	--border: var(--color-border);
-	--input: var(--color-border);
-	--ring: var(--color-accent);
-	--radius: 0.5rem;
-
-	/* shadcn sidebar */
-	--sidebar: var(--color-bg-secondary);
-	--sidebar-foreground: var(--color-text-primary);
-	--sidebar-primary: var(--color-accent);
-	--sidebar-primary-foreground: #ffffff;
-	--sidebar-accent: var(--color-accent-subtle);
-	--sidebar-accent-foreground: var(--color-accent);
-	--sidebar-border: var(--color-border-subtle);
-	--sidebar-ring: var(--color-accent);
-}
-
-/* Dark mode — system preference */
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme='light']) {
-		--color-bg-primary: #0d1117;
-		--color-bg-secondary: #161b22;
-		--color-bg-tertiary: #21262d;
-		--color-surface: #161b22;
-		--color-border: #30363d;
-		--color-border-subtle: #21262d;
-		--color-text-primary: #e6edf3;
-		--color-text-secondary: #8b949e;
-		--color-text-tertiary: #6e7681;
-		--color-accent: #58a6ff;
-		--color-accent-hover: #79c0ff;
-		--color-accent-subtle: #1a2332;
-		--color-success: #3fb950;
-		--color-warning: #d29922;
-		--color-error: #f85149;
-		--color-unread-indicator: #58a6ff;
-		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-		--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-		--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
-	}
-}
-
-/* Dark mode — manual toggle */
-:root[data-theme='dark'] {
-	--color-bg-primary: #0d1117;
-	--color-bg-secondary: #161b22;
-	--color-bg-tertiary: #21262d;
-	--color-surface: #161b22;
-	--color-border: #30363d;
-	--color-border-subtle: #21262d;
-	--color-text-primary: #e6edf3;
-	--color-text-secondary: #8b949e;
-	--color-text-tertiary: #6e7681;
-	--color-accent: #58a6ff;
-	--color-accent-hover: #79c0ff;
-	--color-accent-subtle: #1a2332;
-	--color-success: #3fb950;
-	--color-warning: #d29922;
-	--color-error: #f85149;
-	--color-unread-indicator: #58a6ff;
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Base styles ─────────────────────────────────────────── */

@@ -56,7 +56,7 @@ function SignInPage() {
 					{loading ? 'Loading…' : 'Sign in'}
 				</Button>
 			</form>
-			<p className="mt-6 text-center text-sm text-muted-foreground">
+			<p className="text-muted-foreground mt-6 text-center text-sm">
 				No account? <Link to="/sign-up">Sign up</Link>
 				{' · '}
 				<Button variant="link" onClick={handleGuestMode} className="h-auto p-0 text-sm">

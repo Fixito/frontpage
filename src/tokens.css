@@ -1,0 +1,44 @@
+/*
+ * Brand tokens — Frontpage design system (light mode defaults)
+ * Dark mode overrides are applied in styles.css to support both system
+ * preference and the manual [data-theme] toggle.
+ */
+
+:root {
+	/* Backgrounds */
+	--color-bg-primary: #ffffff;
+	--color-bg-secondary: #f8f9fa;
+	--color-bg-tertiary: #f1f3f5;
+	--color-surface: #ffffff;
+
+	/* Borders */
+	--color-border: #e1e4e8;
+	--color-border-subtle: #eceef0;
+
+	/* Text */
+	--color-text-primary: #1a1d21;
+	--color-text-secondary: #57606a;
+	--color-text-tertiary: #8b949e;
+
+	/* Accent */
+	--color-accent: #2563eb;
+	--color-accent-hover: #1d4ed8;
+	--color-accent-subtle: #eff6ff;
+
+	/* Status */
+	--color-success: #16a34a;
+	--color-warning: #ca8a04;
+	--color-error: #dc2626;
+	--color-unread-indicator: #2563eb;
+
+	/* Shadows */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
+	/* Layout */
+	--sidebar-width: 16.25rem;
+	--content-max-width: 45rem;
+	--feed-max-width: 60rem;
+	--page-max-width: 80rem;
+}

@@ -1,191 +1,222 @@
-Welcome to your new TanStack Start app!
+# Frontpage — Thomas ROBERT
 
-# Getting Started
+A customizable content aggregator that pulls RSS and Atom feeds into one well-designed reading dashboard.
 
-To run this application:
+**Live URL:** [your-deployed-url.com]
+
+![Screenshot of your solution](./screenshot.png)
+
+---
+
+## Overview
+
+<!-- Brief description of your implementation. What did you build? What's the experience like? -->
+
+### Tech Stack
+
+<!-- List your technology choices -->
+
+| Layer          | Technology                             |
+| -------------- | -------------------------------------- |
+| Framework      | TanStack Start v1 (React 19, SSR)      |
+| Routing        | TanStack Router v1 (file-based)        |
+| Database       | Drizzle ORM + Neon (PostgreSQL)        |
+| Authentication | Better Auth v1.5                       |
+| Hosting        | Nitro (nightly) / Vercel               |
+| Styling        | Tailwind CSS v4 + shadcn/ui (new-york) |
+| Feed parsing   | fast-xml-parser                        |
+| Type checking  | TypeScript 5.7 (strict)                |
+
+---
+
+## Design Decisions
+
+These are the product and design choices I made where the spec left room for interpretation.
+
+### Content Discovery & Onboarding
+
+<!-- How did you design the onboarding experience? What does a new user see? How do they find feeds to follow? -->
+
+**The problem I was solving:**
+
+**My approach:**
+
+**Why I chose this approach:**
+
+**What I'd do differently:**
+
+### Digest / Summary View
+
+<!-- How did you design the "what did I miss?" experience? What does the digest contain? How is content prioritized? -->
+
+**The problem I was solving:**
+
+**My approach:**
+
+**Why I chose this approach:**
+
+**What I'd do differently:**
+
+### Layout Customization
+
+Three layout modes — list, compact, and cards — let readers choose their preferred density. The toggle lives in the page header so it's always accessible without digging into settings.
+
+**The problem I was solving:** Different reading contexts call for different densities. Skimming headlines at speed needs compact; deep reading needs list with excerpts; visual/magazine content needs cards.
+
+**My approach:** A three-button toggle group (icon-only, with tooltips) that persists the preference to localStorage. The selected layout affects how feed items are rendered but not the URL, so bookmarks and shares always show content in the viewer's preferred format.
+
+**Why I chose this approach:** Keeping layout state in localStorage (not search params) means it's truly personal — your layout preference doesn't affect shared links.
+
+**What I'd do differently:** Add a per-feed layout override for feeds that are inherently visual (always show cards for image-heavy feeds).
+
+### Other Design Choices
+
+<!-- Document any other significant design decisions: navigation structure, feed item design, landing page approach, etc. -->
+
+---
+
+## Development Journey
+
+### Initial Approach vs. Final
+
+<!-- What was your initial plan? What changed as you built? Were there any pivots? -->
+
+### Decisions Reconsidered
+
+<!-- What seemed right at first but needed rethinking? Why did you change course? -->
+
+### What Surprised Me
+
+<!-- What was harder than expected? Easier? What didn't you anticipate? -->
+
+### Session Breakdown
+
+<!-- How did you structure your working sessions? What did you accomplish in each? Add rows for however many sessions you worked across. -->
+
+| Session | Focus | What I Accomplished |
+| ------- | ----- | ------------------- |
+| 1       |       |                     |
+| 2       |       |                     |
+| 3       |       |                     |
+
+---
+
+## AI Collaboration Reflection
+
+<!-- This section documents how you worked with AI throughout the project. -->
+
+### How I Used AI
+
+<!-- What was AI most helpful for? Where did you rely on your own judgment? -->
+
+### What Worked Well
+
+<!-- Which prompting strategies or collaboration patterns produced the best results? -->
+
+### What I Learned
+
+<!-- How did your approach to AI collaboration evolve across sessions? What would you do differently next time? -->
+
+### Where I Pushed Back
+
+<!-- Were there moments where AI suggestions weren't right? How did you identify and correct course? -->
+
+---
+
+## Differentiators
+
+### Chosen Differentiator(s)
+
+<!-- Which differentiator(s) did you pick from the spec? -->
+
+**1. [Differentiator Name]**
+
+**Why I chose this:**
+
+**How it enhances the product:**
+
+**Implementation highlights:**
+
+**What I learned:**
+
+<!-- Repeat for second differentiator if applicable -->
+
+---
+
+## Self-Assessment
+
+Rate your implementation honestly. This self-awareness is part of the portfolio artifact.
+
+| Category                                                                                                 | Rating | Notes |
+| -------------------------------------------------------------------------------------------------------- | ------ | ----- |
+| **Works for real users** — Deployed, functional end-to-end                                               | /5     |       |
+| **Feed parsing robustness** — Handles format variations, errors, edge cases                              | /5     |       |
+| **Design-it-yourself features** — Quality and thoughtfulness of onboarding, digest, and layout solutions | /5     |       |
+| **Design quality** — Typography, spacing, visual hierarchy, polish                                       | /5     |       |
+| **Responsive design** — Fully functional and well-designed across devices                                | /5     |       |
+| **Performance** — Fast load, smooth scrolling, efficient caching                                         | /5     |       |
+| **Accessibility** — Keyboard nav, screen reader support, contrast                                        | /5     |       |
+| **Edge case handling** — Empty states, errors, loading, large datasets                                   | /5     |       |
+| **Code quality** — Clean, maintainable, well-structured                                                  | /5     |       |
+| **Landing page** — Compelling, communicates value, visually polished                                     | /5     |       |
+| **Guest experience** — Immediately impressive, real content, full features                               | /5     |       |
+
+### Lighthouse Scores
+
+<!-- Run Lighthouse on your deployed site and record the scores -->
+
+| Category       | Score |
+| -------------- | ----- |
+| Performance    |       |
+| Accessibility  |       |
+| Best Practices |       |
+| SEO            |       |
+
+### Strengths
+
+<!-- What are you most proud of in this project? -->
+
+### Areas for Improvement
+
+<!-- What would you improve with more time? Be specific. -->
+
+---
+
+## Known Limitations
+
+<!-- What doesn't work perfectly? What's missing? What would you add in a v2? -->
+
+---
+
+## Running Locally
 
 ```bash
+# Clone the repo
+git clone [your-repo-url]
+cd frontpage
+
+# Install dependencies
 pnpm install
+
+# Set up environment variables
+cp .env.example .env
+# Fill in your database URL and auth secret
+
+# Push the database schema
+pnpm drizzle-kit push
+
+# Run the development server
 pnpm dev
 ```
 
-# Building For Production
+### Environment Variables
 
-To build this application for production:
+| Variable | Description |
+| -------- | ----------- |
+|          |             |
 
-```bash
-pnpm build
-```
+---
 
-## Testing
+## Acknowledgments
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
-
-```bash
-pnpm test
-```
-
-## Styling
-
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from '@tanstack/react-router';
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router';
-
-export const Route = createRootRoute({
-	head: () => ({
-		meta: [
-			{ charSet: 'utf-8' },
-			{ name: 'viewport', content: 'width=device-width, initial-scale=1' },
-			{ title: 'My App' },
-		],
-	}),
-	shellComponent: ({ children }) => (
-		<html lang="en">
-			<head>
-				<HeadContent />
-			</head>
-			<body>
-				<header>
-					<nav>
-						<Link to="/">Home</Link>
-						<Link to="/about">About</Link>
-					</nav>
-				</header>
-				{children}
-				<Scripts />
-			</body>
-		</html>
-	),
-});
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start';
-
-const getServerTime = createServerFn({
-	method: 'GET',
-}).handler(async () => {
-	return new Date().toISOString();
-});
-
-// Use in a component
-function MyComponent() {
-	const [time, setTime] = useState('');
-
-	useEffect(() => {
-		getServerTime().then(setTime);
-	}, []);
-
-	return <div>Server time: {time}</div>;
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-import { json } from '@tanstack/react-start';
-
-export const Route = createFileRoute('/api/hello')({
-	server: {
-		handlers: {
-			GET: () => json({ message: 'Hello, World!' }),
-		},
-	},
-});
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-
-export const Route = createFileRoute('/people')({
-	loader: async () => {
-		const response = await fetch('https://swapi.dev/api/people');
-		return response.json();
-	},
-	component: PeopleComponent,
-});
-
-function PeopleComponent() {
-	const data = Route.useLoaderData();
-	return (
-		<ul>
-			{data.results.map((person) => (
-				<li key={person.name}>{person.name}</li>
-			))}
-		</ul>
-	);
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Built as a [Frontend Mentor Product Challenge](https://www.frontendmentor.io).
