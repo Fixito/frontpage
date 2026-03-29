@@ -4,7 +4,7 @@ import { ItemActions } from './item-actions';
 import { ReaderViewDrawer } from './reader-view-drawer';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
-import { cn } from '@/lib/utils';
+import { cn, stripHtml } from '@/lib/utils';
 
 interface FeedItemListProps {
 	items: Array<FeedItemRow>;
@@ -75,9 +75,7 @@ function FeedItemCard({
 			>
 				<FeedFavicon url={item.feedFaviconUrl} />
 				{!isCompact && (
-					<span className="text-muted-foreground max-w-[120px] truncate text-xs">
-						{item.feedTitle}
-					</span>
+					<span className="text-muted-foreground max-w-30 truncate text-xs">{item.feedTitle}</span>
 				)}
 			</div>
 
@@ -108,15 +106,17 @@ function FeedItemCard({
 					</a>
 				</div>
 
-				{!isCompact && item.description && (
+				{/* Description — list layout only */}
+				{!isCompact && !isCards && item.description && (
 					<p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-relaxed">
-						{item.description}
+						{stripHtml(item.description)}
 					</p>
 				)}
 
+				{/* Description — cards layout only (3 lines) */}
 				{isCards && item.description && (
 					<p className="text-muted-foreground mt-1 line-clamp-3 text-sm leading-relaxed">
-						{item.description}
+						{stripHtml(item.description)}
 					</p>
 				)}
 			</div>
@@ -131,7 +131,7 @@ function FeedItemCard({
 					{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
 				</time>
 
-				<div className="hidden group-hover:flex">
+				<div className="invisible flex group-hover:visible">
 					<ItemActions
 						item={item}
 						onReadToggle={() => onMarkRead(item.id)}

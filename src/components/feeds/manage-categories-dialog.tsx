@@ -171,10 +171,7 @@ export function ManageCategoriesDialog({
 					)}
 
 					{localCats.map((cat, index) => (
-						<div
-							key={cat.id}
-							className="flex min-h-[2.25rem] items-center gap-1.5 rounded-md px-1 py-0.5"
-						>
+						<div key={cat.id} className="flex min-h-9 items-center gap-1.5 rounded-md px-1 py-0.5">
 							{editingId === cat.id ? (
 								<>
 									<Input
