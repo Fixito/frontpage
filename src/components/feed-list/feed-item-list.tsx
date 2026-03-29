@@ -75,6 +75,7 @@ interface FeedItemListProps {
 	layout: 'list' | 'compact' | 'cards';
 	onMarkRead: (itemId: string) => void;
 	onMarkBookmark: (itemId: string) => void;
+	userId: string | null;
 }
 
 interface FeedItemCardProps {
@@ -295,7 +296,13 @@ function FeedItemCard({
 
 // ── List container ────────────────────────────────────────────────────────────
 
-export function FeedItemList({ items, layout, onMarkRead, onMarkBookmark }: FeedItemListProps) {
+export function FeedItemList({
+	items,
+	layout,
+	onMarkRead,
+	onMarkBookmark,
+	userId,
+}: FeedItemListProps) {
 	const [readerItem, setReaderItem] = useState<FeedItemRow | null>(null);
 	const [readerOpen, setReaderOpen] = useState(false);
 
@@ -320,7 +327,12 @@ export function FeedItemList({ items, layout, onMarkRead, onMarkBookmark }: Feed
 						/>
 					))}
 				</div>
-				<ReaderViewDrawer item={readerItem} open={readerOpen} onOpenChange={setReaderOpen} />
+				<ReaderViewDrawer
+					item={readerItem}
+					open={readerOpen}
+					onOpenChange={setReaderOpen}
+					userId={userId}
+				/>
 			</>
 		);
 	}
@@ -339,7 +351,12 @@ export function FeedItemList({ items, layout, onMarkRead, onMarkBookmark }: Feed
 					/>
 				))}
 			</div>
-			<ReaderViewDrawer item={readerItem} open={readerOpen} onOpenChange={setReaderOpen} />
+			<ReaderViewDrawer
+				item={readerItem}
+				open={readerOpen}
+				onOpenChange={setReaderOpen}
+				userId={userId}
+			/>
 		</>
 	);
 }

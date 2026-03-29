@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 interface SidebarProps {
 	data: SidebarData;
-	activeView?: 'all' | 'bookmarks';
+	activeView?: 'all' | 'bookmarks' | 'digest';
 	activeCategoryId?: string;
 	activeFeedId?: string;
 	onAddFeed?: () => void;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss } from 'lucide-react';
+import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss, Sparkles } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 
 interface SidebarNavProps {
 	data: SidebarData;
-	activeView?: 'all' | 'bookmarks';
+	activeView?: 'all' | 'bookmarks' | 'digest';
 	activeCategoryId?: string;
 	activeFeedId?: string;
 	onNavigate?: () => void;
@@ -162,6 +162,7 @@ export function SidebarNav({
 }: SidebarNavProps) {
 	const isAllActive = activeView === 'all' && !activeCategoryId && !activeFeedId;
 	const isBookmarksActive = activeView === 'bookmarks';
+	const isDigestActive = activeView === 'digest';
 
 	return (
 		<div className="flex flex-col gap-0.5">
@@ -203,6 +204,22 @@ export function SidebarNav({
 			>
 				<BookmarkIcon size={14} className="shrink-0" aria-hidden />
 				<span className="flex-1">Bookmarks</span>
+			</Link>
+
+			<Link
+				to="/dashboard"
+				search={{ view: 'digest' }}
+				onClick={onNavigate}
+				aria-current={isDigestActive ? 'page' : undefined}
+				className={cn(
+					'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+					isDigestActive
+						? 'bg-accent text-accent-foreground font-medium'
+						: 'text-foreground hover:bg-muted',
+				)}
+			>
+				<Sparkles size={14} className="shrink-0" aria-hidden />
+				<span className="flex-1">Weekly Digest</span>
 			</Link>
 
 			{(data.categories.length > 0 || data.uncategorized.length > 0) && (

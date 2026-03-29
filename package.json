@@ -16,6 +16,7 @@
 		"seed": "tsx --env-file=.env src/scripts/seed-guest.ts"
 	},
 	"dependencies": {
+		"@google/generative-ai": "^0.24.1",
 		"@neondatabase/serverless": "^1.0.2",
 		"@tailwindcss/vite": "^4.1.18",
 		"@tanstack/react-devtools": "latest",

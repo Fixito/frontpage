@@ -5,4 +5,5 @@ export { FeedErrorBanner } from './feed-error-banner';
 export { EmptyState } from './empty-state';
 export { ItemActions } from './item-actions';
 export { ReaderViewDrawer } from './reader-view-drawer';
+export { DigestView } from './digest-view';
 export type { FeedItemRow, GetItemsResult } from './types';

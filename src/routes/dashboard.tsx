@@ -9,7 +9,7 @@ import { exitGuestMode } from '@/lib/session';
 import { getSidebarDataFn } from '@/lib/category-service';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
-import { FeedContentArea } from '@/components/feed-list';
+import { DigestView, FeedContentArea } from '@/components/feed-list';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { LayoutToggle } from '@/components/ui/layout-toggle';
@@ -18,7 +18,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
 	feedId: z.string().optional(),
-	view: z.enum(['all', 'bookmarks']).optional(),
+	view: z.enum(['all', 'bookmarks', 'digest']).optional(),
 });
 
 const EMPTY_SIDEBAR_DATA: SidebarData = {
@@ -95,6 +95,7 @@ function DashboardPage() {
 
 	function getPageTitle() {
 		if (view === 'bookmarks') return 'Bookmarks';
+		if (view === 'digest') return 'Weekly Digest';
 		const category = sidebarData.categories.find((c) => c.id === categoryId);
 		if (category) return category.name;
 		const feed = [
@@ -201,16 +202,20 @@ function DashboardPage() {
 
 				{/* Content */}
 				<main id="main-content" className="flex flex-1 flex-col overflow-hidden">
-					<FeedContentArea
-						userId={user?.id ?? null}
-						guestDemoUserId={isGuest ? (guestDemoUserId ?? null) : null}
-						isGuest={isGuest}
-						feedId={feedId}
-						categoryId={categoryId}
-						view={view}
-						layout={layout}
-						onSidebarRefresh={handleRefreshSidebar}
-					/>
+					{view === 'digest' ? (
+						<DigestView userId={user?.id ?? null} />
+					) : (
+						<FeedContentArea
+							userId={user?.id ?? null}
+							guestDemoUserId={isGuest ? (guestDemoUserId ?? null) : null}
+							isGuest={isGuest}
+							feedId={feedId}
+							categoryId={categoryId}
+							view={view}
+							layout={layout}
+							onSidebarRefresh={handleRefreshSidebar}
+						/>
+					)}
 				</main>
 			</div>
 

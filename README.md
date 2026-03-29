@@ -26,6 +26,39 @@ A customizable content aggregator that pulls RSS and Atom feeds into one well-de
 | Styling        | Tailwind CSS v4 + shadcn/ui (new-york) |
 | Feed parsing   | fast-xml-parser                        |
 | Type checking  | TypeScript 5.7 (strict)                |
+| AI             | Google Gemini 1.5 Flash                |
+
+---
+
+## Phase 7 — AI Features
+
+Powered by **Google Gemini 1.5 Flash** via `@google/generative-ai`. All AI features degrade gracefully when `GEMINI_API_KEY` is not set — the UI simply hides the AI affordances.
+
+### Article Summarization
+
+Open any article in the Reader View drawer and click **"Summarize with AI"** to generate a 2–3 sentence summary. Summaries are stored in the `feedItem.aiSummary` column, so subsequent opens return the cached result instantly (no second API call).
+
+### Category Auto-Suggestion
+
+When adding a new feed, Frontpage calls Gemini in the background after the feed preview loads. If it finds a good match among your existing categories, a dismissible suggestion banner appears above the Category selector with an **Apply** button. This fires without blocking the UI — if it fails or finds no match, nothing is shown.
+
+### Weekly Digest View
+
+Navigate to **Weekly Digest** in the sidebar (or `?view=digest`) to see an AI-curated editorial briefing of your unread articles from the last 7 days. The view:
+
+1. Queries the 10 most recent unread items with content (last 7 days).
+2. Sends them to Gemini for a 3–4 sentence editorial summary.
+3. Lists the individual articles below, showing AI summaries where already cached.
+
+### Caching Strategy
+
+`feedItem.aiSummary` stores generated summaries in Postgres. `generateSummaryFn` checks for an existing value before calling Gemini, so summaries are only generated once per article regardless of how many times the reader is opened.
+
+### Graceful Fallback
+
+- If `GEMINI_API_KEY` is missing or the API call fails, `generateSummaryFn` returns `{ summary: null, error: 'AI unavailable' }` — the UI shows a gentle error message.
+- `suggestCategoryFn` returns `null` on any error — the suggestion banner simply never appears.
+- `getWeeklyDigestFn` re-throws on error — the Digest view shows an error state with a retry button.
 
 ---
 

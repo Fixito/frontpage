@@ -222,6 +222,7 @@ export function FeedContentArea({
 							layout={layout}
 							onMarkRead={handleMarkRead}
 							onMarkBookmark={handleBookmarkToggle}
+							userId={userId}
 						/>
 
 						{/* Load more */}

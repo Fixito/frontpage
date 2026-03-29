@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import type { FeedPreview } from '@/lib/feed-service';
 import { addFeedFn, validateFeedUrlFn } from '@/lib/feed-service';
+import { suggestCategoryFn } from '@/lib/ai-service';
 import {
 	Dialog,
 	DialogContent,
@@ -44,6 +45,8 @@ export function AddFeedDialog({
 	const [selectedCategoryId, setSelectedCategoryId] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
+	const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
 	function resetState() {
 		setStep('url');
@@ -52,6 +55,8 @@ export function AddFeedDialog({
 		setSelectedCategoryId('');
 		setLoading(false);
 		setError(null);
+		setSuggestedCategory(null);
+		setSuggestionDismissed(false);
 	}
 
 	function handleOpenChange(nextOpen: boolean) {
@@ -71,6 +76,21 @@ export function AddFeedDialog({
 			const result = await validateFeedUrlFn({ data: { url: trimmed } });
 			setPreview(result);
 			setStep('preview');
+			if (categories.length > 0) {
+				void suggestCategoryFn({
+					data: {
+						feedTitle: result.title,
+						feedDescription: result.description ?? null,
+						categoryNames: categories.map((c) => c.name),
+					},
+				})
+					.then((suggestion) => {
+						if (suggestion) setSuggestedCategory(suggestion);
+					})
+					.catch(() => {
+						// ignore suggestion errors
+					});
+			}
 		} catch (err) {
 			setError(
 				err instanceof Error
@@ -177,6 +197,35 @@ export function AddFeedDialog({
 										</p>
 									</div>
 								</div>
+
+								{/* AI category suggestion */}
+								{suggestedCategory && !suggestionDismissed && !selectedCategoryId && (
+									<div className="bg-accent/40 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
+										<Sparkles size={12} className="text-primary shrink-0" aria-hidden />
+										<span className="text-muted-foreground flex-1">
+											AI suggests: <strong className="text-foreground">{suggestedCategory}</strong>
+										</span>
+										<button
+											type="button"
+											className="text-primary font-medium hover:underline"
+											onClick={() => {
+												const cat = categories.find((c) => c.name === suggestedCategory);
+												if (cat) setSelectedCategoryId(cat.id);
+												setSuggestionDismissed(true);
+											}}
+										>
+											Apply
+										</button>
+										<button
+											type="button"
+											className="text-muted-foreground hover:text-foreground ml-1"
+											onClick={() => setSuggestionDismissed(true)}
+											aria-label="Dismiss suggestion"
+										>
+											✕
+										</button>
+									</div>
+								)}
 
 								{/* Category selector */}
 								<div className="flex flex-col gap-1.5">
