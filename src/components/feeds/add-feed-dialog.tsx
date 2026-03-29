@@ -114,8 +114,10 @@ export function AddFeedDialog({
 					categoryId: selectedCategoryId || null,
 				},
 			});
-			onSuccess();
+			// Close the dialog first so the Radix portal finishes unmounting before
+			// router.invalidate() triggers a concurrent re-render of the page.
 			handleOpenChange(false);
+			setTimeout(() => onSuccess(), 0);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to add feed. Please try again.');
 		} finally {

@@ -34,8 +34,8 @@ export function DeleteFeedDialog({
 		setError(null);
 		try {
 			await deleteFeedFn({ data: { userId, feedId: feed.id } });
-			onSuccess();
 			onOpenChange(false);
+			setTimeout(() => onSuccess(), 0);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to delete feed. Please try again.');
 			setLoading(false);

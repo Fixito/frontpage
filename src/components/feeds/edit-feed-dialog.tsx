@@ -66,8 +66,8 @@ export function EditFeedDialog({
 					categoryId: selectedCategoryId || null,
 				},
 			});
-			onSuccess();
 			onOpenChange(false);
+			setTimeout(() => onSuccess(), 0);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : 'Failed to save changes. Please try again.');
 		} finally {
