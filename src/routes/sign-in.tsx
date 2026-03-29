@@ -1,7 +1,9 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router';
 import { useState } from 'react';
-import { AuthLayout, ErrorAlert, Field, SubmitButton } from '@/components/auth';
+import { AuthLayout } from '@/components/auth';
 import { Button } from '@/components/ui/button';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { FormField } from '@/components/ui/form-field';
 import { authClient } from '@/lib/auth-client';
 import { enterGuestMode } from '@/lib/session';
 
@@ -42,15 +44,17 @@ function SignInPage() {
 		<AuthLayout title="Welcome back" subtitle="Sign in to your Frontpage account">
 			<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 				{error && <ErrorAlert>{error}</ErrorAlert>}
-				<Field label="Email" name="email" type="email" autoComplete="email" required />
-				<Field
+				<FormField label="Email" name="email" type="email" autoComplete="email" required />
+				<FormField
 					label="Password"
 					name="password"
 					type="password"
 					autoComplete="current-password"
 					required
 				/>
-				<SubmitButton loading={loading}>Sign in</SubmitButton>
+				<Button type="submit" disabled={loading} className="w-full">
+					{loading ? 'Loading…' : 'Sign in'}
+				</Button>
 			</form>
 			<p className="mt-6 text-center text-sm text-muted-foreground">
 				No account? <Link to="/sign-up">Sign up</Link>

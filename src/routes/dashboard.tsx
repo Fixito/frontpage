@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { DashboardHeader } from '@/components/dashboard-header';
+import { DashboardHeader } from '@/components/dashboard';
 import { authClient } from '@/lib/auth-client';
 import { exitGuestMode } from '@/lib/session';
 
