@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { authClient } from '@/lib/auth-client';
 import { enterGuestMode } from '@/lib/session';
 
 export const Route = createFileRoute('/')({ component: LandingPage });
@@ -57,6 +58,7 @@ function LandingPage() {
 	const router = useRouter();
 
 	async function handleGuestMode() {
+		await authClient.signOut(); // clears session cookie if authenticated
 		await enterGuestMode();
 		await router.navigate({ to: '/dashboard' });
 	}

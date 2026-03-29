@@ -26,13 +26,7 @@ export const getAuthContext = createServerFn().handler(async (): Promise<AuthCon
 	return { user: null, isGuest };
 });
 
-export const enterGuestMode = createServerFn({ method: 'POST' }).handler(async () => {
-	// Sign out any authenticated user first so their identity doesn't bleed into guest mode.
-	const request = getRequest();
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (session) {
-		await auth.api.signOut({ headers: request.headers });
-	}
+export const enterGuestMode = createServerFn({ method: 'POST' }).handler(() => {
 	setCookie('frontpage-guest', '1', {
 		httpOnly: true,
 		sameSite: 'lax',

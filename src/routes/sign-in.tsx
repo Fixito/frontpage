@@ -16,6 +16,7 @@ function SignInPage() {
 	const [loading, setLoading] = useState(false);
 
 	async function handleGuestMode() {
+		await authClient.signOut(); // clears session cookie if authenticated
 		await enterGuestMode();
 		await router.navigate({ to: '/dashboard' });
 	}
