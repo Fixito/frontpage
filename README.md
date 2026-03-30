@@ -10,11 +10,9 @@ A customizable content aggregator that pulls RSS and Atom feeds into one well-de
 
 ## Overview
 
-<!-- Brief description of your implementation. What did you build? What's the experience like? -->
+Frontpage is a full-stack RSS/Atom feed reader built as a Frontend Mentor Product Challenge. It fetches, parses and stores articles from any public feed URL, organises them into user-defined categories, and presents them in three switchable layouts (list, compact, cards). A guest demo lets visitors explore 19 curated tech feeds without signing up. Authenticated users get a persistent reading history, bookmarks, and an AI-powered weekly digest.
 
 ### Tech Stack
-
-<!-- List your technology choices -->
 
 | Layer          | Technology                             |
 | -------------- | -------------------------------------- |
@@ -26,7 +24,7 @@ A customizable content aggregator that pulls RSS and Atom feeds into one well-de
 | Styling        | Tailwind CSS v4 + shadcn/ui (new-york) |
 | Feed parsing   | fast-xml-parser                        |
 | Type checking  | TypeScript 5.7 (strict)                |
-| AI             | Google Gemini 1.5 Flash                |
+| AI             | Google Gemini 2.5 Flash (free tier)    |
 
 ---
 
@@ -68,27 +66,23 @@ These are the product and design choices I made where the spec left room for int
 
 ### Content Discovery & Onboarding
 
-<!-- How did you design the onboarding experience? What does a new user see? How do they find feeds to follow? -->
+**The problem I was solving:** A feed reader is useless when empty. New users need to get to "valuable content in the app" within seconds, not minutes.
 
-**The problem I was solving:**
+**My approach:** Two parallel onboarding paths. First, a guest demo with 19 curated tech/design/dev feeds pre-loaded (seeded via a one-time script), so anyone visiting the landing page can click "Try as guest" and land in a fully populated dashboard instantly. Second, for authenticated users who start fresh, a "Starter Pack" onboarding flow in the empty state offers to add all 19 curated feeds in one click, with manual category assignment in a follow-up dialog.
 
-**My approach:**
+**Why I chose this approach:** The guest path eliminates the "blank page" problem for discovery. The starter pack removes the friction of searching for good feed URLs — the hardest part of adopting an RSS reader.
 
-**Why I chose this approach:**
-
-**What I'd do differently:**
+**What I'd do differently:** Add OPML import for power users migrating from another reader. The data model already supports it.
 
 ### Digest / Summary View
 
-<!-- How did you design the "what did I miss?" experience? What does the digest contain? How is content prioritized? -->
+**The problem I was solving:** Readers who don't check in daily need a "what did I miss?" view that surfaces signal without overwhelming them with 100+ unread items.
 
-**The problem I was solving:**
+**My approach:** A Weekly Digest view (sidebar link or `?view=digest`) queries the 10 most recent unread articles from the past 7 days that have full content, sends them to Gemini for a 3–4 sentence editorial briefing, and displays that briefing above the list of articles. Article-level AI summaries are shown inline where already cached.
 
-**My approach:**
+**Why I chose this approach:** An editorially-framed briefing feels more like a newsletter than a raw list — it gives context for why these items matter together. The view degrades gracefully: if AI is unavailable, the articles are still shown without a briefing.
 
-**Why I chose this approach:**
-
-**What I'd do differently:**
+**What I'd do differently:** Let users tune the digest (e.g. filter by category, adjust the look-back window). Currently it's one fixed view.
 
 ### Layout Customization
 
@@ -104,7 +98,11 @@ Three layout modes — list, compact, and cards — let readers choose their pre
 
 ### Other Design Choices
 
-<!-- Document any other significant design decisions: navigation structure, feed item design, landing page approach, etc. -->
+**Card click → Reader View.** Clicking a card title opens the in-app reader drawer (when full article HTML is available) rather than jumping straight to the external URL. The reader shows sanitised content (via `isomorphic-dompurify`), an AI summary button, and an "Original article ↗" link for when you want to go to the source. External links remain accessible via the action bar's `ExternalLink` icon without opening the reader.
+
+**Unread/Bookmark state model.** Unread count and bookmark count are both reflected live in the sidebar without a full page reload. Toggling a bookmark or marking items as read triggers a sidebar data refresh so counters stay accurate. Read items fade to 60% opacity; unread items have a blue dot indicator.
+
+**Health indicators.** Each feed in the sidebar has a subtle colour-coded health badge (green / yellow / red) showing whether the last fetch succeeded. On error, the feed detail view shows the specific error message and a manual retry button.
 
 ---
 
@@ -160,19 +158,23 @@ Three layout modes — list, compact, and cards — let readers choose their pre
 
 ### Chosen Differentiator(s)
 
-<!-- Which differentiator(s) did you pick from the spec? -->
+**1. AI-Powered Content Intelligence (Gemini 2.5 Flash)**
 
-**1. [Differentiator Name]**
-
-**Why I chose this:**
+**Why I chose this:** AI summarisation directly addresses the core pain point of an RSS reader — information overload. Instead of adding a cosmetic feature, AI here does real work: it saves reading time.
 
 **How it enhances the product:**
 
+- **Article summaries** cached in the database so the first reader who summarises an article benefits everyone (no repeat API calls).
+- **Category auto-suggestion** on feed add reduces the friction of organisation — Gemini reads the feed title/description and suggests the best matching category from the user's own list.
+- **Weekly Digest** surfaces a curated editorial briefing of the week's most recent unread content, giving irregular readers a meaningful entry point.
+
 **Implementation highlights:**
 
-**What I learned:**
+- All AI calls are non-blocking: summaries and suggestions degrade gracefully to `null` — the UI never crashes or blocks on AI.
+- 429 quota errors are caught and surfaced with a human-readable "Retry in Xs" countdown that auto-enables the button.
+- Model: `gemini-2.5-flash` via the free tier on AI Studio. Using `@google/generative-ai` SDK directly (no wrapper library).
 
-<!-- Repeat for second differentiator if applicable -->
+**What I learned:** Gemini's free tier is tied to the API key source — keys from Google Cloud Console (billing-enabled projects) have a free quota of zero. Keys from [aistudio.google.com](https://aistudio.google.com) work correctly on the free tier.
 
 ---
 
@@ -217,7 +219,12 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 ## Known Limitations
 
-<!-- What doesn't work perfectly? What's missing? What would you add in a v2? -->
+- **No background feed refresh** — feeds are only refreshed when a user manually clicks "Refresh" or adds a new feed. There is no scheduled cron job. On Vercel's free tier, a cron would require a separate Vercel Cron configuration.
+- **Search not implemented** — full-text search across articles is a stretch feature. The DB schema supports it (PostgreSQL `tsvector`) but the UI is not built.
+- **OPML import/export missing** — power users migrating from other readers cannot bulk-import their subscriptions. The data model supports it.
+- **Guest state is read-only** — the guest demo user's read/bookmark state is seeded and not writeable (changes would be visible to all guests sharing the demo account).
+- **AI quota dependence** — Gemini 2.5 Flash on the free tier has per-minute and per-day limits. Heavy usage will hit 429 errors; the app handles them gracefully but AI features become temporarily unavailable.
+- **No password reset flow** — Better Auth supports it, but email delivery (via Resend or similar) was not configured for this MVP.
 
 ---
 
@@ -256,9 +263,12 @@ pnpm dev
 
 ### Environment Variables
 
-| Variable | Description |
-| -------- | ----------- |
-|          |             |
+| Variable             | Description                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | Neon PostgreSQL connection string (pooled, with `?sslmode=require`)                                                 |
+| `BETTER_AUTH_SECRET` | Random secret for session signing (min 32 chars, e.g. `openssl rand -base64 32`)                                    |
+| `GEMINI_API_KEY`     | Google AI Studio API key — get one at [aistudio.google.com](https://aistudio.google.com) (not Google Cloud Console) |
+| `GUEST_DEMO_USER_ID` | UUID of the seeded demo user — output by `pnpm seed`                                                                |
 
 ---
 
