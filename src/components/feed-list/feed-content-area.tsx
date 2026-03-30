@@ -173,7 +173,7 @@ export function FeedContentArea({
 
 	if (loading) {
 		return (
-			<div className="flex-1 overflow-y-auto">
+			<div className="flex-1 overflow-y-auto" role="status" aria-label="Loading articles…">
 				<FeedItemSkeleton />
 			</div>
 		);
@@ -181,7 +181,10 @@ export function FeedContentArea({
 
 	if (error) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+			<div
+				role="alert"
+				className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center"
+			>
 				<p className="text-destructive font-medium">{error}</p>
 				<Button variant="outline" size="sm" onClick={handleRetry}>
 					Try again

@@ -52,6 +52,7 @@ function FavIcon({ url }: { url: string | null }) {
 			alt=""
 			width={12}
 			height={12}
+			loading="lazy"
 			className="shrink-0 rounded-sm"
 			onError={() => setFailed(true)}
 			aria-hidden

@@ -183,6 +183,7 @@ export function AddFeedDialog({
 											alt=""
 											width={20}
 											height={20}
+											loading="lazy"
 											className="mt-0.5 shrink-0 rounded-sm"
 											aria-hidden
 										/>

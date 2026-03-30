@@ -15,7 +15,7 @@ export function ItemActions({ item, onReadToggle, onBookmarkToggle }: ItemAction
 				variant="ghost"
 				size="icon"
 				className="h-7 w-7"
-				title={item.isRead ? 'Mark as unread' : 'Mark as read'}
+				aria-label={item.isRead ? 'Mark as unread' : 'Mark as read'}
 				onClick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
@@ -29,7 +29,7 @@ export function ItemActions({ item, onReadToggle, onBookmarkToggle }: ItemAction
 				variant="ghost"
 				size="icon"
 				className="h-7 w-7"
-				title={item.isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+				aria-label={item.isBookmarked ? 'Remove bookmark' : 'Bookmark'}
 				onClick={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
@@ -43,14 +43,14 @@ export function ItemActions({ item, onReadToggle, onBookmarkToggle }: ItemAction
 				)}
 			</Button>
 
-			<a href={item.url} target="_blank" rel="noopener noreferrer">
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-7 w-7"
-					title="Open in new tab"
-					tabIndex={-1}
-				>
+			<a
+				href={item.url}
+				target="_blank"
+				rel="noopener noreferrer"
+				aria-label="Open in new tab"
+				onClick={(e) => e.stopPropagation()}
+			>
+				<Button variant="ghost" size="icon" className="h-7 w-7" tabIndex={-1}>
 					<ExternalLink size={14} aria-hidden />
 				</Button>
 			</a>
