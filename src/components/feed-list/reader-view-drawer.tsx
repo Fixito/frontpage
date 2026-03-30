@@ -71,7 +71,7 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 				</DrawerHeader>
 
 				<ScrollArea className="flex-1">
-					<div className="p-4 md:p-6">
+					<div className="p-4 select-text md:p-6">
 						{item && (
 							<>
 								<div className="text-muted-foreground mb-5 flex flex-wrap gap-x-3 gap-y-1 text-sm">

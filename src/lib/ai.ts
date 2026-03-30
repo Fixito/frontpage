@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 let client: GoogleGenerativeAI | null = null;
 
+const MODEL = 'gemini-2.0-flash';
+
 function getClient(): GoogleGenerativeAI {
 	if (!client) {
 		const apiKey = process.env['GEMINI_API_KEY'];
@@ -12,7 +14,7 @@ function getClient(): GoogleGenerativeAI {
 }
 
 export async function generateArticleSummary(title: string, content: string): Promise<string> {
-	const model = getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+	const model = getClient().getGenerativeModel({ model: MODEL });
 	const prompt = `Summarize this article in 2-3 sentences. Article title: ${title}\n\nContent: ${content.slice(0, 3000)}`;
 	const result = await model.generateContent(prompt);
 	return result.response.text();
@@ -24,7 +26,7 @@ export async function suggestCategory(
 	existingCategories: ReadonlyArray<string>,
 ): Promise<string | null> {
 	if (existingCategories.length === 0) return null;
-	const model = getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+	const model = getClient().getGenerativeModel({ model: MODEL });
 	const descPart = feedDescription ? ` with description: "${feedDescription}"` : '';
 	const prompt = `Given a feed titled "${feedTitle}"${descPart}, pick the best matching category from this list: ${existingCategories.join(', ')}. Respond with ONLY the category name exactly as written, or "none" if none fit.`;
 	const result = await model.generateContent(prompt);
@@ -42,7 +44,7 @@ export async function generateWeeklyDigest(
 		feedTitle: string;
 	}>,
 ): Promise<string> {
-	const model = getClient().getGenerativeModel({ model: 'gemini-1.5-flash' });
+	const model = getClient().getGenerativeModel({ model: MODEL });
 	const list = items
 		.map(
 			(item, i) =>

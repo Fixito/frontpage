@@ -7,7 +7,13 @@ import { EmptyState } from './empty-state';
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
 import { Button } from '@/components/ui/button';
-import { getItemsFn, markAllReadFn, markReadFn, toggleBookmarkFn } from '@/lib/items-service';
+import {
+	getItemsFn,
+	markAllReadFn,
+	markReadFn,
+	toggleBookmarkFn,
+	unmarkReadFn,
+} from '@/lib/items-service';
 
 interface FeedContentAreaProps {
 	userId: string | null;
@@ -89,12 +95,22 @@ export function FeedContentArea({
 	const handleMarkRead = useCallback(
 		(itemId: string) => {
 			if (!userId) return;
+			const isCurrentlyRead = items.find((i) => i.id === itemId)?.isRead ?? false;
+			// Optimistic toggle
 			setItems((prev) =>
-				prev.map((item) => (item.id === itemId ? { ...item, isRead: true } : item)),
+				prev.map((item) => (item.id === itemId ? { ...item, isRead: !item.isRead } : item)),
 			);
-			void markReadFn({ data: { userId, itemId } }).catch(console.error);
+			const fn = isCurrentlyRead
+				? unmarkReadFn({ data: { userId, itemId } })
+				: markReadFn({ data: { userId, itemId } });
+			void fn.catch(() => {
+				// Rollback on error
+				setItems((prev) =>
+					prev.map((item) => (item.id === itemId ? { ...item, isRead: isCurrentlyRead } : item)),
+				);
+			});
 		},
-		[userId],
+		[userId, items],
 	);
 
 	const handleBookmarkToggle = useCallback(

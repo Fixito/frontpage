@@ -135,6 +135,12 @@ export async function markRead(userId: string, itemId: string): Promise<void> {
 	await db.insert(readState).values({ userId, itemId }).onConflictDoNothing();
 }
 
+// ── unmarkRead ────────────────────────────────────────────────────────────────
+
+export async function unmarkRead(userId: string, itemId: string): Promise<void> {
+	await db.delete(readState).where(and(eq(readState.userId, userId), eq(readState.itemId, itemId)));
+}
+
 // ── markAllRead ───────────────────────────────────────────────────────────────
 
 export async function markAllRead(
@@ -252,6 +258,10 @@ export const getItemsFn = createServerFn({ method: 'POST' })
 export const markReadFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string; itemId: string }) => data)
 	.handler(async ({ data }) => markRead(data.userId, data.itemId));
+
+export const unmarkReadFn = createServerFn({ method: 'POST' })
+	.inputValidator((data: { userId: string; itemId: string }) => data)
+	.handler(async ({ data }) => unmarkRead(data.userId, data.itemId));
 
 export const markAllReadFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string; feedId?: string; categoryId?: string }) => data)
