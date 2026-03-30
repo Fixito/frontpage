@@ -53,7 +53,14 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 				return { summary, cached: false };
 			} catch (err) {
 				console.error('[AI] generateSummaryFn error:', err);
-				const msg = err instanceof Error ? err.message : 'Unknown error';
+				const raw = err instanceof Error ? err.message : 'Unknown error';
+				// Extract retry delay from 429 response if present
+				const retryMatch = raw.match(/Please retry in (\d+(?:\.\d+)?)s/);
+				const msg = retryMatch
+					? `AI quota exceeded. Please retry in ${Math.ceil(Number(retryMatch[1]))} seconds.`
+					: raw.includes('429')
+						? 'AI quota exceeded. Please check your Google AI Studio plan.'
+						: 'AI unavailable. Please try again.';
 				return { summary: null, error: msg };
 			}
 		},

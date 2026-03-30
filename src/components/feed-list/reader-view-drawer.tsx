@@ -30,14 +30,23 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 	const [summary, setSummary] = useState<string | null>(item?.aiSummary ?? null);
 	const [summarizing, setSummarizing] = useState(false);
 	const [summaryError, setSummaryError] = useState<string | null>(null);
+	const [retryIn, setRetryIn] = useState(0);
 
 	useEffect(() => {
 		setSummary(item?.aiSummary ?? null);
 		setSummaryError(null);
+		setRetryIn(0);
 	}, [item?.id, item?.aiSummary]);
 
+	// Countdown timer for rate-limited retry
+	useEffect(() => {
+		if (retryIn <= 0) return;
+		const t = setTimeout(() => setRetryIn((s) => s - 1), 1000);
+		return () => clearTimeout(t);
+	}, [retryIn]);
+
 	async function handleSummarize() {
-		if (!item || !userId) return;
+		if (!item || !userId || retryIn > 0) return;
 		setSummarizing(true);
 		setSummaryError(null);
 		try {
@@ -46,7 +55,11 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 				setSummary(result.summary);
 			} else {
 				const error = 'error' in result ? result.error : undefined;
-				setSummaryError(error ?? 'Could not generate summary. Try again.');
+				const msg = error ?? 'Could not generate summary. Try again.';
+				setSummaryError(msg);
+				// Auto-parse retry delay and start countdown
+				const m = msg.match(/retry in (\d+) seconds/i);
+				if (m) setRetryIn(Number(m[1]));
 			}
 		} catch (err) {
 			console.error('[AI] summarize error:', err);
@@ -108,7 +121,7 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 												onClick={() => {
 													void handleSummarize();
 												}}
-												disabled={summarizing}
+												disabled={summarizing || retryIn > 0}
 												className="border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
 											>
 												{summarizing ? (
@@ -116,12 +129,16 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 												) : (
 													<Sparkles size={12} aria-hidden />
 												)}
-												{summarizing ? 'Generating summary...' : 'Summarize with AI'}
+												{summarizing
+													? 'Generating summary...'
+													: retryIn > 0
+														? `Retry in ${retryIn}s`
+														: 'Summarize with AI'}
 											</button>
 										)
 									)}
 									{summaryError && (
-										<p className="text-destructive mt-1.5 text-xs">{summaryError}</p>
+										<p className="text-muted-foreground mt-1.5 text-xs">{summaryError}</p>
 									)}
 								</div>
 
