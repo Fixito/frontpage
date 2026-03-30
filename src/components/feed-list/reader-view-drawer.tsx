@@ -39,16 +39,22 @@ export function ReaderViewDrawer({
 	onNext,
 }: ReaderViewDrawerProps) {
 	const safeHtml = item?.contentHtml ? sanitize(item.contentHtml) : '';
-	const [summary, setSummary] = useState<string | null>(item?.aiSummary ?? null);
+	const [prevItemId, setPrevItemId] = useState(item?.id);
+	const [generatedSummary, setGeneratedSummary] = useState<string | null>(null);
 	const [summarizing, setSummarizing] = useState(false);
 	const [summaryError, setSummaryError] = useState<string | null>(null);
 	const [retryIn, setRetryIn] = useState(0);
 
-	useEffect(() => {
-		setSummary(item?.aiSummary ?? null);
+	// Reset generated summary and errors during render when the item changes
+	if (prevItemId !== item?.id) {
+		setPrevItemId(item?.id);
+		setGeneratedSummary(null);
 		setSummaryError(null);
 		setRetryIn(0);
-	}, [item?.id, item?.aiSummary]);
+	}
+
+	// Compute summary: prefer user-triggered generated summary, fall back to stored AI summary
+	const summary = generatedSummary ?? item?.aiSummary ?? null;
 
 	// Countdown timer for rate-limited retry
 	useEffect(() => {
@@ -64,7 +70,7 @@ export function ReaderViewDrawer({
 		try {
 			const result = await generateSummaryFn({ data: { userId, itemId: item.id } });
 			if (result.summary) {
-				setSummary(result.summary);
+				setGeneratedSummary(result.summary);
 			} else {
 				const error = 'error' in result ? result.error : undefined;
 				const msg = error ?? 'Could not generate summary. Try again.';

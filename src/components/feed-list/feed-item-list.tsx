@@ -58,9 +58,7 @@ function CategoryBadge({
 function SourceRow({ item }: { item: FeedItemRow }) {
 	return (
 		<p className="text-muted-foreground flex items-center gap-1 text-xs">
-			<span className="text-foreground/70 max-w-[10rem] truncate font-medium">
-				{item.feedTitle}
-			</span>
+			<span className="text-foreground/70 max-w-40 truncate font-medium">{item.feedTitle}</span>
 			<span aria-hidden>·</span>
 			<time title={formatAbsoluteDate(item.publishedAt)} dateTime={item.publishedAt?.toISOString()}>
 				{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
@@ -213,10 +211,7 @@ function FeedItemCard({
 			>
 				<div className="flex w-3 shrink-0 justify-center">
 					{!item.isRead && (
-						<span
-							className="h-1.5 w-1.5 rounded-full bg-[var(--color-unread-indicator)]"
-							aria-label="Unread"
-						/>
+						<span className="bg-unread h-1.5 w-1.5 rounded-full" aria-label="Unread" />
 					)}
 				</div>
 
@@ -264,12 +259,7 @@ function FeedItemCard({
 		>
 			{/* Unread indicator */}
 			<div className="flex w-3 shrink-0 items-start justify-center pt-2">
-				{!item.isRead && (
-					<span
-						className="h-2 w-2 rounded-full bg-[var(--color-unread-indicator)]"
-						aria-label="Unread"
-					/>
-				)}
+				{!item.isRead && <span className="bg-unread h-2 w-2 rounded-full" aria-label="Unread" />}
 			</div>
 
 			<div className="shrink-0 pt-0.5">
@@ -376,18 +366,20 @@ export function FeedItemList({
 			}
 			if (e.key === 'j' || e.key === 'ArrowDown') {
 				e.preventDefault();
-				setFocusedIndex((prev) => {
-					if (prev === null) return 0;
-					return Math.min(prev + 1, items.length - 1);
-				});
+				const nextIndex = focusedIndex === null ? 0 : Math.min(focusedIndex + 1, items.length - 1);
+				setFocusedIndex(nextIndex);
+				document
+					.querySelector(`[data-item-index="${nextIndex}"]`)
+					?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 				return;
 			}
 			if (e.key === 'k' || e.key === 'ArrowUp') {
 				e.preventDefault();
-				setFocusedIndex((prev) => {
-					if (prev === null) return 0;
-					return Math.max(prev - 1, 0);
-				});
+				const prevIndex = focusedIndex === null ? 0 : Math.max(focusedIndex - 1, 0);
+				setFocusedIndex(prevIndex);
+				document
+					.querySelector(`[data-item-index="${prevIndex}"]`)
+					?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 				return;
 			}
 			if (focusedIndex === null) return;
@@ -411,12 +403,6 @@ export function FeedItemList({
 		document.addEventListener('keydown', handleKey);
 		return () => document.removeEventListener('keydown', handleKey);
 	}, [items, focusedIndex, readerOpen, handleOpenReader, onMarkRead, onMarkBookmark]);
-
-	useEffect(() => {
-		if (focusedIndex === null) return;
-		const el = document.querySelector(`[data-item-index="${focusedIndex}"]`);
-		el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-	}, [focusedIndex]);
 
 	if (layout === 'cards') {
 		return (

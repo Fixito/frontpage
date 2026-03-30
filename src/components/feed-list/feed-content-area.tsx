@@ -6,6 +6,7 @@ import { FeedErrorBanner } from './feed-error-banner';
 import { EmptyState } from './empty-state';
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
+import type { GuestSession } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 import {
 	getItemsFn,
@@ -17,8 +18,7 @@ import {
 
 interface FeedContentAreaProps {
 	userId: string | null;
-	guestDemoUserId?: string | null;
-	isGuest: boolean;
+	guest: GuestSession | null;
 	feedId?: string;
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
@@ -30,8 +30,7 @@ const PAGE_SIZE = 50;
 
 export function FeedContentArea({
 	userId,
-	guestDemoUserId,
-	isGuest,
+	guest,
 	feedId,
 	categoryId,
 	view,
@@ -47,6 +46,18 @@ export function FeedContentArea({
 	const [error, setError] = useState<string | null>(null);
 	const [feedInfo, setFeedInfo] = useState<GetItemsResult['feedInfo']>(null);
 	const [markingAllRead, setMarkingAllRead] = useState(false);
+
+	const guestDemoUserId = guest?.demoUserId ?? null;
+
+	// Reset sync state during render when filter props change
+	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}`;
+	const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+	if (prevFilterKey !== filterKey) {
+		setPrevFilterKey(filterKey);
+		setLoading(true);
+		setError(null);
+		setPage(1);
+	}
 
 	const fetchItems = useCallback(
 		async (pageNum: number, append = false) => {
@@ -82,11 +93,9 @@ export function FeedContentArea({
 		[userId, guestDemoUserId, feedId, categoryId, view],
 	);
 
-	// Refetch when filters change
+	// Refetch when filters change (items are async data, cannot be computed during render)
 	useEffect(() => {
-		setLoading(true);
-		setError(null);
-		setPage(1);
+		// eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
 		fetchItems(1).finally(() => {
 			setLoading(false);
 		});
@@ -238,7 +247,7 @@ export function FeedContentArea({
 			{/* Content */}
 			<div className="flex-1 overflow-y-auto">
 				{showEmptyState ? (
-					<EmptyState view={view} isGuest={isGuest} feedId={feedId} categoryId={categoryId} />
+					<EmptyState view={view} isGuest={guest !== null} feedId={feedId} categoryId={categoryId} />
 				) : (
 					<>
 						<FeedItemList

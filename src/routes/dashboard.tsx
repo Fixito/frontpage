@@ -31,20 +31,19 @@ const EMPTY_SIDEBAR_DATA: SidebarData = {
 export const Route = createFileRoute('/dashboard')({
 	validateSearch: dashboardSearchSchema,
 	beforeLoad: ({ context }) => {
-		if (!context.user && !context.isGuest) {
+		if (!context.user && !context.guest) {
 			throw redirect({ to: '/' });
 		}
 		return {
 			user: context.user,
-			isGuest: context.isGuest,
-			guestDemoUserId: context.guestDemoUserId,
+			guest: context.guest,
 		};
 	},
 	loader: async ({ context }) => {
 		if (!context.user) {
-			if (context.guestDemoUserId) {
+			if (context.guest?.demoUserId) {
 				const sidebarData = await getSidebarDataFn({
-					data: { userId: context.guestDemoUserId },
+					data: { userId: context.guest.demoUserId },
 				});
 				return { sidebarData };
 			}
@@ -64,7 +63,7 @@ function getInitialLayout(): FeedLayout {
 }
 
 function DashboardPage() {
-	const { user, isGuest, guestDemoUserId } = Route.useRouteContext();
+	const { user, guest } = Route.useRouteContext();
 	const { sidebarData } = Route.useLoaderData();
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
@@ -82,7 +81,7 @@ function DashboardPage() {
 	}
 
 	async function handleSignOut() {
-		if (isGuest) {
+		if (guest) {
 			await exitGuestMode();
 		} else {
 			await authClient.signOut();
@@ -149,7 +148,7 @@ function DashboardPage() {
 			{/* Main area */}
 			<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
 				{/* Guest banner */}
-				{isGuest && (
+				{guest && (
 					<div className="border-border bg-accent/30 flex items-center justify-between border-b px-4 py-2">
 						<p className="text-accent-foreground text-sm">
 							You&apos;re browsing as a guest.{' '}
@@ -208,8 +207,7 @@ function DashboardPage() {
 					) : (
 						<FeedContentArea
 							userId={user?.id ?? null}
-							guestDemoUserId={isGuest ? (guestDemoUserId ?? null) : null}
-							isGuest={isGuest}
+							guest={guest}
 							feedId={feedId}
 							categoryId={categoryId}
 							view={view}

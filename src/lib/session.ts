@@ -8,35 +8,46 @@ export type AuthUser = {
 	email: string;
 };
 
+export type GuestSession = {
+	demoUserId: string;
+	expiresAt: Date;
+};
+
 export type AuthContext = {
 	user: AuthUser | null;
-	isGuest: boolean;
-	guestDemoUserId: string | null;
+	guest: GuestSession | null;
 };
 
 export const getAuthContext = createServerFn().handler(async (): Promise<AuthContext> => {
 	const request = getRequest();
 	const session = await auth.api.getSession({ headers: request.headers });
-	const guestDemoUserId = process.env['GUEST_DEMO_USER_ID'] ?? null;
 	if (session?.user) {
 		return {
 			user: { id: session.user.id, name: session.user.name, email: session.user.email },
-			isGuest: false,
-			guestDemoUserId,
+			guest: null,
 		};
 	}
-	const isGuest = getCookie('frontpage-guest') === '1';
-	return { user: null, isGuest, guestDemoUserId };
+	const rawCookie = getCookie('frontpage-guest');
+	if (rawCookie) {
+		const expiresAt = new Date(rawCookie);
+		const demoUserId = process.env['GUEST_DEMO_USER_ID'];
+		if (demoUserId && !isNaN(expiresAt.getTime()) && expiresAt > new Date()) {
+			return { user: null, guest: { demoUserId, expiresAt } };
+		}
+	}
+	return { user: null, guest: null };
 });
 
-export const enterGuestMode = createServerFn({ method: 'POST' }).handler(() => {
-	setCookie('frontpage-guest', '1', {
+export const enterGuestMode = createServerFn({ method: 'POST' }).handler((): { expiresAt: string } => {
+	const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
+	setCookie('frontpage-guest', expiresAt.toISOString(), {
 		httpOnly: true,
 		sameSite: 'lax',
 		path: '/',
-		maxAge: 60 * 60 * 24, // 1 day
+		maxAge: 60 * 60 * 24,
 		secure: process.env['NODE_ENV'] === 'production',
 	});
+	return { expiresAt: expiresAt.toISOString() };
 });
 
 export const exitGuestMode = createServerFn({ method: 'POST' }).handler(() => {

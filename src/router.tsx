@@ -5,7 +5,7 @@ import type { AuthContext } from './lib/session';
 export function getRouter() {
 	const router = createTanStackRouter({
 		routeTree,
-		context: { user: null, isGuest: false, guestDemoUserId: null } satisfies AuthContext,
+		context: { user: null, guest: null } satisfies AuthContext,
 		scrollRestoration: true,
 		defaultPreload: 'intent',
 		defaultPreloadStaleTime: 0,

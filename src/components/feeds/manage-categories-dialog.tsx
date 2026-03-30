@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Check, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
 import {
 	createCategoryFn,
@@ -46,7 +47,10 @@ export function ManageCategoriesDialog({
 	const [error, setError] = useState<string | null>(null);
 	const editInputRef = useRef<HTMLInputElement>(null);
 
-	useEffect(() => {
+	// Reset dialog state during render when it opens or categories change
+	const [prevOpen, setPrevOpen] = useState(open);
+	if (prevOpen !== open) {
+		setPrevOpen(open);
 		if (open) {
 			setLocalCats(categories.map((c) => ({ id: c.id, name: c.name })));
 			setEditingId(null);
@@ -55,14 +59,7 @@ export function ManageCategoriesDialog({
 			setNewName('');
 			setError(null);
 		}
-	}, [open, categories]);
-
-	// Focus the edit input whenever editingId changes
-	useEffect(() => {
-		if (editingId) {
-			editInputRef.current?.focus();
-		}
-	}, [editingId]);
+	}
 
 	async function handleAdd() {
 		const name = newName.trim();
@@ -143,9 +140,12 @@ export function ManageCategoriesDialog({
 	}
 
 	function startEdit(cat: LocalCategory) {
-		setEditingId(cat.id);
-		setEditingName(cat.name);
-		setDeletingId(null);
+		flushSync(() => {
+			setEditingId(cat.id);
+			setEditingName(cat.name);
+			setDeletingId(null);
+		});
+		editInputRef.current?.focus();
 	}
 
 	function cancelEdit() {

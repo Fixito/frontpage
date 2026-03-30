@@ -1,15 +1,15 @@
 import { Link } from '@tanstack/react-router';
 import { LogOut, Rss } from 'lucide-react';
-import type { AuthUser } from '@/lib/session';
+import type { AuthUser, GuestSession } from '@/lib/session';
 import { Button } from '@/components/ui/button';
 
 interface DashboardHeaderProps {
 	user: AuthUser | null;
-	isGuest: boolean;
+	guest: GuestSession | null;
 	onSignOut: () => void;
 }
 
-export function DashboardHeader({ user, isGuest, onSignOut }: DashboardHeaderProps) {
+export function DashboardHeader({ user, guest, onSignOut }: DashboardHeaderProps) {
 	return (
 		<header className="border-border bg-background sticky top-0 z-50 flex h-14 items-center justify-between border-b px-6">
 			<Link to="/" className="text-foreground flex items-center gap-2 font-bold">
@@ -17,7 +17,7 @@ export function DashboardHeader({ user, isGuest, onSignOut }: DashboardHeaderPro
 				Frontpage
 			</Link>
 			<div className="flex items-center gap-4">
-				{isGuest && (
+				{guest && (
 					<p className="text-muted-foreground text-sm">
 						Browsing as guest — <Link to="/sign-up">Sign up to save your data</Link>
 					</p>
@@ -27,10 +27,10 @@ export function DashboardHeader({ user, isGuest, onSignOut }: DashboardHeaderPro
 					variant="outline"
 					size="sm"
 					onClick={onSignOut}
-					title={isGuest ? 'Exit guest mode' : 'Sign out'}
+					title={guest ? 'Exit guest mode' : 'Sign out'}
 				>
 					<LogOut size={14} aria-hidden />
-					{isGuest ? 'Exit' : 'Sign out'}
+					{guest ? 'Exit' : 'Sign out'}
 				</Button>
 			</div>
 		</header>

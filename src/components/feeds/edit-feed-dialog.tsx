@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { updateFeedFn } from '@/lib/category-service';
 import {
 	Dialog,
@@ -41,13 +41,16 @@ export function EditFeedDialog({
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
+	// Reset form state during render when the dialog opens or the feed changes
+	const [prevOpen, setPrevOpen] = useState(open);
+	if (prevOpen !== open) {
+		setPrevOpen(open);
 		if (open) {
 			setTitle(feed.title);
 			setSelectedCategoryId(feed.categoryId ?? '__none__');
 			setError(null);
 		}
-	}, [open, feed.title, feed.categoryId]);
+	}
 
 	async function handleSave() {
 		const trimmedTitle = title.trim();
