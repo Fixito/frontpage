@@ -68,6 +68,43 @@ function SourceRow({ item }: { item: FeedItemRow }) {
 	);
 }
 
+// ── Title element ─────────────────────────────────────────────────────────────
+// Opens the reader when full HTML content is available, otherwise external URL.
+
+const TITLE_BASE = 'hover:text-primary transition-colors cursor-pointer';
+
+interface TitleElProps {
+	item: FeedItemRow;
+	className: string;
+	onOpenReader: (item: FeedItemRow) => void;
+	onMarkRead: (itemId: string) => void;
+}
+
+function TitleEl({ item, className, onOpenReader, onMarkRead }: TitleElProps) {
+	if (item.contentHtml) {
+		return (
+			<button
+				type="button"
+				onClick={() => onOpenReader(item)}
+				className={cn('text-left', TITLE_BASE, className)}
+			>
+				{item.title}
+			</button>
+		);
+	}
+	return (
+		<a
+			href={item.url}
+			target="_blank"
+			rel="noopener noreferrer"
+			onClick={() => onMarkRead(item.id)}
+			className={cn(TITLE_BASE, className)}
+		>
+			{item.title}
+		</a>
+	);
+}
+
 // ── Card ──────────────────────────────────────────────────────────────────────
 
 interface FeedItemListProps {
@@ -96,20 +133,6 @@ function FeedItemCard({
 	const isCompact = layout === 'compact';
 	const isCards = layout === 'cards';
 
-	function handleClick() {
-		onMarkRead(item.id);
-	}
-
-	const readerButton = item.contentHtml ? (
-		<button
-			type="button"
-			onClick={() => onOpenReader(item)}
-			className="text-muted-foreground hover:text-foreground hover:bg-accent rounded px-1.5 py-0.5 text-xs transition-colors"
-		>
-			Reader
-		</button>
-	) : null;
-
 	// ── Cards layout ──────────────────────────────────────────────────────────
 	if (isCards) {
 		const accentHex = hashToHex(item.categoryId ?? item.feedId);
@@ -134,15 +157,12 @@ function FeedItemCard({
 					</div>
 
 					{/* Title */}
-					<a
-						href={item.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						onClick={handleClick}
-						className="hover:text-primary line-clamp-2 text-base leading-snug font-semibold transition-colors"
-					>
-						{item.title}
-					</a>
+					<TitleEl
+						item={item}
+						className="line-clamp-2 text-base leading-snug font-semibold"
+						onOpenReader={onOpenReader}
+						onMarkRead={onMarkRead}
+					/>
 
 					{/* Description */}
 					{item.description && (
@@ -166,7 +186,6 @@ function FeedItemCard({
 								onReadToggle={() => onMarkRead(item.id)}
 								onBookmarkToggle={() => onMarkBookmark(item.id)}
 							/>
-							{readerButton}
 						</div>
 					</div>
 				</div>
@@ -198,15 +217,12 @@ function FeedItemCard({
 					{item.feedTitle}
 				</span>
 
-				<a
-					href={item.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={handleClick}
-					className="hover:text-primary min-w-0 flex-1 truncate text-sm font-medium transition-colors"
-				>
-					{item.title}
-				</a>
+				<TitleEl
+					item={item}
+					className="min-w-0 flex-1 truncate text-sm font-medium"
+					onOpenReader={onOpenReader}
+					onMarkRead={onMarkRead}
+				/>
 
 				<time
 					className="text-muted-foreground shrink-0 text-xs"
@@ -222,7 +238,6 @@ function FeedItemCard({
 						onReadToggle={() => onMarkRead(item.id)}
 						onBookmarkToggle={() => onMarkBookmark(item.id)}
 					/>
-					{readerButton}
 				</div>
 			</article>
 		);
@@ -255,15 +270,12 @@ function FeedItemCard({
 					<SourceRow item={item} />
 				</div>
 
-				<a
-					href={item.url}
-					target="_blank"
-					rel="noopener noreferrer"
-					onClick={handleClick}
-					className="hover:text-primary text-sm leading-snug font-semibold transition-colors"
-				>
-					{item.title}
-				</a>
+				<TitleEl
+					item={item}
+					className="text-sm leading-snug font-semibold"
+					onOpenReader={onOpenReader}
+					onMarkRead={onMarkRead}
+				/>
 
 				{item.description && (
 					<p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-relaxed">
@@ -288,7 +300,6 @@ function FeedItemCard({
 					onReadToggle={() => onMarkRead(item.id)}
 					onBookmarkToggle={() => onMarkBookmark(item.id)}
 				/>
-				{readerButton}
 			</div>
 		</article>
 	);
