@@ -69,7 +69,13 @@ export function DigestView({ userId }: DigestViewProps) {
 		);
 	}
 
-	if (!briefing) return null;
+	if (items.length === 0) {
+		return (
+			<div className="flex flex-1 items-center justify-center p-8">
+				<p className="text-muted-foreground text-sm">No unread articles from the past 7 days.</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex-1 overflow-y-auto">
@@ -80,9 +86,15 @@ export function DigestView({ userId }: DigestViewProps) {
 						<h2 className="text-base font-semibold">Weekly Digest</h2>
 						<span className="text-muted-foreground ml-auto text-xs">Last 7 days</span>
 					</div>
-					<div className="bg-accent/30 rounded-xl border p-4">
-						<p className="text-sm leading-relaxed">{briefing}</p>
-					</div>
+					{briefing ? (
+						<div className="bg-accent/30 rounded-xl border p-4">
+							<p className="text-sm leading-relaxed">{briefing}</p>
+						</div>
+					) : (
+						<div className="text-muted-foreground bg-muted/40 rounded-xl border border-dashed p-4 text-sm">
+							AI briefing unavailable — showing your unread articles below.
+						</div>
+					)}
 				</div>
 
 				<div className="space-y-3">

@@ -78,7 +78,7 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 
 export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }): Promise<{ briefing: string; items: Array<DigestItem> }> => {
+	.handler(async ({ data }): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
 		const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
 		const rs = alias(readState, 'rs');
@@ -125,7 +125,12 @@ export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 			feedTitle: row.feedTitle,
 		}));
 
-		const briefing = await generateWeeklyDigest(briefingInput);
+		let briefing: string | null = null;
+		try {
+			briefing = await generateWeeklyDigest(briefingInput);
+		} catch (err) {
+			console.error('[AI] getWeeklyDigestFn briefing error:', err);
+		}
 
 		return { briefing, items: digestItems };
 	});

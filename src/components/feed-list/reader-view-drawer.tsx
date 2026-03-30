@@ -58,7 +58,7 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 
 	return (
 		<Drawer open={open} onOpenChange={onOpenChange} direction="right">
-			<DrawerContent className="flex h-full w-full flex-col sm:max-w-2xl">
+			<DrawerContent className="flex h-full w-full flex-col sm:max-w-3xl">
 				<DrawerHeader className="flex shrink-0 items-start justify-between gap-4 border-b pb-4">
 					<DrawerTitle className="line-clamp-2 text-base leading-snug">
 						{item?.title ?? ''}
