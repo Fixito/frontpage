@@ -2,7 +2,7 @@
 
 A customizable content aggregator that pulls RSS and Atom feeds into one well-designed reading dashboard.
 
-**Live URL:** [your-deployed-url.com]
+**Live URL:** https://frontpage-toco.vercel.app/
 
 ![Screenshot of your solution](./screenshot.png)
 
@@ -202,10 +202,10 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 | Category       | Score |
 | -------------- | ----- |
-| Performance    |       |
-| Accessibility  |       |
-| Best Practices |       |
-| SEO            |       |
+| Performance    | 91    |
+| Accessibility  | 93    |
+| Best Practices | 96    |
+| SEO            | 100   |
 
 ### Strengths
 
