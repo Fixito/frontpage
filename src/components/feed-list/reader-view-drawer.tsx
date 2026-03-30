@@ -10,7 +10,6 @@ import {
 	DrawerTitle,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { generateSummaryFn } from '@/lib/ai-service';
 import { formatAbsoluteDate } from '@/lib/time';
 
@@ -83,7 +82,7 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 					</DrawerClose>
 				</DrawerHeader>
 
-				<ScrollArea className="flex-1">
+				<div className="min-h-0 flex-1 overflow-y-auto">
 					<div className="p-4 select-text md:p-6">
 						{item && (
 							<>
@@ -154,7 +153,7 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 							</>
 						)}
 					</div>
-				</ScrollArea>
+				</div>
 			</DrawerContent>
 		</Drawer>
 	);
