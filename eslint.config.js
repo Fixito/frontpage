@@ -5,6 +5,7 @@ import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-config-prettier';
+import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 
 export default defineConfig(
 	{ ignores: ['**/routeTree.gen.ts', 'dist/**', '.output/**', 'eslint.config.js'] },
@@ -23,6 +24,7 @@ export default defineConfig(
 		},
 	},
 	reactHooks.configs.flat['recommended-latest'],
+	reactYouMightNotNeedAnEffect.configs.strict,
 	jsxA11y.flatConfigs.recommended,
 	prettier,
 	{
