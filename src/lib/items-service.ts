@@ -147,7 +147,11 @@ export async function markAllRead(
 			.insert(readState)
 			.select(
 				db
-					.select({ userId: sql<string>`${userId}`.as('user_id'), itemId: feedItem.id })
+					.select({
+						userId: sql<string>`${userId}`.as('user_id'),
+						itemId: feedItem.id,
+						readAt: sql`now()`.as('read_at'),
+					})
 					.from(feedItem)
 					.where(
 						and(
@@ -170,7 +174,11 @@ export async function markAllRead(
 			.insert(readState)
 			.select(
 				db
-					.select({ userId: sql<string>`${userId}`.as('user_id'), itemId: feedItem.id })
+					.select({
+						userId: sql<string>`${userId}`.as('user_id'),
+						itemId: feedItem.id,
+						readAt: sql`now()`.as('read_at'),
+					})
 					.from(feedItem)
 					.innerJoin(feed, eq(feed.id, feedItem.feedId))
 					.where(
@@ -196,7 +204,11 @@ export async function markAllRead(
 		.insert(readState)
 		.select(
 			db
-				.select({ userId: sql<string>`${userId}`.as('user_id'), itemId: feedItem.id })
+				.select({
+					userId: sql<string>`${userId}`.as('user_id'),
+					itemId: feedItem.id,
+					readAt: sql`now()`.as('read_at'),
+				})
 				.from(feedItem)
 				.where(
 					and(

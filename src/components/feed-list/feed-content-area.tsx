@@ -100,21 +100,25 @@ export function FeedContentArea({
 	const handleBookmarkToggle = useCallback(
 		(itemId: string) => {
 			if (!userId) return;
-			// Optimistic toggle
+			// Optimistic: in bookmarks view, remove the item immediately; elsewhere toggle the flag
 			setItems((prev) =>
-				prev.map((item) =>
-					item.id === itemId ? { ...item, isBookmarked: !item.isBookmarked } : item,
-				),
+				view === 'bookmarks'
+					? prev.filter((item) => item.id !== itemId)
+					: prev.map((item) =>
+							item.id === itemId ? { ...item, isBookmarked: !item.isBookmarked } : item,
+						),
 			);
 			void toggleBookmarkFn({ data: { userId, itemId } })
 				.then((isBookmarked) => {
 					setItems((prev) =>
-						prev.map((item) => (item.id === itemId ? { ...item, isBookmarked } : item)),
+						view === 'bookmarks' && !isBookmarked
+							? prev.filter((item) => item.id !== itemId)
+							: prev.map((item) => (item.id === itemId ? { ...item, isBookmarked } : item)),
 					);
 				})
 				.catch(console.error);
 		},
-		[userId],
+		[userId, view],
 	);
 
 	const handleMarkAllRead = useCallback(async () => {

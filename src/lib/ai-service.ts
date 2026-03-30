@@ -51,8 +51,10 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 				const summary = await generateArticleSummary(item.title, content);
 				await db.update(feedItem).set({ aiSummary: summary }).where(eq(feedItem.id, data.itemId));
 				return { summary, cached: false };
-			} catch {
-				return { summary: null, error: 'AI unavailable' };
+			} catch (err) {
+				console.error('[AI] generateSummaryFn error:', err);
+				const msg = err instanceof Error ? err.message : 'Unknown error';
+				return { summary: null, error: msg };
 			}
 		},
 	);

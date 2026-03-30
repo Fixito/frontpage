@@ -45,9 +45,11 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 			if (result.summary) {
 				setSummary(result.summary);
 			} else {
-				setSummaryError('Could not generate summary. Try again.');
+				const error = 'error' in result ? result.error : undefined;
+				setSummaryError(error ?? 'Could not generate summary. Try again.');
 			}
-		} catch {
+		} catch (err) {
+			console.error('[AI] summarize error:', err);
 			setSummaryError('Could not generate summary. Try again.');
 		} finally {
 			setSummarizing(false);
