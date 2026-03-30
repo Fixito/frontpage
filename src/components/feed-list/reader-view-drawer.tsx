@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Sparkles, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
 import DOMPurify from 'isomorphic-dompurify';
 import type { FeedItemRow } from './types';
 import {
@@ -18,13 +18,26 @@ interface ReaderViewDrawerProps {
 	open: boolean;
 	onOpenChange: (v: boolean) => void;
 	userId: string | null;
+	hasPrev?: boolean;
+	hasNext?: boolean;
+	onPrev?: () => void;
+	onNext?: () => void;
 }
 
 function sanitize(html: string): string {
 	return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 
-export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderViewDrawerProps) {
+export function ReaderViewDrawer({
+	item,
+	open,
+	onOpenChange,
+	userId,
+	hasPrev,
+	hasNext,
+	onPrev,
+	onNext,
+}: ReaderViewDrawerProps) {
 	const safeHtml = item?.contentHtml ? sanitize(item.contentHtml) : '';
 	const [summary, setSummary] = useState<string | null>(item?.aiSummary ?? null);
 	const [summarizing, setSummarizing] = useState(false);
@@ -75,6 +88,28 @@ export function ReaderViewDrawer({ item, open, onOpenChange, userId }: ReaderVie
 					<DrawerTitle className="line-clamp-2 text-base leading-snug">
 						{item?.title ?? ''}
 					</DrawerTitle>
+					<div className="flex items-center gap-1">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+							onClick={onPrev}
+							disabled={!hasPrev}
+							aria-label="Previous article"
+						>
+							<ChevronLeft size={16} aria-hidden />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-8 w-8"
+							onClick={onNext}
+							disabled={!hasNext}
+							aria-label="Next article"
+						>
+							<ChevronRight size={16} aria-hidden />
+						</Button>
+					</div>
 					<DrawerClose asChild>
 						<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Close">
 							<X size={16} aria-hidden />

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ItemActions } from './item-actions';
+import { KeyboardShortcutsHelp } from './keyboard-shortcuts-help';
 import { ReaderViewDrawer } from './reader-view-drawer';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
@@ -118,6 +119,8 @@ interface FeedItemListProps {
 interface FeedItemCardProps {
 	item: FeedItemRow;
 	layout: 'list' | 'compact' | 'cards';
+	index: number;
+	isFocused?: boolean;
 	onMarkRead: (itemId: string) => void;
 	onMarkBookmark: (itemId: string) => void;
 	onOpenReader: (item: FeedItemRow) => void;
@@ -126,6 +129,8 @@ interface FeedItemCardProps {
 function FeedItemCard({
 	item,
 	layout,
+	index,
+	isFocused,
 	onMarkRead,
 	onMarkBookmark,
 	onOpenReader,
@@ -138,9 +143,11 @@ function FeedItemCard({
 		const accentHex = hashToHex(item.categoryId ?? item.feedId);
 		return (
 			<article
+				data-item-index={index}
 				className={cn(
 					'group bg-card flex flex-col overflow-hidden rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
 					item.isRead && 'opacity-60',
+					isFocused && 'ring-primary ring-2 ring-inset',
 				)}
 			>
 				{/* Colored top accent bar */}
@@ -197,9 +204,11 @@ function FeedItemCard({
 	if (isCompact) {
 		return (
 			<article
+				data-item-index={index}
 				className={cn(
 					'group hover:bg-accent/30 flex items-center gap-2 px-4 py-2 transition-colors',
 					item.isRead && 'opacity-60',
+					isFocused && 'ring-primary ring-2 ring-inset',
 				)}
 			>
 				<div className="flex w-3 shrink-0 justify-center">
@@ -246,9 +255,11 @@ function FeedItemCard({
 	// ── List layout (default) ─────────────────────────────────────────────────
 	return (
 		<article
+			data-item-index={index}
 			className={cn(
 				'group hover:bg-accent/30 flex gap-3 px-4 py-3 transition-colors',
 				item.isRead && 'opacity-60',
+				isFocused && 'ring-primary ring-2 ring-inset',
 			)}
 		>
 			{/* Unread indicator */}
@@ -316,22 +327,108 @@ export function FeedItemList({
 }: FeedItemListProps) {
 	const [readerItem, setReaderItem] = useState<FeedItemRow | null>(null);
 	const [readerOpen, setReaderOpen] = useState(false);
+	const [readerIndex, setReaderIndex] = useState<number | null>(null);
+	const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+	const [helpOpen, setHelpOpen] = useState(false);
 
-	function handleOpenReader(item: FeedItemRow) {
-		setReaderItem(item);
-		setReaderOpen(true);
-		onMarkRead(item.id);
+	const handleOpenReader = useCallback(
+		(item: FeedItemRow) => {
+			const idx = items.indexOf(item);
+			setReaderItem(item);
+			setReaderOpen(true);
+			setReaderIndex(idx !== -1 ? idx : null);
+			onMarkRead(item.id);
+		},
+		[items, onMarkRead],
+	);
+
+	function handlePrev() {
+		if (readerIndex === null || readerIndex <= 0) return;
+		const prevItem = items[readerIndex - 1];
+		setReaderItem(prevItem);
+		setReaderIndex(readerIndex - 1);
+		onMarkRead(prevItem.id);
 	}
+
+	function handleNext() {
+		if (readerIndex === null || readerIndex >= items.length - 1) return;
+		const nextItem = items[readerIndex + 1];
+		setReaderItem(nextItem);
+		setReaderIndex(readerIndex + 1);
+		onMarkRead(nextItem.id);
+	}
+
+	useEffect(() => {
+		function handleKey(e: KeyboardEvent) {
+			const tag = (e.target as HTMLElement).tagName;
+			if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable)
+				return;
+			if (readerOpen) return;
+
+			if (e.key === '?') {
+				e.preventDefault();
+				setHelpOpen(true);
+				return;
+			}
+			if (e.key === 'Escape') {
+				setFocusedIndex(null);
+				return;
+			}
+			if (e.key === 'j' || e.key === 'ArrowDown') {
+				e.preventDefault();
+				setFocusedIndex((prev) => {
+					if (prev === null) return 0;
+					return Math.min(prev + 1, items.length - 1);
+				});
+				return;
+			}
+			if (e.key === 'k' || e.key === 'ArrowUp') {
+				e.preventDefault();
+				setFocusedIndex((prev) => {
+					if (prev === null) return 0;
+					return Math.max(prev - 1, 0);
+				});
+				return;
+			}
+			if (focusedIndex === null) return;
+			const item = items[focusedIndex];
+			if (e.key === 'o' || e.key === 'Enter') {
+				e.preventDefault();
+				handleOpenReader(item);
+				return;
+			}
+			if (e.key === 'm') {
+				e.preventDefault();
+				onMarkRead(item.id);
+				return;
+			}
+			if (e.key === 's') {
+				e.preventDefault();
+				onMarkBookmark(item.id);
+				return;
+			}
+		}
+		document.addEventListener('keydown', handleKey);
+		return () => document.removeEventListener('keydown', handleKey);
+	}, [items, focusedIndex, readerOpen, handleOpenReader, onMarkRead, onMarkBookmark]);
+
+	useEffect(() => {
+		if (focusedIndex === null) return;
+		const el = document.querySelector(`[data-item-index="${focusedIndex}"]`);
+		el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	}, [focusedIndex]);
 
 	if (layout === 'cards') {
 		return (
 			<>
 				<div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
-					{items.map((item) => (
+					{items.map((item, index) => (
 						<FeedItemCard
 							key={item.id}
 							item={item}
 							layout="cards"
+							index={index}
+							isFocused={focusedIndex === index}
 							onMarkRead={onMarkRead}
 							onMarkBookmark={onMarkBookmark}
 							onOpenReader={handleOpenReader}
@@ -343,7 +440,12 @@ export function FeedItemList({
 					open={readerOpen}
 					onOpenChange={setReaderOpen}
 					userId={userId}
+					hasPrev={readerIndex !== null && readerIndex > 0}
+					hasNext={readerIndex !== null && readerIndex < items.length - 1}
+					onPrev={handlePrev}
+					onNext={handleNext}
 				/>
+				<KeyboardShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
 			</>
 		);
 	}
@@ -351,11 +453,13 @@ export function FeedItemList({
 	return (
 		<>
 			<div className={cn('divide-y', layout === 'compact' && 'divide-y-0')}>
-				{items.map((item) => (
+				{items.map((item, index) => (
 					<FeedItemCard
 						key={item.id}
 						item={item}
 						layout={layout}
+						index={index}
+						isFocused={focusedIndex === index}
 						onMarkRead={onMarkRead}
 						onMarkBookmark={onMarkBookmark}
 						onOpenReader={handleOpenReader}
@@ -367,7 +471,12 @@ export function FeedItemList({
 				open={readerOpen}
 				onOpenChange={setReaderOpen}
 				userId={userId}
+				hasPrev={readerIndex !== null && readerIndex > 0}
+				hasNext={readerIndex !== null && readerIndex < items.length - 1}
+				onPrev={handlePrev}
+				onNext={handleNext}
 			/>
+			<KeyboardShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
 		</>
 	);
 }

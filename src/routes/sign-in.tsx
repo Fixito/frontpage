@@ -63,6 +63,9 @@ function SignInPage() {
 					Try as guest
 				</Button>
 			</p>
+			<p className="text-muted-foreground mt-2 text-center text-sm">
+				<Link to="/forgot-password">Forgot password?</Link>
+			</p>
 		</AuthLayout>
 	);
 }

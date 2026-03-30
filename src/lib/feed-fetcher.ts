@@ -31,12 +31,13 @@ export class FeedNotModifiedError extends Error {
 
 // ── Fetcher ────────────────────────────────────────────────────────────────────
 
-export async function fetchFeed(
-	url: string,
-	options: FetchFeedOptions = {},
-): Promise<FetchFeedResult> {
-	const { timeoutMs = 10_000 } = options;
+const RETRY_DELAYS_MS = [0, 1_000, 3_000];
 
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function attemptFetch(url: string, timeoutMs: number): Promise<FetchFeedResult> {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -82,4 +83,39 @@ export async function fetchFeed(
 		etag: response.headers.get('etag'),
 		lastModified: response.headers.get('last-modified'),
 	};
+}
+
+export async function fetchFeed(
+	url: string,
+	options: FetchFeedOptions = {},
+): Promise<FetchFeedResult> {
+	const { timeoutMs = 10_000 } = options;
+	let lastError: unknown;
+
+	for (const delay of RETRY_DELAYS_MS) {
+		if (delay > 0) await sleep(delay);
+
+		try {
+			return await attemptFetch(url, timeoutMs);
+		} catch (err) {
+			// Never retry on 304 (not modified) or timeouts
+			if (err instanceof FeedNotModifiedError) throw err;
+			if (err instanceof FeedFetchError && err.name === 'AbortError') throw err;
+
+			// Never retry on 4xx HTTP errors
+			if (
+				err instanceof FeedFetchError &&
+				err.status !== undefined &&
+				err.status >= 400 &&
+				err.status < 500
+			) {
+				throw err;
+			}
+
+			lastError = err;
+			// Retry on network errors and 5xx
+		}
+	}
+
+	throw lastError;
 }
