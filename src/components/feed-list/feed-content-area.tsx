@@ -131,10 +131,11 @@ export function FeedContentArea({
 							? prev.filter((item) => item.id !== itemId)
 							: prev.map((item) => (item.id === itemId ? { ...item, isBookmarked } : item)),
 					);
+					onSidebarRefresh();
 				})
 				.catch(console.error);
 		},
-		[userId, view],
+		[userId, view, onSidebarRefresh],
 	);
 
 	const handleMarkAllRead = useCallback(async () => {
