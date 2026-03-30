@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 let client: GoogleGenerativeAI | null = null;
 
-const MODEL = 'gemini-1.5-flash-8b';
+const MODEL = 'gemini-2.5-flash';
 
 function getClient(): GoogleGenerativeAI {
 	if (!client) {
