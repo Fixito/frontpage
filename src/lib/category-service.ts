@@ -1,8 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, eq, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, max, sql } from 'drizzle-orm';
 import { db } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
-import { category, feed, feedItem, readState } from '@/db/schema';
+import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
 // ── getSidebarData ─────────────────────────────────────────────────────────────
 
@@ -63,7 +63,14 @@ export async function getSidebarData(userId: string): Promise<SidebarData> {
 	});
 
 	const totalUnread = feedsRaw.reduce((sum, f) => sum + Math.max(0, f.unreadCount), 0);
-	return { categories, uncategorized, totalUnread };
+
+	const [bmRow] = await db
+		.select({ cnt: count() })
+		.from(bookmark)
+		.where(eq(bookmark.userId, userId));
+	const bookmarkCount = bmRow.cnt;
+
+	return { categories, uncategorized, totalUnread, bookmarkCount };
 }
 
 // ── Category CRUD ──────────────────────────────────────────────────────────────

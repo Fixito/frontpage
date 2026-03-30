@@ -204,6 +204,7 @@ export function SidebarNav({
 			>
 				<BookmarkIcon size={14} className="shrink-0" aria-hidden />
 				<span className="flex-1">Bookmarks</span>
+				<UnreadBadge count={data.bookmarkCount} />
 			</Link>
 
 			<Link

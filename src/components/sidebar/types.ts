@@ -17,4 +17,5 @@ export interface SidebarData {
 	categories: Array<CategoryNavItem>;
 	uncategorized: Array<FeedNavItem>;
 	totalUnread: number;
+	bookmarkCount: number;
 }

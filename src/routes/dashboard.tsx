@@ -25,6 +25,7 @@ const EMPTY_SIDEBAR_DATA: SidebarData = {
 	categories: [],
 	uncategorized: [],
 	totalUnread: 0,
+	bookmarkCount: 0,
 };
 
 export const Route = createFileRoute('/dashboard')({
