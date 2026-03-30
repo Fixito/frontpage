@@ -30,7 +30,7 @@ Frontpage is a full-stack RSS/Atom feed reader built as a Frontend Mentor Produc
 
 ## Phase 7 — AI Features
 
-Powered by **Google Gemini 1.5 Flash** via `@google/generative-ai`. All AI features degrade gracefully when `GEMINI_API_KEY` is not set — the UI simply hides the AI affordances.
+Powered by **Google Gemini 2.5 Flash** via `@google/generative-ai`. All AI features degrade gracefully when `GEMINI_API_KEY` is not set — the UI simply hides the AI affordances.
 
 ### Article Summarization
 
@@ -110,49 +110,53 @@ Three layout modes — list, compact, and cards — let readers choose their pre
 
 ### Initial Approach vs. Final
 
-<!-- What was your initial plan? What changed as you built? Were there any pivots? -->
+I started by having Copilot generate a phased implementation plan directly from the spec files. Each phase had clear acceptance criteria, so the AI could work through them systematically. I executed the plan phase by phase, reviewing the result before moving on.
+
+The approach held up well in practice. The main deviation was unplanned fix sessions between phases — bugs and UX issues discovered during manual testing required iteration that was not in the original timeline. The plan was solid; the integration between phases needed more polish than expected.
 
 ### Decisions Reconsidered
 
-<!-- What seemed right at first but needed rethinking? Why did you change course? -->
+Working through the entire project in essentially one long session was manageable, but in retrospect it created compounding problems: as the context grew, earlier decisions became harder to revisit. I would structure future projects as multiple sessions — one per phase — with a checkpoint summary at the end of each.
+
+I also learned I should have set up automated tests before implementing features rather than relying entirely on manual testing. Bugs introduced by the AI sometimes went undetected until much later, when they were harder to trace back to their source.
 
 ### What Surprised Me
 
-<!-- What was harder than expected? Easier? What didn't you anticipate? -->
+How effectively the AI translated the spec into a working architecture surprised me most. I expected to spend significant time on architectural decisions — database schema, component structure, service layer — but the spec was detailed enough that the AI could derive these almost independently. The quality of the spec directly determines the quality of what comes out.
+
+The harder part was technology currency. Getting the AI to use the latest APIs and patterns for a fast-moving stack (TanStack Start, Tailwind v4, Drizzle) required explicit guidance. The AI\'s knowledge of cutting-edge tooling is naturally behind the curve.
 
 ### Session Breakdown
 
-<!-- How did you structure your working sessions? What did you accomplish in each? Add rows for however many sessions you worked across. -->
-
-| Session | Focus | What I Accomplished |
-| ------- | ----- | ------------------- |
-| 1       |       |                     |
-| 2       |       |                     |
-| 3       |       |                     |
+| Session | Focus                 | What I Accomplished                                                 |
+| ------- | --------------------- | ------------------------------------------------------------------- |
+| 1       | Planning & scaffold   | Spec review, phased plan, project init, DB schema, auth             |
+| 2       | Core features         | Feed engine, app shell, content browsing, read/unread tracking      |
+| 3       | Experience & AI       | Guest experience, landing page, AI features (Gemini integration)    |
+| 4       | Bug fixes & UX polish | Error fixes, reader drawer, bookmark sync, card click to reader     |
+| 5       | Phase 8 & deployment  | Accessibility audit, spec gaps (prev/next, keyboard, reset), Vercel |
 
 ---
 
 ## AI Collaboration Reflection
 
-<!-- This section documents how you worked with AI throughout the project. -->
+I used speech-to-text (Wispr Flow) throughout the entire project, which made it much faster to describe context, explain intent, and report bugs than typing would have been. The combination of voice input and an agent that could plan and execute was a genuinely efficient way to build.
 
 ### How I Used AI
 
-<!-- What was AI most helpful for? Where did you rely on your own judgment? -->
+AI handled implementation end-to-end: architecture design, code generation, bug diagnosis, and fixes. My role was directing — approving the plan, testing each feature manually, catching issues the AI missed, and making product decisions when the spec left room for interpretation.
+
+The AI was most valuable during the architectural phases where coherent decisions across many files were needed simultaneously. It was less reliable on cutting-edge APIs where my explicit guidance was required.
 
 ### What Worked Well
 
-<!-- Which prompting strategies or collaboration patterns produced the best results? -->
+**Plan mode first, then agent mode.** Having Copilot generate a structured plan from the spec before writing any code gave us a shared roadmap. Each phase was self-contained and verifiable before moving on — this prevented scope creep and kept progress legible.
+
+**Speech-to-text as the primary input.** Describing a bug verbally is faster and often more precise than typing. The AI responded well to conversational context, and the reduced friction meant I raised issues earlier rather than letting them accumulate.
 
 ### What I Learned
 
-<!-- How did your approach to AI collaboration evolve across sessions? What would you do differently next time? -->
-
-### Where I Pushed Back
-
-<!-- Were there moments where AI suggestions weren't right? How did you identify and correct course? -->
-
----
+I would do two things differently next time: ask for tests before implementation (TDD rather than manual testing only), and break the work into shorter sessions with explicit checkpoints between them. Copilot has a TDD skill I did not use — running red-green-refactor loops would have caught regressions earlier and reduced the manual QA burden.
 
 ## Differentiators
 
@@ -182,23 +186,21 @@ Three layout modes — list, compact, and cards — let readers choose their pre
 
 Rate your implementation honestly. This self-awareness is part of the portfolio artifact.
 
-| Category                                                                                                 | Rating | Notes |
-| -------------------------------------------------------------------------------------------------------- | ------ | ----- |
-| **Works for real users** — Deployed, functional end-to-end                                               | /5     |       |
-| **Feed parsing robustness** — Handles format variations, errors, edge cases                              | /5     |       |
-| **Design-it-yourself features** — Quality and thoughtfulness of onboarding, digest, and layout solutions | /5     |       |
-| **Design quality** — Typography, spacing, visual hierarchy, polish                                       | /5     |       |
-| **Responsive design** — Fully functional and well-designed across devices                                | /5     |       |
-| **Performance** — Fast load, smooth scrolling, efficient caching                                         | /5     |       |
-| **Accessibility** — Keyboard nav, screen reader support, contrast                                        | /5     |       |
-| **Edge case handling** — Empty states, errors, loading, large datasets                                   | /5     |       |
-| **Code quality** — Clean, maintainable, well-structured                                                  | /5     |       |
-| **Landing page** — Compelling, communicates value, visually polished                                     | /5     |       |
-| **Guest experience** — Immediately impressive, real content, full features                               | /5     |       |
+| Category                                                                                                 | Rating |
+| -------------------------------------------------------------------------------------------------------- | ------ |
+| **Works for real users** — Deployed, functional end-to-end                                               | 5/5    |
+| **Feed parsing robustness** — Handles format variations, errors, edge cases                              | 3/5    |
+| **Design-it-yourself features** — Quality and thoughtfulness of onboarding, digest, and layout solutions | 4/5    |
+| **Design quality** — Typography, spacing, visual hierarchy, polish                                       | 4/5    |
+| **Responsive design** — Fully functional and well-designed across devices                                | 4/5    |
+| **Performance** — Fast load, smooth scrolling, efficient caching                                         | 4/5    |
+| **Accessibility** — Keyboard nav, screen reader support, contrast                                        | 5/5    |
+| **Edge case handling** — Empty states, errors, loading, large datasets                                   | 4/5    |
+| **Code quality** — Clean, maintainable, well-structured                                                  | 3/5    |
+| **Landing page** — Compelling, communicates value, visually polished                                     | 4/5    |
+| **Guest experience** — Immediately impressive, real content, full features                               | 4/5    |
 
 ### Lighthouse Scores
-
-<!-- Run Lighthouse on your deployed site and record the scores -->
 
 | Category       | Score |
 | -------------- | ----- |
@@ -209,13 +211,17 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 ### Strengths
 
-<!-- What are you most proud of in this project? -->
+- **End-to-end delivery in ~2 days.** From empty scaffold to a deployed, functional product with 12 core features — this is the fastest I have shipped something of this scope.
+- **Accessibility.** Semantic HTML, keyboard navigation, ARIA live regions, reduced-motion support, and a 93 Lighthouse accessibility score that actually reflects real care rather than just passing automated checks.
+- **AI integration that degrades gracefully.** The Gemini features (summaries, category suggestion, weekly digest) all fail silently — the app is fully usable with or without a valid API key.
+- **Guest experience.** The demo is immediately impressive: 19 curated feeds, fully populated, no sign-up required. It removes the barrier to evaluating the product.
 
 ### Areas for Improvement
 
-<!-- What would you improve with more time? Be specific. -->
-
----
+- **No automated tests.** The codebase has zero test coverage. Regressions were caught through manual testing, which is slow and error-prone. TDD from the start would have prevented several of the bug-fix sessions.
+- **Feed parsing edge cases.** RSS/Atom in the wild is messy — encoding issues, malformed XML, non-standard date formats. The parser handles common cases but would likely break on adversarial feeds.
+- **No OPML import/export.** Power users migrating from another reader cannot bulk-import their subscriptions. This is the most impactful missing feature for adoption.
+- **No background refresh.** Feeds only update on manual trigger or page load. A cron-based refresh would make the reading experience feel live rather than static.
 
 ## Known Limitations
 
@@ -224,7 +230,6 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 - **OPML import/export missing** — power users migrating from other readers cannot bulk-import their subscriptions. The data model supports it.
 - **Guest state is read-only** — the guest demo user's read/bookmark state is seeded and not writeable (changes would be visible to all guests sharing the demo account).
 - **AI quota dependence** — Gemini 2.5 Flash on the free tier has per-minute and per-day limits. Heavy usage will hit 429 errors; the app handles them gracefully but AI features become temporarily unavailable.
-- **No password reset flow** — Better Auth supports it, but email delivery (via Resend or similar) was not configured for this MVP.
 
 ---
 
