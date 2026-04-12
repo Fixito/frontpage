@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { refreshFeedByIdFn } from '@/lib/items-service';
+import { refreshFeedFn } from '@/lib/feed-service';
 
 interface FeedErrorBannerProps {
 	feedId: string;
@@ -15,7 +15,7 @@ export function FeedErrorBanner({ feedId, errorMessage, onRetry }: FeedErrorBann
 	async function handleRetry() {
 		setRetrying(true);
 		try {
-			await refreshFeedByIdFn({ data: { feedId } });
+			await refreshFeedFn({ data: { feedId } });
 			onRetry();
 		} catch (err) {
 			console.error('Feed refresh failed', err);

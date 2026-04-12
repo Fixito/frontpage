@@ -36,6 +36,26 @@ export async function suggestCategory(
 	return match ?? null;
 }
 
+// ── Error helpers ──────────────────────────────────────────────────────────────
+
+export interface AiError {
+	error: string;
+	retryIn?: number;
+}
+
+export function parseAiError(err: unknown): AiError {
+	const raw = err instanceof Error ? err.message : 'Unknown error';
+	const retryMatch = raw.match(/Please retry in (\d+(?:\.\d+)?)s/);
+	if (retryMatch) {
+		const retryIn = Math.ceil(Number(retryMatch[1]));
+		return { error: `AI quota exceeded. Please retry in ${retryIn} seconds.`, retryIn };
+	}
+	if (raw.includes('429')) {
+		return { error: 'AI quota exceeded. Please check your Google AI Studio plan.' };
+	}
+	return { error: 'AI unavailable. Please try again.' };
+}
+
 export async function generateWeeklyDigest(
 	items: ReadonlyArray<{
 		title: string;

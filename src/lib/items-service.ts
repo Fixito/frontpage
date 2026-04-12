@@ -270,10 +270,3 @@ export const markAllReadFn = createServerFn({ method: 'POST' })
 export const toggleBookmarkFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string; itemId: string }) => data)
 	.handler(async ({ data }) => toggleBookmark(data.userId, data.itemId));
-
-export const refreshFeedByIdFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { feedId: string }) => data)
-	.handler(async ({ data }) => {
-		const { refreshFeed } = await import('./feed-service');
-		return refreshFeed(data.feedId);
-	});

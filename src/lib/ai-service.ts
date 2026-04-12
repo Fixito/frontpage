@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, gte, isNotNull, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { generateArticleSummary, generateWeeklyDigest, suggestCategory } from './ai';
+import { generateArticleSummary, generateWeeklyDigest, parseAiError, suggestCategory } from './ai';
 import { db } from './db';
 import { feed, feedItem, readState } from '@/db/schema';
 
@@ -24,7 +24,9 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 	.handler(
 		async ({
 			data,
-		}): Promise<{ summary: string; cached: boolean } | { summary: null; error: string }> => {
+		}): Promise<
+			{ summary: string; cached: boolean } | { summary: null; error: string; retryIn?: number }
+		> => {
 			const rows = await db
 				.select({
 					id: feedItem.id,
@@ -53,15 +55,7 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 				return { summary, cached: false };
 			} catch (err) {
 				console.error('[AI] generateSummaryFn error:', err);
-				const raw = err instanceof Error ? err.message : 'Unknown error';
-				// Extract retry delay from 429 response if present
-				const retryMatch = raw.match(/Please retry in (\d+(?:\.\d+)?)s/);
-				const msg = retryMatch
-					? `AI quota exceeded. Please retry in ${Math.ceil(Number(retryMatch[1]))} seconds.`
-					: raw.includes('429')
-						? 'AI quota exceeded. Please check your Google AI Studio plan.'
-						: 'AI unavailable. Please try again.';
-				return { summary: null, error: msg };
+				return { summary: null, ...parseAiError(err) };
 			}
 		},
 	);

@@ -73,11 +73,8 @@ export function ReaderViewDrawer({
 				setGeneratedSummary(result.summary);
 			} else {
 				const error = 'error' in result ? result.error : undefined;
-				const msg = error ?? 'Could not generate summary. Try again.';
-				setSummaryError(msg);
-				// Auto-parse retry delay and start countdown
-				const m = msg.match(/retry in (\d+) seconds/i);
-				if (m) setRetryIn(Number(m[1]));
+				setSummaryError(error ?? 'Could not generate summary. Try again.');
+				if ('retryIn' in result && result.retryIn) setRetryIn(result.retryIn);
 			}
 		} catch (err) {
 			console.error('[AI] summarize error:', err);
