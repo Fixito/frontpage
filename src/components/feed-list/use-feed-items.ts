@@ -19,6 +19,7 @@ interface UseFeedItemsParams {
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
 	onSidebarRefresh: () => void;
+	onBookmarkCountChange?: (delta: number) => void;
 	refreshKey?: number;
 }
 
@@ -47,6 +48,7 @@ export function useFeedItems({
 	categoryId,
 	view,
 	onSidebarRefresh,
+	onBookmarkCountChange,
 	refreshKey,
 }: UseFeedItemsParams): UseFeedItemsResult {
 	const [items, setItems] = useState<Array<FeedItemRow>>([]);
@@ -138,6 +140,7 @@ export function useFeedItems({
 			if (!userId) return;
 			const originalItem = items.find((i) => i.id === itemId);
 			if (!originalItem) return;
+			const delta = originalItem.isBookmarked ? -1 : 1;
 			setItems((prev) =>
 				view === 'bookmarks'
 					? prev.filter((item) => item.id !== itemId)
@@ -145,6 +148,7 @@ export function useFeedItems({
 							item.id === itemId ? { ...item, isBookmarked: !originalItem.isBookmarked } : item,
 						),
 			);
+			onBookmarkCountChange?.(delta);
 			void toggleBookmarkFn({ data: { userId, itemId } })
 				.then(() => {
 					onSidebarRefresh();
@@ -157,9 +161,10 @@ export function useFeedItems({
 								: [...prev, originalItem]
 							: prev.map((item) => (item.id === itemId ? originalItem : item)),
 					);
+					onBookmarkCountChange?.(-delta);
 				});
 		},
-		[userId, view, items, onSidebarRefresh],
+		[userId, view, items, onSidebarRefresh, onBookmarkCountChange],
 	);
 
 	const handleMarkAllRead = useCallback(async () => {

@@ -118,6 +118,10 @@ function DashboardPage() {
 		}
 	}
 
+	function handleBookmarkCountChange(delta: number) {
+		setSidebarData((prev) => ({ ...prev, bookmarkCount: Math.max(0, prev.bookmarkCount + delta) }));
+	}
+
 	async function handleRefreshAll() {
 		if (!user) return;
 		setRefreshing(true);
@@ -264,6 +268,7 @@ function DashboardPage() {
 							view={view}
 							layout={layout}
 							onSidebarRefresh={handleRefreshSidebar}
+							onBookmarkCountChange={handleBookmarkCountChange}
 							refreshKey={feedRefreshKey}
 						/>
 					)}

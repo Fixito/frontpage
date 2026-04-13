@@ -177,7 +177,7 @@ export async function deleteFeed(userId: string, feedId: string): Promise<void> 
 
 // ── Server function wrappers ───────────────────────────────────────────────────
 
-export const getSidebarDataFn = createServerFn({ method: 'GET' })
+export const getSidebarDataFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string }) => data)
 	.handler(async ({ data }) => getSidebarData(data.userId));
 
