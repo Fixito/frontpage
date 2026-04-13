@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useForm } from '@tanstack/react-form';
+import { useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
 import { updateFeedFn } from '@/lib/category-service';
 import {
 	Dialog,
@@ -10,7 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
 	Select,
 	SelectContent,
@@ -18,6 +19,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { toErrors } from '@/lib/form-utils';
 
 interface EditFeedDialogProps {
 	open: boolean;
@@ -36,112 +40,160 @@ export function EditFeedDialog({
 	categories,
 	onSuccess,
 }: EditFeedDialogProps) {
-	const [title, setTitle] = useState(feed.title);
-	const [selectedCategoryId, setSelectedCategoryId] = useState(feed.categoryId ?? '__none__');
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className="sm:max-w-md">
+				{open && (
+					<EditFeedForm
+						key={feed.id}
+						feed={feed}
+						userId={userId}
+						categories={categories}
+						onOpenChange={onOpenChange}
+						onSuccess={onSuccess}
+					/>
+				)}
+			</DialogContent>
+		</Dialog>
+	);
+}
 
-	// Reset form state during render when the dialog opens or the feed changes
-	const [prevOpen, setPrevOpen] = useState(open);
-	if (prevOpen !== open) {
-		setPrevOpen(open);
-		if (open) {
-			setTitle(feed.title);
-			setSelectedCategoryId(feed.categoryId ?? '__none__');
-			setError(null);
-		}
-	}
+interface EditFeedFormProps {
+	feed: { id: string; title: string; categoryId: string | null; url: string };
+	userId: string;
+	categories: Array<{ id: string; name: string }>;
+	onOpenChange: (open: boolean) => void;
+	onSuccess: () => void;
+}
 
-	async function handleSave() {
-		const trimmedTitle = title.trim();
-		if (!trimmedTitle) {
-			setError('Title cannot be empty');
-			return;
-		}
-		setLoading(true);
-		setError(null);
-		try {
+const schema = z.object({
+	title: z.string().min(1, 'Display name cannot be empty'),
+	categoryId: z.string(),
+});
+
+function EditFeedForm({ feed, userId, categories, onOpenChange, onSuccess }: EditFeedFormProps) {
+	const mutation = useMutation({
+		mutationFn: async (values: z.infer<typeof schema>) => {
 			await updateFeedFn({
 				data: {
 					userId,
 					feedId: feed.id,
-					customTitle: trimmedTitle,
-					categoryId: selectedCategoryId === '__none__' ? null : selectedCategoryId,
+					customTitle: values.title.trim(),
+					categoryId: values.categoryId === '__none__' ? null : values.categoryId,
 				},
 			});
+		},
+		onSuccess: () => {
 			onOpenChange(false);
 			setTimeout(() => onSuccess(), 0);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to save changes. Please try again.');
-		} finally {
-			setLoading(false);
-		}
-	}
+		},
+	});
+
+	const form = useForm({
+		defaultValues: {
+			title: feed.title,
+			categoryId: feed.categoryId ?? '__none__',
+		},
+		validators: { onSubmit: schema },
+		onSubmit: async ({ value }) => {
+			await mutation.mutateAsync(value);
+		},
+	});
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>Edit Feed</DialogTitle>
-					<DialogDescription>Update the display name and category for this feed.</DialogDescription>
-				</DialogHeader>
+		<form
+			onSubmit={(e) => {
+				e.preventDefault();
+				form.handleSubmit();
+			}}
+			className="flex flex-col gap-4"
+		>
+			<DialogHeader>
+				<DialogTitle>Edit Feed</DialogTitle>
+				<DialogDescription>Update the display name and category for this feed.</DialogDescription>
+			</DialogHeader>
 
-				<div className="flex flex-col gap-4">
-					<div className="flex flex-col gap-1.5">
-						<Label htmlFor="edit-feed-title">Display name</Label>
-						<Input
-							id="edit-feed-title"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === 'Enter' && !loading) handleSave();
-							}}
-							disabled={loading}
-							aria-describedby={error ? 'edit-feed-error' : undefined}
-							aria-invalid={error ? true : undefined}
-						/>
-					</div>
+			{mutation.error && <ErrorAlert>{mutation.error.message}</ErrorAlert>}
 
-					<div className="flex flex-col gap-1.5">
-						<Label htmlFor="edit-feed-category">Category</Label>
-						<Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-							<SelectTrigger id="edit-feed-category" className="w-full">
-								<SelectValue placeholder="No category" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="__none__">No category</SelectItem>
-								{categories.map((cat) => (
-									<SelectItem key={cat.id} value={cat.id}>
-										{cat.name}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
+			<FieldGroup>
+				<form.Field name="title">
+					{(field) => {
+						const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+						return (
+							<Field data-invalid={isInvalid}>
+								<FieldLabel htmlFor={field.name}>Display name</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value)}
+									onKeyDown={(e) => {
+										if (e.key === 'Enter') {
+											e.preventDefault();
+											form.handleSubmit();
+										}
+									}}
+									aria-invalid={isInvalid}
+								/>
+								{isInvalid && <FieldError errors={toErrors(field.state.meta.errors)} />}
+							</Field>
+						);
+					}}
+				</form.Field>
 
-					<div className="flex flex-col gap-1">
-						<p className="text-muted-foreground text-xs font-medium">Feed URL</p>
-						<p className="text-muted-foreground truncate text-xs" title={feed.url}>
-							{feed.url}
-						</p>
-					</div>
-
-					{error && (
-						<p id="edit-feed-error" role="alert" className="text-destructive text-sm">
-							{error}
-						</p>
+				<form.Field name="categoryId">
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Category</FieldLabel>
+							<Select
+								name={field.name}
+								value={field.state.value}
+								onValueChange={field.handleChange}
+							>
+								<SelectTrigger id={field.name} className="w-full">
+									<SelectValue placeholder="No category" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="__none__">No category</SelectItem>
+									{categories.map((cat) => (
+										<SelectItem key={cat.id} value={cat.id}>
+											{cat.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</Field>
 					)}
-				</div>
+				</form.Field>
+			</FieldGroup>
 
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-						Cancel
-					</Button>
-					<Button onClick={handleSave} disabled={loading || !title.trim()}>
-						{loading ? 'Saving…' : 'Save'}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+			<div className="flex flex-col gap-1">
+				<p className="text-muted-foreground text-xs font-medium">Feed URL</p>
+				<p className="text-muted-foreground truncate text-xs" title={feed.url}>
+					{feed.url}
+				</p>
+			</div>
+
+			<DialogFooter>
+				<form.Subscribe selector={(s) => s.isSubmitting}>
+					{(isSubmitting) => (
+						<>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => onOpenChange(false)}
+								disabled={isSubmitting}
+							>
+								Cancel
+							</Button>
+							<Button type="submit" disabled={isSubmitting}>
+								{isSubmitting ? 'Saving…' : 'Save'}
+							</Button>
+						</>
+					)}
+				</form.Subscribe>
+			</DialogFooter>
+		</form>
 	);
 }

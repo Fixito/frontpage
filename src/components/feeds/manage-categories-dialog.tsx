@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Check, ChevronDown, ChevronUp, Pencil, Trash2, X } from 'lucide-react';
+import { useForm } from '@tanstack/react-form';
+import { useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
 import {
 	createCategoryFn,
 	deleteCategoryFn,
@@ -17,6 +20,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { toErrors } from '@/lib/form-utils';
 
 interface ManageCategoriesDialogProps {
 	open: boolean;
@@ -42,10 +47,31 @@ export function ManageCategoriesDialog({
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingName, setEditingName] = useState('');
 	const [deletingId, setDeletingId] = useState<string | null>(null);
-	const [newName, setNewName] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const editInputRef = useRef<HTMLInputElement>(null);
+
+	const addMutation = useMutation({
+		mutationFn: async (name: string) => {
+			const id = await createCategoryFn({ data: { userId, name } });
+			return { id, name };
+		},
+		onSuccess: ({ id, name }) => {
+			setLocalCats((prev) => [...prev, { id, name }]);
+			addForm.reset();
+			onSuccess();
+		},
+	});
+
+	const addForm = useForm({
+		defaultValues: { name: '' },
+		validators: {
+			onSubmit: z.object({ name: z.string().min(1, 'Category name is required') }),
+		},
+		onSubmit: async ({ value }) => {
+			await addMutation.mutateAsync(value.name.trim());
+		},
+	});
 
 	// Reset dialog state during render when it opens or categories change
 	const [prevOpen, setPrevOpen] = useState(open);
@@ -56,25 +82,7 @@ export function ManageCategoriesDialog({
 			setEditingId(null);
 			setEditingName('');
 			setDeletingId(null);
-			setNewName('');
 			setError(null);
-		}
-	}
-
-	async function handleAdd() {
-		const name = newName.trim();
-		if (!name) return;
-		setLoading(true);
-		setError(null);
-		try {
-			const id = await createCategoryFn({ data: { userId, name } });
-			setLocalCats((prev) => [...prev, { id, name }]);
-			setNewName('');
-			onSuccess();
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to add category');
-		} finally {
-			setLoading(false);
 		}
 	}
 
@@ -289,26 +297,55 @@ export function ManageCategoriesDialog({
 				)}
 
 				{/* Add new category */}
-				<div className="border-border flex gap-2 border-t pt-3">
-					<Input
-						placeholder="New category name"
-						value={newName}
-						onChange={(e) => setNewName(e.target.value)}
-						onKeyDown={(e) => {
-							if (e.key === 'Enter' && !loading) handleAdd();
-						}}
-						disabled={loading}
-						aria-label="New category name"
-					/>
-					<Button
-						variant="outline"
-						onClick={handleAdd}
-						disabled={loading || !newName.trim()}
-						className="shrink-0"
-					>
-						Add
-					</Button>
-				</div>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						addForm.handleSubmit();
+					}}
+					className="border-border flex flex-col gap-2 border-t pt-3"
+				>
+					{addMutation.error && (
+						<p role="alert" className="text-destructive text-sm">
+							{addMutation.error.message}
+						</p>
+					)}
+					<div className="flex gap-2">
+						<addForm.Field name="name">
+							{(field) => {
+								const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+								return (
+									<Field data-invalid={isInvalid} className="flex-1">
+										<FieldLabel htmlFor={field.name} className="sr-only">
+											New category name
+										</FieldLabel>
+										<Input
+											id={field.name}
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+											placeholder="New category name"
+											aria-invalid={isInvalid}
+											disabled={loading}
+										/>
+										{isInvalid && <FieldError errors={toErrors(field.state.meta.errors)} />}
+									</Field>
+								);
+							}}
+						</addForm.Field>
+						<addForm.Subscribe selector={(s) => s.isSubmitting}>
+							{(isSubmitting) => (
+								<Button
+									type="submit"
+									variant="outline"
+									disabled={isSubmitting || loading}
+									className="shrink-0 self-start"
+								>
+									Add
+								</Button>
+							)}
+						</addForm.Subscribe>
+					</div>
+				</form>
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -69,6 +69,7 @@ function LandingPage() {
 			<header className="border-border bg-background sticky top-0 z-50 border-b backdrop-blur-sm">
 				<nav className="mx-auto flex h-14 max-w-(--container-page) items-center justify-between px-6">
 					<span className="text-base font-bold">Frontpage</span>
+
 					<div className="flex items-center gap-2">
 						<Button asChild variant="ghost">
 							<Link to="/sign-in">Sign in</Link>
@@ -85,13 +86,16 @@ function LandingPage() {
 				<Badge variant="secondary" className="mb-4">
 					RSS feed reader
 				</Badge>
+
 				<h1 className="mx-auto mb-6 max-w-2xl text-2xl leading-tight font-bold sm:text-3xl">
 					Your personalized front page for tech content
 				</h1>
+
 				<p className="text-muted-foreground mx-auto mb-10 max-w-lg text-base leading-loose">
 					One calm, organized dashboard for all the blogs, newsletters, and publications you follow.
 					No more scattered tabs and forgotten links.
 				</p>
+
 				<div className="flex flex-wrap justify-center gap-3">
 					<Button asChild size="lg">
 						<Link to="/sign-up">
@@ -99,6 +103,7 @@ function LandingPage() {
 							<ArrowRight aria-hidden />
 						</Link>
 					</Button>
+
 					<Button variant="outline" size="lg" onClick={handleGuestMode}>
 						Try as guest
 					</Button>
@@ -113,7 +118,9 @@ function LandingPage() {
 							<div className="bg-accent text-accent-foreground mb-3 inline-flex rounded-md p-2">
 								<Icon size={18} aria-hidden />
 							</div>
+
 							<h2 className="mb-2 text-base font-semibold">{title}</h2>
+
 							<p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
 						</article>
 					))}
@@ -122,12 +129,7 @@ function LandingPage() {
 
 			{/* ── Footer ── */}
 			<footer className="border-border text-muted-foreground border-t px-6 py-8 text-center text-xs">
-				<p>
-					Built for{' '}
-					<a href="https://www.frontendmentor.io" target="_blank" rel="noopener noreferrer">
-						Frontend Mentor
-					</a>
-				</p>
+				<p>&copy; {new Date().getFullYear()} Frontpage.</p>
 			</footer>
 		</div>
 	);

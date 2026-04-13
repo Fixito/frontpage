@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
+import { useForm } from '@tanstack/react-form';
+import { useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
 import type { FeedPreview } from '@/lib/feed-service';
 import { addFeedFn, validateFeedUrlFn } from '@/lib/feed-service';
 import { suggestCategoryFn } from '@/lib/ai-service';
@@ -13,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
 	Select,
 	SelectContent,
@@ -21,6 +23,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { toErrors } from '@/lib/form-utils';
 
 interface AddFeedDialogProps {
 	open: boolean;
@@ -32,6 +36,10 @@ interface AddFeedDialogProps {
 
 type Step = 'url' | 'preview';
 
+const urlSchema = z.object({
+	url: z.string().url('Please enter a valid URL'),
+});
+
 export function AddFeedDialog({
 	open,
 	onOpenChange,
@@ -40,43 +48,19 @@ export function AddFeedDialog({
 	onSuccess,
 }: AddFeedDialogProps) {
 	const [step, setStep] = useState<Step>('url');
-	const [url, setUrl] = useState('');
 	const [preview, setPreview] = useState<FeedPreview | null>(null);
 	const [selectedCategoryId, setSelectedCategoryId] = useState('__none__');
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
 	const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
 	const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+	const suggestionRequestId = useRef(0);
 
-	function resetState() {
-		setStep('url');
-		setUrl('');
-		setPreview(null);
-		setSelectedCategoryId('__none__');
-		setLoading(false);
-		setError(null);
-		setSuggestedCategory(null);
-		setSuggestionDismissed(false);
-	}
-
-	function handleOpenChange(nextOpen: boolean) {
-		if (!nextOpen) resetState();
-		onOpenChange(nextOpen);
-	}
-
-	async function handleCheckFeed() {
-		const trimmed = url.trim();
-		if (!trimmed) {
-			setError('Please enter a URL');
-			return;
-		}
-		setLoading(true);
-		setError(null);
-		try {
-			const result = await validateFeedUrlFn({ data: { url: trimmed } });
+	const checkFeedMutation = useMutation({
+		mutationFn: (url: string) => validateFeedUrlFn({ data: { url } }),
+		onSuccess: (result) => {
 			setPreview(result);
 			setStep('preview');
 			if (categories.length > 0) {
+				const requestId = ++suggestionRequestId.current;
 				void suggestCategoryFn({
 					data: {
 						feedTitle: result.title,
@@ -85,45 +69,58 @@ export function AddFeedDialog({
 					},
 				})
 					.then((suggestion) => {
-						if (suggestion) setSuggestedCategory(suggestion);
+						if (suggestion && requestId === suggestionRequestId.current) {
+							setSuggestedCategory(suggestion);
+						}
 					})
 					.catch(() => {
 						// ignore suggestion errors
 					});
 			}
-		} catch (err) {
-			setError(
-				err instanceof Error
-					? err.message
-					: 'Failed to validate feed. Check the URL and try again.',
-			);
-		} finally {
-			setLoading(false);
-		}
-	}
+		},
+	});
 
-	async function handleAddFeed() {
-		if (!preview) return;
-		setLoading(true);
-		setError(null);
-		try {
-			await addFeedFn({
+	const addFeedMutation = useMutation({
+		mutationFn: (categoryId: string) => {
+			if (!preview) throw new Error('No feed preview available');
+			return addFeedFn({
 				data: {
 					userId,
 					url: preview.finalUrl,
-					categoryId: selectedCategoryId === '__none__' ? null : selectedCategoryId,
+					categoryId: categoryId === '__none__' ? null : categoryId,
 				},
 			});
-			// Close the dialog first so the Radix portal finishes unmounting before
-			// router.invalidate() triggers a concurrent re-render of the page.
+		},
+		onSuccess: () => {
 			handleOpenChange(false);
 			setTimeout(() => onSuccess(), 0);
-		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to add feed. Please try again.');
-		} finally {
-			setLoading(false);
-		}
+		},
+	});
+
+	function resetState() {
+		suggestionRequestId.current++;
+		setStep('url');
+		setPreview(null);
+		setSelectedCategoryId('__none__');
+		setSuggestedCategory(null);
+		setSuggestionDismissed(false);
+		checkFeedMutation.reset();
+		addFeedMutation.reset();
+		urlForm.reset();
 	}
+
+	function handleOpenChange(nextOpen: boolean) {
+		if (!nextOpen) resetState();
+		onOpenChange(nextOpen);
+	}
+
+	const urlForm = useForm({
+		defaultValues: { url: '' },
+		validators: { onSubmit: urlSchema },
+		onSubmit: async ({ value }) => {
+			await checkFeedMutation.mutateAsync(value.url.trim());
+		},
+	});
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
@@ -135,36 +132,52 @@ export function AddFeedDialog({
 							<DialogDescription>Enter the URL of an RSS or Atom feed to add.</DialogDescription>
 						</DialogHeader>
 
-						<div className="flex flex-col gap-3">
-							<div className="flex flex-col gap-1.5">
-								<Label htmlFor="feed-url">Feed URL</Label>
-								<Input
-									id="feed-url"
-									type="url"
-									placeholder="https://example.com/feed.xml"
-									value={url}
-									onChange={(e) => setUrl(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === 'Enter' && !loading) handleCheckFeed();
-									}}
-									disabled={loading}
-									aria-describedby={error ? 'feed-url-error' : undefined}
-									aria-invalid={error ? true : undefined}
-								/>
-								{error && (
-									<p id="feed-url-error" role="alert" className="text-destructive text-sm">
-										{error}
-									</p>
-								)}
-							</div>
-						</div>
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								urlForm.handleSubmit();
+							}}
+							className="flex flex-col gap-3"
+						>
+							<urlForm.Field name="url">
+								{(field) => {
+									const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+									return (
+										<Field data-invalid={isInvalid}>
+											<FieldLabel htmlFor={field.name}>Feed URL</FieldLabel>
+											<Input
+												id={field.name}
+												name={field.name}
+												type="url"
+												placeholder="https://example.com/feed.xml"
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+												aria-invalid={isInvalid}
+											/>
+											{isInvalid && <FieldError errors={toErrors(field.state.meta.errors)} />}
+										</Field>
+									);
+								}}
+							</urlForm.Field>
 
-						<DialogFooter>
-							<Button onClick={handleCheckFeed} disabled={loading || !url.trim()}>
-								{loading && <Loader2 size={14} className="animate-spin" aria-hidden />}
-								{loading ? 'Checking…' : 'Check Feed'}
-							</Button>
-						</DialogFooter>
+							{checkFeedMutation.error && (
+								<p role="alert" className="text-destructive text-sm">
+									{checkFeedMutation.error.message}
+								</p>
+							)}
+
+							<DialogFooter>
+								<urlForm.Subscribe selector={(s) => s.isSubmitting}>
+									{(isSubmitting) => (
+										<Button type="submit" disabled={isSubmitting}>
+											{isSubmitting && <Loader2 size={14} className="animate-spin" aria-hidden />}
+											{isSubmitting ? 'Checking…' : 'Check Feed'}
+										</Button>
+									)}
+								</urlForm.Subscribe>
+							</DialogFooter>
+						</form>
 					</>
 				) : (
 					<>
@@ -175,7 +188,6 @@ export function AddFeedDialog({
 
 						{preview && (
 							<div className="flex flex-col gap-4">
-								{/* Feed preview card */}
 								<div className="bg-muted/50 flex items-start gap-3 rounded-md p-3">
 									{preview.faviconUrl && (
 										<img
@@ -201,7 +213,6 @@ export function AddFeedDialog({
 									</div>
 								</div>
 
-								{/* AI category suggestion */}
 								{suggestedCategory && !suggestionDismissed && selectedCategoryId === '__none__' && (
 									<div className="bg-accent/40 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
 										<Sparkles size={12} className="text-primary shrink-0" aria-hidden />
@@ -230,9 +241,10 @@ export function AddFeedDialog({
 									</div>
 								)}
 
-								{/* Category selector */}
 								<div className="flex flex-col gap-1.5">
-									<Label htmlFor="feed-category">Category</Label>
+									<label htmlFor="feed-category" className="text-sm leading-none font-medium">
+										Category
+									</label>
 									<Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
 										<SelectTrigger id="feed-category" className="w-full">
 											<SelectValue placeholder="No category" />
@@ -248,9 +260,9 @@ export function AddFeedDialog({
 									</Select>
 								</div>
 
-								{error && (
+								{addFeedMutation.error && (
 									<p role="alert" className="text-destructive text-sm">
-										{error}
+										{addFeedMutation.error.message}
 									</p>
 								)}
 							</div>
@@ -262,15 +274,20 @@ export function AddFeedDialog({
 								size="sm"
 								onClick={() => {
 									setStep('url');
-									setError(null);
+									checkFeedMutation.reset();
 								}}
-								disabled={loading}
+								disabled={addFeedMutation.isPending}
 							>
 								← Back
 							</Button>
-							<Button onClick={handleAddFeed} disabled={loading}>
-								{loading && <Loader2 size={14} className="animate-spin" aria-hidden />}
-								{loading ? 'Adding…' : 'Add Feed'}
+							<Button
+								onClick={() => addFeedMutation.mutate(selectedCategoryId)}
+								disabled={addFeedMutation.isPending}
+							>
+								{addFeedMutation.isPending && (
+									<Loader2 size={14} className="animate-spin" aria-hidden />
+								)}
+								{addFeedMutation.isPending ? 'Adding…' : 'Add Feed'}
 							</Button>
 						</DialogFooter>
 					</>
