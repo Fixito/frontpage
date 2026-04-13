@@ -63,7 +63,7 @@ export function useFeedItems({
 	const guestDemoUserId = guest?.demoUserId ?? null;
 
 	// Reset sync state during render when filter props change
-	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}|${refreshKey ?? 0}`;
+	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}`;
 	const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
 	if (prevFilterKey !== filterKey) {
 		setPrevFilterKey(filterKey);
@@ -103,7 +103,7 @@ export function useFeedItems({
 				setError('Failed to load articles. Please try again.');
 			}
 		},
-		[userId, guestDemoUserId, feedId, categoryId, view, refreshKey],
+		[userId, guestDemoUserId, feedId, categoryId, view],
 	);
 
 	// Refetch when filters change (items are async data, cannot be computed during render)
@@ -112,7 +112,7 @@ export function useFeedItems({
 		fetchItems(1).finally(() => {
 			setLoading(false);
 		});
-	}, [fetchItems]);
+	}, [fetchItems, refreshKey]);
 
 	const handleMarkRead = useCallback(
 		(itemId: string) => {
