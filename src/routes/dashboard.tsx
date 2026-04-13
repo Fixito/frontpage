@@ -1,5 +1,6 @@
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
 
@@ -75,7 +76,6 @@ function DashboardPage() {
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
 	const router = useRouter();
-	const [sidebarData, setSidebarData] = useState(loaderSidebarData);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [layout, setLayout] = useState<FeedLayout>(getInitialLayout);
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
@@ -85,14 +85,13 @@ function DashboardPage() {
 
 	const effectiveUserId = user?.id ?? guest?.demoUserId ?? null;
 
-	// Fetch fresh sidebar data client-side on mount (avoids SSR dehydration issues with bookmarkCount)
-	useEffect(() => {
-		// eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
-		if (!effectiveUserId) return;
-		void getSidebarDataFn({ data: { userId: effectiveUserId } })
-			.then(setSidebarData)
-			.catch(console.error);
-	}, [effectiveUserId]);
+	const queryClient = useQueryClient();
+	const { data: sidebarData = EMPTY_SIDEBAR_DATA } = useQuery({
+		queryKey: ['sidebar', effectiveUserId],
+		queryFn: () => getSidebarDataFn({ data: { userId: effectiveUserId! } }),
+		initialData: loaderSidebarData,
+		enabled: !!effectiveUserId,
+	});
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -112,17 +111,13 @@ function DashboardPage() {
 	}
 
 	async function handleRefreshSidebar() {
-		if (!effectiveUserId) return;
-		try {
-			const fresh = await getSidebarDataFn({ data: { userId: effectiveUserId } });
-			setSidebarData(fresh);
-		} catch (err) {
-			console.error('Failed to refresh sidebar', err);
-		}
+		await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
 	}
 
 	function handleBookmarkCountChange(delta: number) {
-		setSidebarData((prev) => ({ ...prev, bookmarkCount: Math.max(0, prev.bookmarkCount + delta) }));
+		queryClient.setQueryData<SidebarData>(['sidebar', effectiveUserId], (prev) =>
+			prev ? { ...prev, bookmarkCount: Math.max(0, prev.bookmarkCount + delta) } : prev,
+		);
 	}
 
 	async function handleRefreshAll() {
@@ -130,8 +125,7 @@ function DashboardPage() {
 		setRefreshing(true);
 		try {
 			await refreshAllFeedsFn({ data: { userId: user.id } });
-			const fresh = await getSidebarDataFn({ data: { userId: user.id } });
-			setSidebarData(fresh);
+			await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
 		} finally {
 			setFeedRefreshKey((k) => k + 1);
 			setRefreshing(false);
