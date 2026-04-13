@@ -231,6 +231,63 @@ export async function markAllRead(
 		.onConflictDoNothing();
 }
 
+// ── markAllUnread ─────────────────────────────────────────────────────────────
+
+export async function markAllUnread(
+	userId: string,
+	feedId?: string,
+	categoryId?: string,
+): Promise<void> {
+	if (feedId) {
+		await db
+			.delete(readState)
+			.where(
+				and(
+					eq(readState.userId, userId),
+					inArray(
+						readState.itemId,
+						db.select({ id: feedItem.id }).from(feedItem).where(eq(feedItem.feedId, feedId)),
+					),
+				),
+			);
+		return;
+	}
+
+	if (categoryId) {
+		await db.delete(readState).where(
+			and(
+				eq(readState.userId, userId),
+				inArray(
+					readState.itemId,
+					db
+						.select({ id: feedItem.id })
+						.from(feedItem)
+						.innerJoin(feed, eq(feed.id, feedItem.feedId))
+						.where(and(eq(feed.userId, userId), eq(feed.categoryId, categoryId))),
+				),
+			),
+		);
+		return;
+	}
+
+	// All feeds for user
+	await db
+		.delete(readState)
+		.where(
+			and(
+				eq(readState.userId, userId),
+				inArray(
+					readState.itemId,
+					db
+						.select({ id: feedItem.id })
+						.from(feedItem)
+						.innerJoin(feed, eq(feed.id, feedItem.feedId))
+						.where(eq(feed.userId, userId)),
+				),
+			),
+		);
+}
+
 // ── toggleBookmark ────────────────────────────────────────────────────────────
 
 export async function toggleBookmark(userId: string, itemId: string): Promise<boolean> {
@@ -266,6 +323,10 @@ export const unmarkReadFn = createServerFn({ method: 'POST' })
 export const markAllReadFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string; feedId?: string; categoryId?: string }) => data)
 	.handler(async ({ data }) => markAllRead(data.userId, data.feedId, data.categoryId));
+
+export const markAllUnreadFn = createServerFn({ method: 'POST' })
+	.inputValidator((data: { userId: string; feedId?: string; categoryId?: string }) => data)
+	.handler(async ({ data }) => markAllUnread(data.userId, data.feedId, data.categoryId));
 
 export const toggleBookmarkFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { userId: string; itemId: string }) => data)

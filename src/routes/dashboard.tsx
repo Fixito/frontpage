@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
-import { LogOut, Menu, RefreshCw } from 'lucide-react';
+import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import type { SidebarData } from '@/components/sidebar';
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import { authClient } from '@/lib/auth-client';
 import { enterGuestMode, exitGuestMode } from '@/lib/session';
 import { getSidebarDataFn } from '@/lib/category-service';
+import { refreshAllFeedsFn } from '@/lib/feed-service';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
 import { DigestView, FeedContentArea } from '@/components/feed-list';
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { LayoutToggle } from '@/components/ui/layout-toggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
@@ -73,6 +75,8 @@ function DashboardPage() {
 	const [layout, setLayout] = useState<FeedLayout>(getInitialLayout);
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+	const [refreshing, setRefreshing] = useState(false);
+	const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -92,6 +96,18 @@ function DashboardPage() {
 
 	function handleRefreshSidebar() {
 		void router.invalidate();
+	}
+
+	async function handleRefreshAll() {
+		if (!user) return;
+		setRefreshing(true);
+		try {
+			await refreshAllFeedsFn({ data: { userId: user.id } });
+		} finally {
+			setFeedRefreshKey((k) => k + 1);
+			void router.invalidate();
+			setRefreshing(false);
+		}
 	}
 
 	function getPageTitle() {
@@ -181,14 +197,26 @@ function DashboardPage() {
 					<div className="flex items-center gap-1">
 						<LayoutToggle value={layout} onChange={handleLayoutChange} />
 
-						<Button
-							variant="ghost"
-							size="icon"
-							aria-label="Refresh feeds"
-							onClick={handleRefreshSidebar}
-						>
-							<RefreshCw size={16} aria-hidden />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label="Refresh feeds"
+									disabled={refreshing || !user}
+									onClick={() => {
+										void handleRefreshAll();
+									}}
+								>
+									{refreshing ? (
+										<Loader2 size={16} className="animate-spin" aria-hidden />
+									) : (
+										<RefreshCw size={16} aria-hidden />
+									)}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Refresh feeds</TooltipContent>
+						</Tooltip>
 
 						<ThemeToggle />
 
@@ -214,6 +242,7 @@ function DashboardPage() {
 							view={view}
 							layout={layout}
 							onSidebarRefresh={handleRefreshSidebar}
+							refreshKey={feedRefreshKey}
 						/>
 					)}
 				</main>

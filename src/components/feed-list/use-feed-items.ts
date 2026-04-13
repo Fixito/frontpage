@@ -4,6 +4,7 @@ import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
 import {
 	getItemsFn,
 	markAllReadFn,
+	markAllUnreadFn,
 	markReadFn,
 	toggleBookmarkFn,
 	unmarkReadFn,
@@ -18,6 +19,7 @@ interface UseFeedItemsParams {
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
 	onSidebarRefresh: () => void;
+	refreshKey?: number;
 }
 
 export interface UseFeedItemsResult {
@@ -29,9 +31,11 @@ export interface UseFeedItemsResult {
 	error: string | null;
 	feedInfo: GetItemsResult['feedInfo'];
 	markingAllRead: boolean;
+	markingAllUnread: boolean;
 	handleMarkRead: (itemId: string) => void;
 	handleBookmarkToggle: (itemId: string) => void;
 	handleMarkAllRead: () => Promise<void>;
+	handleMarkAllUnread: () => Promise<void>;
 	handleLoadMore: () => Promise<void>;
 	handleRetry: () => void;
 }
@@ -43,6 +47,7 @@ export function useFeedItems({
 	categoryId,
 	view,
 	onSidebarRefresh,
+	refreshKey,
 }: UseFeedItemsParams): UseFeedItemsResult {
 	const [items, setItems] = useState<Array<FeedItemRow>>([]);
 	const [totalCount, setTotalCount] = useState(0);
@@ -53,11 +58,12 @@ export function useFeedItems({
 	const [error, setError] = useState<string | null>(null);
 	const [feedInfo, setFeedInfo] = useState<GetItemsResult['feedInfo']>(null);
 	const [markingAllRead, setMarkingAllRead] = useState(false);
+	const [markingAllUnread, setMarkingAllUnread] = useState(false);
 
 	const guestDemoUserId = guest?.demoUserId ?? null;
 
 	// Reset sync state during render when filter props change
-	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}`;
+	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}|${refreshKey ?? 0}`;
 	const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
 	if (prevFilterKey !== filterKey) {
 		setPrevFilterKey(filterKey);
@@ -97,7 +103,7 @@ export function useFeedItems({
 				setError('Failed to load articles. Please try again.');
 			}
 		},
-		[userId, guestDemoUserId, feedId, categoryId, view],
+		[userId, guestDemoUserId, feedId, categoryId, view, refreshKey],
 	);
 
 	// Refetch when filters change (items are async data, cannot be computed during render)
@@ -170,6 +176,20 @@ export function useFeedItems({
 		}
 	}, [userId, feedId, categoryId, onSidebarRefresh]);
 
+	const handleMarkAllUnread = useCallback(async () => {
+		if (!userId) return;
+		setMarkingAllUnread(true);
+		try {
+			await markAllUnreadFn({ data: { userId, feedId, categoryId } });
+			setItems((prev) => prev.map((item) => ({ ...item, isRead: false })));
+			onSidebarRefresh();
+		} catch (err) {
+			console.error('Failed to mark all as unread', err);
+		} finally {
+			setMarkingAllUnread(false);
+		}
+	}, [userId, feedId, categoryId, onSidebarRefresh]);
+
 	const handleLoadMore = useCallback(async () => {
 		const effectiveUserId = userId ?? guestDemoUserId ?? null;
 		if (loadingMore || !hasMore || !effectiveUserId) return;
@@ -198,9 +218,11 @@ export function useFeedItems({
 		error,
 		feedInfo,
 		markingAllRead,
+		markingAllUnread,
 		handleMarkRead,
 		handleBookmarkToggle,
 		handleMarkAllRead,
+		handleMarkAllUnread,
 		handleLoadMore,
 		handleRetry,
 	};

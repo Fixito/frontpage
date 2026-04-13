@@ -1,4 +1,4 @@
-import { CheckCheck, Loader2 } from 'lucide-react';
+import { CheckCheck, Circle, Loader2 } from 'lucide-react';
 import { FeedItemSkeleton } from './feed-item-skeleton';
 import { FeedItemList } from './feed-item-list';
 import { FeedErrorBanner } from './feed-error-banner';
@@ -16,6 +16,7 @@ interface FeedContentAreaProps {
 	view: 'all' | 'bookmarks';
 	layout: FeedLayout;
 	onSidebarRefresh: () => void;
+	refreshKey?: number;
 }
 
 export function FeedContentArea({
@@ -26,6 +27,7 @@ export function FeedContentArea({
 	view,
 	layout,
 	onSidebarRefresh,
+	refreshKey,
 }: FeedContentAreaProps) {
 	const {
 		items,
@@ -36,12 +38,14 @@ export function FeedContentArea({
 		error,
 		feedInfo,
 		markingAllRead,
+		markingAllUnread,
 		handleMarkRead,
 		handleBookmarkToggle,
 		handleMarkAllRead,
+		handleMarkAllUnread,
 		handleLoadMore,
 		handleRetry,
-	} = useFeedItems({ userId, guest, feedId, categoryId, view, onSidebarRefresh });
+	} = useFeedItems({ userId, guest, feedId, categoryId, view, onSidebarRefresh, refreshKey });
 
 	if (loading) {
 		return (
@@ -66,6 +70,7 @@ export function FeedContentArea({
 	}
 
 	const showEmptyState = items.length === 0;
+	const allRead = items.length > 0 && items.every((i) => i.isRead);
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
@@ -91,17 +96,23 @@ export function FeedContentArea({
 							variant="ghost"
 							size="sm"
 							className="gap-1.5 text-xs"
-							disabled={markingAllRead}
+							disabled={markingAllRead || markingAllUnread}
 							onClick={() => {
-								void handleMarkAllRead();
+								if (allRead) {
+									void handleMarkAllUnread();
+								} else {
+									void handleMarkAllRead();
+								}
 							}}
 						>
-							{markingAllRead ? (
+							{markingAllRead || markingAllUnread ? (
 								<Loader2 size={13} className="animate-spin" aria-hidden />
+							) : allRead ? (
+								<Circle size={13} aria-hidden />
 							) : (
 								<CheckCheck size={13} aria-hidden />
 							)}
-							Mark all as read
+							{allRead ? 'Mark all as unread' : 'Mark all as read'}
 						</Button>
 					)}
 				</div>
