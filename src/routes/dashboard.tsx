@@ -1,21 +1,23 @@
-import { useState } from 'react';
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { z } from 'zod';
+import { useEffect, useState } from 'react';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
-import type { SidebarData } from '@/components/sidebar';
+import { z } from 'zod';
+
 import type { FeedLayout } from '@/components/ui/layout-toggle';
+import type { SidebarData } from '@/components/sidebar';
 import { authClient } from '@/lib/auth-client';
-import { enterGuestMode, exitGuestMode } from '@/lib/session';
 import { getSidebarDataFn } from '@/lib/category-service';
 import { refreshAllFeedsFn } from '@/lib/feed-service';
-import { Sidebar, SidebarNav } from '@/components/sidebar';
-import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
-import { DigestView, FeedContentArea } from '@/components/feed-list';
+import { enterGuestMode, exitGuestMode } from '@/lib/session';
+
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { LayoutToggle } from '@/components/ui/layout-toggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Sidebar, SidebarNav } from '@/components/sidebar';
+import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
+import { DigestView, FeedContentArea } from '@/components/feed-list';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
@@ -50,8 +52,10 @@ export const Route = createFileRoute('/dashboard')({
 				});
 				return { sidebarData };
 			}
+
 			return { sidebarData: EMPTY_SIDEBAR_DATA };
 		}
+
 		const sidebarData = await getSidebarDataFn({ data: { userId: context.user.id } });
 		return { sidebarData };
 	},
@@ -67,16 +71,25 @@ function getInitialLayout(): FeedLayout {
 
 function DashboardPage() {
 	const { user, guest } = Route.useRouteContext();
-	const { sidebarData } = Route.useLoaderData();
+	const { sidebarData: loaderSidebarData } = Route.useLoaderData();
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
 	const router = useRouter();
+	const [sidebarData, setSidebarData] = useState(loaderSidebarData);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [layout, setLayout] = useState<FeedLayout>(getInitialLayout);
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
 	const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+	const effectiveUserId = user?.id ?? guest?.demoUserId ?? null;
+
+	// Sync sidebar when the route loader re-runs (e.g. navigation, session change)
+	useEffect(() => {
+		// eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
+		setSidebarData(loaderSidebarData);
+	}, [loaderSidebarData]);
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -91,11 +104,18 @@ function DashboardPage() {
 		} else {
 			await authClient.signOut();
 		}
+
 		await router.navigate({ to: '/' });
 	}
 
-	function handleRefreshSidebar() {
-		void router.invalidate();
+	async function handleRefreshSidebar() {
+		if (!effectiveUserId) return;
+		try {
+			const fresh = await getSidebarDataFn({ data: { userId: effectiveUserId } });
+			setSidebarData(fresh);
+		} catch (err) {
+			console.error('Failed to refresh sidebar', err);
+		}
 	}
 
 	async function handleRefreshAll() {
@@ -103,9 +123,10 @@ function DashboardPage() {
 		setRefreshing(true);
 		try {
 			await refreshAllFeedsFn({ data: { userId: user.id } });
+			const fresh = await getSidebarDataFn({ data: { userId: user.id } });
+			setSidebarData(fresh);
 		} finally {
 			setFeedRefreshKey((k) => k + 1);
-			void router.invalidate();
 			setRefreshing(false);
 		}
 	}
@@ -146,6 +167,7 @@ function DashboardPage() {
 							Frontpage
 						</Link>
 					</div>
+
 					<nav aria-label="Feed navigation" className="overflow-y-auto p-2">
 						<SidebarNav
 							data={sidebarData}
@@ -256,6 +278,7 @@ function DashboardPage() {
 				categories={categories}
 				onSuccess={handleRefreshSidebar}
 			/>
+
 			<ManageCategoriesDialog
 				open={manageCategoriesOpen}
 				onOpenChange={setManageCategoriesOpen}
