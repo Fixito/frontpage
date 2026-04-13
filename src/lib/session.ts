@@ -38,17 +38,22 @@ export const getAuthContext = createServerFn().handler(async (): Promise<AuthCon
 	return { user: null, guest: null };
 });
 
-export const enterGuestMode = createServerFn({ method: 'POST' }).handler((): { expiresAt: string } => {
-	const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
-	setCookie('frontpage-guest', expiresAt.toISOString(), {
-		httpOnly: true,
-		sameSite: 'lax',
-		path: '/',
-		maxAge: 60 * 60 * 24,
-		secure: process.env['NODE_ENV'] === 'production',
-	});
-	return { expiresAt: expiresAt.toISOString() };
-});
+export const enterGuestMode = createServerFn({ method: 'POST' }).handler(
+	(): { expiresAt: string; available: boolean } => {
+		if (!process.env['GUEST_DEMO_USER_ID']) {
+			return { expiresAt: '', available: false };
+		}
+		const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 1000);
+		setCookie('frontpage-guest', expiresAt.toISOString(), {
+			httpOnly: true,
+			sameSite: 'lax',
+			path: '/',
+			maxAge: 60 * 60 * 24,
+			secure: process.env['NODE_ENV'] === 'production',
+		});
+		return { expiresAt: expiresAt.toISOString(), available: true };
+	},
+);
 
 export const exitGuestMode = createServerFn({ method: 'POST' }).handler(() => {
 	setCookie('frontpage-guest', '', { maxAge: 0, path: '/' });

@@ -5,7 +5,7 @@ import { LogOut, Menu, RefreshCw } from 'lucide-react';
 import type { SidebarData } from '@/components/sidebar';
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import { authClient } from '@/lib/auth-client';
-import { exitGuestMode } from '@/lib/session';
+import { enterGuestMode, exitGuestMode } from '@/lib/session';
 import { getSidebarDataFn } from '@/lib/category-service';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
@@ -30,9 +30,10 @@ const EMPTY_SIDEBAR_DATA: SidebarData = {
 
 export const Route = createFileRoute('/dashboard')({
 	validateSearch: dashboardSearchSchema,
-	beforeLoad: ({ context }) => {
+	beforeLoad: async ({ context }) => {
 		if (!context.user && !context.guest) {
-			throw redirect({ to: '/' });
+			const { available } = await enterGuestMode();
+			throw redirect({ to: available ? '/dashboard' : '/sign-in' });
 		}
 		return {
 			user: context.user,
