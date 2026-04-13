@@ -20,7 +20,7 @@ function UnreadBadge({ count }: { count: number }) {
 	return (
 		<Badge
 			variant="secondary"
-			className="ml-auto h-4 min-w-4 shrink-0 px-1 text-[10px] tabular-nums"
+			className="ml-auto h-4 min-w-4 shrink-0 justify-center px-1 text-[10px]"
 		>
 			{count > 99 ? '99+' : count}
 		</Badge>

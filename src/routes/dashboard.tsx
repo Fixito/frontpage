@@ -85,11 +85,14 @@ function DashboardPage() {
 
 	const effectiveUserId = user?.id ?? guest?.demoUserId ?? null;
 
-	// Sync sidebar when the route loader re-runs (e.g. navigation, session change)
+	// Fetch fresh sidebar data client-side on mount (avoids SSR dehydration issues with bookmarkCount)
 	useEffect(() => {
-		// eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
-		setSidebarData(loaderSidebarData);
-	}, [loaderSidebarData]);
+		// eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+		if (!effectiveUserId) return;
+		void getSidebarDataFn({ data: { userId: effectiveUserId } })
+			.then(setSidebarData)
+			.catch(console.error);
+	}, [effectiveUserId]);
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
