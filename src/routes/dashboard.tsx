@@ -6,11 +6,6 @@ import { z } from 'zod';
 
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import type { SidebarData } from '@/components/sidebar';
-import { authClient } from '@/lib/auth-client';
-import { getSidebarDataFn } from '@/lib/category-service';
-import { refreshAllFeedsFn } from '@/lib/feed-service';
-import { enterGuestMode, exitGuestMode } from '@/lib/session';
-
 import { Button } from '@/components/ui/button';
 import { LayoutToggle } from '@/components/ui/layout-toggle';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -19,6 +14,11 @@ import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
 import { DigestView, FeedContentArea } from '@/components/feed-list';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+
+import { authClient } from '@/lib/auth-client';
+import { getSidebarDataFn } from '@/lib/category-service';
+import { refreshAllFeedsFn } from '@/lib/feed-service';
+import { enterGuestMode, exitGuestMode } from '@/lib/session';
 
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
@@ -40,6 +40,7 @@ export const Route = createFileRoute('/dashboard')({
 			const { available } = await enterGuestMode();
 			throw redirect({ to: available ? '/dashboard' : '/sign-in' });
 		}
+
 		return {
 			user: context.user,
 			guest: context.guest,
@@ -51,6 +52,7 @@ export const Route = createFileRoute('/dashboard')({
 				const sidebarData = await getSidebarDataFn({
 					data: { userId: context.guest.demoUserId },
 				});
+
 				return { sidebarData };
 			}
 
@@ -123,6 +125,7 @@ function DashboardPage() {
 	async function handleRefreshAll() {
 		if (!user) return;
 		setRefreshing(true);
+
 		try {
 			await refreshAllFeedsFn({ data: { userId: user.id } });
 			await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
