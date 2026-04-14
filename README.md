@@ -219,7 +219,7 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 | Category       | Score |
 | -------------- | ----- |
-| Performance    | 91    |
+| Performance    | 66    |
 | Accessibility  | 100   |
 | Best Practices | 96    |
 | SEO            | 100   |

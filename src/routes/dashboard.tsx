@@ -1,5 +1,5 @@
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
@@ -83,17 +83,37 @@ function DashboardPage() {
 	const view = rawView ?? 'all';
 	const router = useRouter();
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const [layout, setLayout] = useState<FeedLayout>(() => {
-		const dbLayout = loaderPreferences?.defaultLayout;
-		if (dbLayout === 'compact' || dbLayout === 'cards') return dbLayout;
-		if (dbLayout === 'list') return 'list';
-		return getInitialLayout();
-	});
-	const [dark, setDark] = useState(() => {
-		if (loaderPreferences?.theme === 'dark') return true;
-		if (loaderPreferences?.theme === 'light') return false;
-		return readStoredTheme();
-	});
+	// useSyncExternalStore provides separate server/client snapshots, eliminating SSR hydration
+	// mismatches caused by reading localStorage during render. Server snapshot = DB value only;
+	// client snapshot = DB value (explicit 'dark'|'light') or localStorage/OS preference.
+	const syncLayout = useSyncExternalStore(
+		() => () => {},
+		() => {
+			const db = loaderPreferences?.defaultLayout;
+			if (db === 'compact' || db === 'cards' || db === 'list') return db as FeedLayout;
+			return getInitialLayout();
+		},
+		() => {
+			const db = loaderPreferences?.defaultLayout;
+			if (db === 'compact' || db === 'cards' || db === 'list') return db as FeedLayout;
+			return 'list' as FeedLayout;
+		},
+	);
+	const [layoutOverride, setLayoutOverride] = useState<FeedLayout | undefined>(undefined);
+	const layout = layoutOverride ?? syncLayout;
+
+	const syncDark = useSyncExternalStore(
+		() => () => {},
+		() => {
+			if (loaderPreferences?.theme === 'dark') return true;
+			if (loaderPreferences?.theme === 'light') return false;
+			return readStoredTheme();
+		},
+		() => loaderPreferences?.theme === 'dark',
+	);
+	const [darkOverride, setDarkOverride] = useState<boolean | undefined>(undefined);
+	const dark = darkOverride ?? syncDark;
+
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
@@ -112,7 +132,7 @@ function DashboardPage() {
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
 	function handleLayoutChange(next: FeedLayout) {
-		setLayout(next);
+		setLayoutOverride(next);
 		localStorage.setItem('feedLayout', next);
 		if (user?.id) {
 			void updateLayoutFn({ data: { userId: user.id, layout: next } });
@@ -121,7 +141,7 @@ function DashboardPage() {
 
 	function handleThemeToggle() {
 		const next = !dark;
-		setDark(next);
+		setDarkOverride(next);
 		applyTheme(next);
 		if (user?.id) {
 			void updateThemeFn({ data: { userId: user.id, theme: next ? 'dark' : 'light' } });
