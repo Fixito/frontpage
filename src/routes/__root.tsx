@@ -41,15 +41,7 @@ export const Route = createRootRouteWithContext<AuthContext>()({
 					'A customizable RSS/Atom feed reader for developers, designers, and tech professionals.',
 			},
 		],
-		links: [
-			{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
-			{ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
-			{
-				rel: 'stylesheet',
-				href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
-			},
-			{ rel: 'stylesheet', href: appCss },
-		],
+		links: [{ rel: 'stylesheet', href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });

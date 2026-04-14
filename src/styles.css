@@ -1,3 +1,5 @@
+@import '@fontsource-variable/inter/wght.css';
+@import '@fontsource-variable/jetbrains-mono/wght.css';
 @import 'tailwindcss';
 @import './tokens.css';
 @plugin '@tailwindcss/typography';
@@ -263,9 +265,9 @@
 
 @theme {
 	/* Fonts */
-	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+	--font-sans: 'Inter Variable', system-ui, -apple-system, sans-serif;
 	--font-serif: 'Georgia', 'Charter', serif;
-	--font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+	--font-mono: 'JetBrains Mono Variable', 'SF Mono', 'Fira Code', monospace;
 
 	/* Type scale (1.25 ratio, anchored at 16px) */
 	--text-xs: 0.6875rem;

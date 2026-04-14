@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { ItemActions } from './item-actions';
 import { KeyboardShortcutsHelp } from './keyboard-shortcuts-help';
-import { ReaderViewDrawer } from './reader-view-drawer';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
 import { cn, hashToHex, hashToIndex, stripHtml } from '@/lib/utils';
+
+const ReaderViewDrawer = lazy(() =>
+	import('./reader-view-drawer').then((m) => ({ default: m.ReaderViewDrawer })),
+);
 
 // ── Avatar ───────────────────────────────────────────────────────────────────
 // Uses CSS custom property --avatar-{n} which switches between light/dark mode.
@@ -427,16 +430,18 @@ export function FeedItemList({
 						/>
 					))}
 				</div>
-				<ReaderViewDrawer
-					item={readerItem}
-					open={readerOpen}
-					onOpenChange={setReaderOpen}
-					userId={userId}
-					hasPrev={readerIndex !== null && readerIndex > 0}
-					hasNext={readerIndex !== null && readerIndex < items.length - 1}
-					onPrev={handlePrev}
-					onNext={handleNext}
-				/>
+				<Suspense>
+					<ReaderViewDrawer
+						item={readerItem}
+						open={readerOpen}
+						onOpenChange={setReaderOpen}
+						userId={userId}
+						hasPrev={readerIndex !== null && readerIndex > 0}
+						hasNext={readerIndex !== null && readerIndex < items.length - 1}
+						onPrev={handlePrev}
+						onNext={handleNext}
+					/>
+				</Suspense>
 				<KeyboardShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
 			</>
 		);
@@ -458,16 +463,18 @@ export function FeedItemList({
 					/>
 				))}
 			</div>
-			<ReaderViewDrawer
-				item={readerItem}
-				open={readerOpen}
-				onOpenChange={setReaderOpen}
-				userId={userId}
-				hasPrev={readerIndex !== null && readerIndex > 0}
-				hasNext={readerIndex !== null && readerIndex < items.length - 1}
-				onPrev={handlePrev}
-				onNext={handleNext}
-			/>
+			<Suspense>
+				<ReaderViewDrawer
+					item={readerItem}
+					open={readerOpen}
+					onOpenChange={setReaderOpen}
+					userId={userId}
+					hasPrev={readerIndex !== null && readerIndex > 0}
+					hasNext={readerIndex !== null && readerIndex < items.length - 1}
+					onPrev={handlePrev}
+					onNext={handleNext}
+				/>
+			</Suspense>
 			<KeyboardShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
 		</>
 	);

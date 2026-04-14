@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 import type { FeedItemRow } from './types';
 import {
 	Drawer,
@@ -25,6 +25,7 @@ interface ReaderViewDrawerProps {
 }
 
 function sanitize(html: string): string {
+	if (typeof window === 'undefined') return '';
 	return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 

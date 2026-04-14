@@ -1,6 +1,6 @@
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { useState, useSyncExternalStore } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Suspense, lazy, useState, useSyncExternalStore } from 'react';
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
 
@@ -11,8 +11,7 @@ import { LayoutToggle } from '@/components/ui/layout-toggle';
 import { ThemeToggle, applyTheme, readStoredTheme } from '@/components/ui/theme-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
-import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
-import { DigestView, FeedContentArea } from '@/components/feed-list';
+import { FeedContentArea } from '@/components/feed-list/feed-content-area';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 import { authClient } from '@/lib/auth-client';
@@ -20,6 +19,18 @@ import { getSidebarDataFn, updateFeedFn } from '@/lib/category-service';
 import { refreshAllFeedsFn } from '@/lib/feed-service';
 import { getPreferenceFn, updateLayoutFn, updateThemeFn } from '@/lib/preference-service';
 import { enterGuestMode, exitGuestMode } from '@/lib/session';
+
+const AddFeedDialog = lazy(() =>
+	import('@/components/feeds/add-feed-dialog').then((m) => ({ default: m.AddFeedDialog })),
+);
+const ManageCategoriesDialog = lazy(() =>
+	import('@/components/feeds/manage-categories-dialog').then((m) => ({
+		default: m.ManageCategoriesDialog,
+	})),
+);
+const DigestView = lazy(() =>
+	import('@/components/feed-list/digest-view').then((m) => ({ default: m.DigestView })),
+);
 
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
@@ -68,6 +79,13 @@ export const Route = createFileRoute('/dashboard')({
 	},
 	component: DashboardPage,
 });
+
+const sidebarQueryOptions = (userId: string | null) =>
+	queryOptions({
+		queryKey: ['sidebar', userId],
+		queryFn: () => getSidebarDataFn({ data: { userId: userId! } }),
+		enabled: !!userId,
+	});
 
 function getInitialLayout(): FeedLayout {
 	if (typeof window === 'undefined') return 'list';
@@ -123,10 +141,8 @@ function DashboardPage() {
 
 	const queryClient = useQueryClient();
 	const { data: sidebarData = EMPTY_SIDEBAR_DATA } = useQuery({
-		queryKey: ['sidebar', effectiveUserId],
-		queryFn: () => getSidebarDataFn({ data: { userId: effectiveUserId! } }),
+		...sidebarQueryOptions(effectiveUserId),
 		initialData: loaderSidebarData,
-		enabled: !!effectiveUserId,
 	});
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
@@ -159,11 +175,13 @@ function DashboardPage() {
 	}
 
 	async function handleRefreshSidebar() {
-		await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+		await queryClient.invalidateQueries({
+			queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
+		});
 	}
 
 	function handleBookmarkCountChange(delta: number) {
-		queryClient.setQueryData<SidebarData>(['sidebar', effectiveUserId], (prev) =>
+		queryClient.setQueryData<SidebarData>(sidebarQueryOptions(effectiveUserId).queryKey, (prev) =>
 			prev ? { ...prev, bookmarkCount: Math.max(0, prev.bookmarkCount + delta) } : prev,
 		);
 	}
@@ -174,7 +192,9 @@ function DashboardPage() {
 
 		try {
 			await refreshAllFeedsFn({ data: { userId: user.id } });
-			await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+			await queryClient.invalidateQueries({
+				queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
+			});
 		} finally {
 			setFeedRefreshKey((k) => k + 1);
 			setRefreshing(false);
@@ -184,7 +204,7 @@ function DashboardPage() {
 	function handleMoveFeed(targetFeedId: string, targetCategoryId: string | null) {
 		if (!user) return;
 
-		queryClient.setQueryData<SidebarData>(['sidebar', effectiveUserId], (prev) => {
+		queryClient.setQueryData<SidebarData>(sidebarQueryOptions(effectiveUserId).queryKey, (prev) => {
 			if (!prev) return prev;
 
 			const movingFeed =
@@ -224,7 +244,9 @@ function DashboardPage() {
 		updateFeedFn({
 			data: { userId: user.id, feedId: targetFeedId, categoryId: targetCategoryId },
 		}).catch(() => {
-			void queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+			void queryClient.invalidateQueries({
+				queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
+			});
 		});
 	}
 
@@ -361,7 +383,9 @@ function DashboardPage() {
 				{/* Content */}
 				<main id="main-content" className="flex flex-1 flex-col overflow-hidden">
 					{view === 'digest' ? (
-						<DigestView userId={user?.id ?? null} />
+						<Suspense fallback={null}>
+							<DigestView userId={user?.id ?? null} />
+						</Suspense>
 					) : (
 						<FeedContentArea
 							userId={user?.id ?? null}
@@ -379,21 +403,25 @@ function DashboardPage() {
 			</div>
 
 			{/* Dialogs */}
-			<AddFeedDialog
-				open={addFeedOpen}
-				onOpenChange={setAddFeedOpen}
-				userId={user?.id ?? ''}
-				categories={categories}
-				onSuccess={handleRefreshSidebar}
-			/>
+			<Suspense fallback={null}>
+				<AddFeedDialog
+					open={addFeedOpen}
+					onOpenChange={setAddFeedOpen}
+					userId={user?.id ?? ''}
+					categories={categories}
+					onSuccess={handleRefreshSidebar}
+				/>
+			</Suspense>
 
-			<ManageCategoriesDialog
-				open={manageCategoriesOpen}
-				onOpenChange={setManageCategoriesOpen}
-				userId={user?.id ?? ''}
-				categories={categories}
-				onSuccess={handleRefreshSidebar}
-			/>
+			<Suspense fallback={null}>
+				<ManageCategoriesDialog
+					open={manageCategoriesOpen}
+					onOpenChange={setManageCategoriesOpen}
+					userId={user?.id ?? ''}
+					categories={categories}
+					onSuccess={handleRefreshSidebar}
+				/>
+			</Suspense>
 		</div>
 	);
 }
