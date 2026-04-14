@@ -1,12 +1,25 @@
+import { Suspense, lazy } from 'react';
 import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router';
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { TanStackDevtools } from '@tanstack/react-devtools';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import appCss from '../styles.css?url';
 import type { AuthContext } from '@/lib/session';
 import { getAuthContext } from '@/lib/session';
 import { TooltipProvider } from '@/components/ui/tooltip';
+
+// Lazy-load devtools only in development — the dead branch is tree-shaken in production,
+// so neither package appears in the prod bundle.
+const TanStackDevtools = import.meta.env.PROD
+	? () => null
+	: lazy(() => import('@tanstack/react-devtools').then((m) => ({ default: m.TanStackDevtools })));
+
+const TanStackRouterDevtoolsPanel = import.meta.env.PROD
+	? () => null
+	: lazy(() =>
+			import('@tanstack/react-router-devtools').then((m) => ({
+				default: m.TanStackRouterDevtoolsPanel,
+			})),
+		);
 
 const queryClient = new QueryClient();
 
@@ -28,7 +41,15 @@ export const Route = createRootRouteWithContext<AuthContext>()({
 					'A customizable RSS/Atom feed reader for developers, designers, and tech professionals.',
 			},
 		],
-		links: [{ rel: 'stylesheet', href: appCss }],
+		links: [
+			{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+			{ rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
+			{
+				rel: 'stylesheet',
+				href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+			},
+			{ rel: 'stylesheet', href: appCss },
+		],
 	}),
 	shellComponent: RootDocument,
 });
@@ -51,10 +72,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<QueryClientProvider client={queryClient}>
 					<TooltipProvider>{children}</TooltipProvider>
 				</QueryClientProvider>
-				<TanStackDevtools
-					config={{ position: 'bottom-right' }}
-					plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
-				/>
+				{import.meta.env.DEV && (
+					<Suspense fallback={null}>
+						<TanStackDevtools
+							config={{ position: 'bottom-right' }}
+							plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
+						/>
+					</Suspense>
+				)}
 				<Scripts />
 			</body>
 		</html>

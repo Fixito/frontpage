@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
 
 	return {
 		plugins: [
-			devtools(),
+			...(mode !== 'production' ? [devtools()] : []),
 			nitro({ rollupConfig: { external: [/^@sentry\//] } }),
 			tsconfigPaths({ projects: ['./tsconfig.json'] }),
 			tailwindcss(),

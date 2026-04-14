@@ -322,9 +322,17 @@ function DashboardPage() {
 						<ThemeToggle dark={dark} onToggle={handleThemeToggle} />
 
 						{user && (
-							<Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={handleSignOut}
+								aria-label="Sign out"
+								className="gap-1.5"
+							>
 								<LogOut size={14} aria-hidden />
-								<span className="hidden sm:inline">Sign out</span>
+								<span className="hidden sm:inline" aria-hidden="true">
+									Sign out
+								</span>
 							</Button>
 						)}
 					</div>

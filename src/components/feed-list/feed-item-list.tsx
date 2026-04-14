@@ -157,7 +157,11 @@ function FeedItemCard({
 						<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
 						<SourceRow item={item} />
 						{!item.isRead && (
-							<span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" aria-label="Unread" />
+							<span
+								className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
+								role="img"
+								aria-label="Unread"
+							/>
 						)}
 					</div>
 
@@ -211,7 +215,7 @@ function FeedItemCard({
 			>
 				<div className="flex w-3 shrink-0 justify-center">
 					{!item.isRead && (
-						<span className="bg-unread h-1.5 w-1.5 rounded-full" aria-label="Unread" />
+						<span className="bg-unread h-1.5 w-1.5 rounded-full" role="img" aria-label="Unread" />
 					)}
 				</div>
 
@@ -259,7 +263,9 @@ function FeedItemCard({
 		>
 			{/* Unread indicator */}
 			<div className="flex w-3 shrink-0 items-start justify-center pt-2">
-				{!item.isRead && <span className="bg-unread h-2 w-2 rounded-full" aria-label="Unread" />}
+				{!item.isRead && (
+					<span className="bg-unread h-2 w-2 rounded-full" role="img" aria-label="Unread" />
+				)}
 			</div>
 
 			<div className="shrink-0 pt-0.5">

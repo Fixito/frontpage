@@ -34,11 +34,23 @@ Powered by **Google Gemini 2.5 Flash** via `@google/generative-ai`. All AI featu
 
 ### Article Summarization
 
-Open any article in the Reader View drawer and click **"Summarize with AI"** to generate a 2–3 sentence summary. Summaries are stored in the `feedItem.aiSummary` column, so subsequent opens return the cached result instantly (no second API call).
+Open any article in the Reader View drawer and click **"Summarize with AI"** to generate a structured summary. The summary format is:
+
+- **First line:** one direct sentence stating the main finding, argument, or news event (no "this article discusses" preamble).
+- **Bullet points:** 2–3 specific facts, data points, or key takeaways.
+
+Article HTML is stripped to plain text before being sent to the API (up to 8 000 characters). Summaries are stored in the `feedItem.aiSummary` column, so subsequent opens return the cached result instantly (no second API call). Old plain-text summaries (from before the format update) render gracefully as a single paragraph.
 
 ### Category Auto-Suggestion
 
-When adding a new feed, Frontpage calls Gemini in the background after the feed preview loads. If it finds a good match among your existing categories, a dismissible suggestion banner appears above the Category selector with an **Apply** button. This fires without blocking the UI — if it fails or finds no match, nothing is shown.
+When adding a new feed, Frontpage calls Gemini in the background immediately after the feed preview loads. While waiting, a pulsing skeleton strip shows that a suggestion is on its way. Once the response arrives:
+
+- **Existing category match:** a dismissible banner shows _"AI suggests: **Category Name**"_ with an **Apply** button that sets the selector in one click.
+- **No matching category (or no categories yet):** Gemini proposes a new name — the banner shows _"AI suggests new: **Category Name**"_ with a **Create & Apply** button.
+
+Accepting a new-category suggestion does **not** immediately write to the database. The name is held in local state and the category is only created when the user clicks **Add Feed** — so abandoning the dialog never leaves orphan categories. A confirmation chip below the selector lets the user cancel the proposed name before confirming.
+
+This fires without blocking the UI — if the API call fails, the skeleton simply disappears and nothing is shown.
 
 ### Weekly Digest View
 
@@ -128,13 +140,16 @@ The harder part was technology currency. Getting the AI to use the latest APIs a
 
 ### Session Breakdown
 
-| Session | Focus                 | What I Accomplished                                                 |
-| ------- | --------------------- | ------------------------------------------------------------------- |
-| 1       | Planning & scaffold   | Spec review, phased plan, project init, DB schema, auth             |
-| 2       | Core features         | Feed engine, app shell, content browsing, read/unread tracking      |
-| 3       | Experience & AI       | Guest experience, landing page, AI features (Gemini integration)    |
-| 4       | Bug fixes & UX polish | Error fixes, reader drawer, bookmark sync, card click to reader     |
-| 5       | Phase 8 & deployment  | Accessibility audit, spec gaps (prev/next, keyboard, reset), Vercel |
+| Session | Focus                 | What I Accomplished                                                                         |
+| ------- | --------------------- | ------------------------------------------------------------------------------------------- |
+| 1       | Planning & scaffold   | Spec review, phased plan, project init, DB schema, auth                                     |
+| 2       | Core features         | Feed engine, app shell, content browsing, read/unread tracking                              |
+| 3       | Experience & AI       | Guest experience, landing page, AI features (Gemini integration)                            |
+| 4       | Bug fixes & UX polish | Error fixes, reader drawer, bookmark sync, card click to reader                             |
+| 5       | Phase 8 & deployment  | Accessibility audit, spec gaps (prev/next, keyboard, reset), Vercel                         |
+| 6       | Reader & AI quality   | Drawer width fix, dark-mode prose color, structured AI summaries                            |
+| 7       | UI polish             | Add-feed dialog overflow fix, remove duplicate theme toggle, AI suggestion loading skeleton |
+| 8       | AI category proposal  | AI suggests new category names when none match; deferred creation to avoid orphan records   |
 
 ---
 
@@ -169,7 +184,7 @@ I would do two things differently next time: ask for tests before implementation
 **How it enhances the product:**
 
 - **Article summaries** cached in the database so the first reader who summarises an article benefits everyone (no repeat API calls).
-- **Category auto-suggestion** on feed add reduces the friction of organisation — Gemini reads the feed title/description and suggests the best matching category from the user's own list.
+- **Category auto-suggestion** on feed add reduces the friction of organisation — Gemini reads the feed title/description and either picks the best matching category from the user's list, or proposes a brand-new category name if none fit. Accepting a new-category suggestion defers creation until "Add Feed" is confirmed, so no orphan categories are ever written to the database.
 - **Weekly Digest** surfaces a curated editorial briefing of the week's most recent unread content, giving irregular readers a meaningful entry point.
 
 **Implementation highlights:**
@@ -205,14 +220,14 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 | Category       | Score |
 | -------------- | ----- |
 | Performance    | 91    |
-| Accessibility  | 93    |
+| Accessibility  | 100   |
 | Best Practices | 96    |
 | SEO            | 100   |
 
 ### Strengths
 
 - **End-to-end delivery in ~2 days.** From empty scaffold to a deployed, functional product with 12 core features — this is the fastest I have shipped something of this scope.
-- **Accessibility.** Semantic HTML, keyboard navigation, ARIA live regions, reduced-motion support, and a 93 Lighthouse accessibility score that actually reflects real care rather than just passing automated checks.
+- **Accessibility.** Semantic HTML, keyboard navigation, ARIA live regions, reduced-motion support, and a 100 Lighthouse accessibility score that actually reflects real care rather than just passing automated checks.
 - **AI integration that degrades gracefully.** The Gemini features (summaries, category suggestion, weekly digest) all fail silently — the app is fully usable with or without a valid API key.
 - **Guest experience.** The demo is immediately impressive: 19 curated feeds, fully populated, no sign-up required. It removes the barrier to evaluating the product.
 
