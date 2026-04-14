@@ -16,7 +16,7 @@ import { DigestView, FeedContentArea } from '@/components/feed-list';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 import { authClient } from '@/lib/auth-client';
-import { getSidebarDataFn } from '@/lib/category-service';
+import { getSidebarDataFn, updateFeedFn } from '@/lib/category-service';
 import { refreshAllFeedsFn } from '@/lib/feed-service';
 import { getPreferenceFn, updateLayoutFn, updateThemeFn } from '@/lib/preference-service';
 import { enterGuestMode, exitGuestMode } from '@/lib/session';
@@ -161,6 +161,53 @@ function DashboardPage() {
 		}
 	}
 
+	function handleMoveFeed(targetFeedId: string, targetCategoryId: string | null) {
+		if (!user) return;
+
+		queryClient.setQueryData<SidebarData>(['sidebar', effectiveUserId], (prev) => {
+			if (!prev) return prev;
+
+			const movingFeed =
+				prev.uncategorized.find((f) => f.id === targetFeedId) ??
+				prev.categories.flatMap((c) => c.feeds).find((f) => f.id === targetFeedId);
+			if (!movingFeed) return prev;
+
+			const newUncategorized =
+				targetCategoryId === null
+					? prev.uncategorized.some((f) => f.id === targetFeedId)
+						? prev.uncategorized
+						: [...prev.uncategorized, { ...movingFeed }]
+					: prev.uncategorized.filter((f) => f.id !== targetFeedId);
+
+			const newCategories = prev.categories.map((cat) => {
+				if (cat.id === targetCategoryId) {
+					if (cat.feeds.some((f) => f.id === targetFeedId)) return cat;
+					return {
+						...cat,
+						feeds: [...cat.feeds, movingFeed],
+						unreadCount: cat.unreadCount + movingFeed.unreadCount,
+					};
+				}
+				if (cat.feeds.some((f) => f.id === targetFeedId)) {
+					return {
+						...cat,
+						feeds: cat.feeds.filter((f) => f.id !== targetFeedId),
+						unreadCount: Math.max(0, cat.unreadCount - movingFeed.unreadCount),
+					};
+				}
+				return cat;
+			});
+
+			return { ...prev, categories: newCategories, uncategorized: newUncategorized };
+		});
+
+		updateFeedFn({
+			data: { userId: user.id, feedId: targetFeedId, categoryId: targetCategoryId },
+		}).catch(() => {
+			void queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+		});
+	}
+
 	function getPageTitle() {
 		if (view === 'bookmarks') return 'Bookmarks';
 		if (view === 'digest') return 'Weekly Digest';
@@ -185,6 +232,7 @@ function DashboardPage() {
 					activeFeedId={feedId}
 					onAddFeed={() => setAddFeedOpen(true)}
 					onManageCategories={() => setManageCategoriesOpen(true)}
+					onMoveFeed={user ? handleMoveFeed : undefined}
 					dark={dark}
 					onThemeToggle={handleThemeToggle}
 				/>
@@ -211,6 +259,7 @@ function DashboardPage() {
 								setMobileOpen(false);
 								setAddFeedOpen(true);
 							}}
+							onMoveFeed={user ? handleMoveFeed : undefined}
 						/>
 					</nav>
 				</SheetContent>

@@ -17,6 +17,7 @@ interface SidebarProps {
 	activeFeedId?: string;
 	onAddFeed?: () => void;
 	onManageCategories?: () => void;
+	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
 	dark: boolean;
 	onThemeToggle: () => void;
 }
@@ -28,6 +29,7 @@ export function Sidebar({
 	activeFeedId,
 	onAddFeed,
 	onManageCategories,
+	onMoveFeed,
 	dark,
 	onThemeToggle,
 }: SidebarProps) {
@@ -53,6 +55,7 @@ export function Sidebar({
 						activeCategoryId={activeCategoryId}
 						activeFeedId={activeFeedId}
 						onAddFeed={onAddFeed}
+						onMoveFeed={onMoveFeed}
 					/>
 				</nav>
 			</ScrollArea>

@@ -1,6 +1,17 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss, Sparkles } from 'lucide-react';
+import {
+	DndContext,
+	DragOverlay,
+	KeyboardSensor,
+	PointerSensor,
+	useDraggable,
+	useDroppable,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +26,7 @@ interface SidebarNavProps {
 	activeFeedId?: string;
 	onNavigate?: () => void;
 	onAddFeed?: () => void;
+	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
 }
 
 function UnreadBadge({ count }: { count: number }) {
@@ -65,6 +77,41 @@ function FavIcon({ url }: { url: string | null }) {
 	);
 }
 
+function DraggableFeedItem({
+	feed,
+	isActive,
+	onNavigate,
+}: {
+	feed: FeedNavItem;
+	isActive: boolean;
+	onNavigate?: () => void;
+}) {
+	const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+		id: feed.id,
+		data: { feed },
+	});
+
+	return (
+		<div
+			ref={setNodeRef}
+			{...listeners}
+			{...attributes}
+			className={cn('cursor-grab touch-none active:cursor-grabbing', isDragging && 'opacity-40')}
+		>
+			<FeedItem feed={feed} isActive={isActive} onNavigate={onNavigate} />
+		</div>
+	);
+}
+
+function FeedDragOverlay({ feed }: { feed: FeedNavItem }) {
+	return (
+		<div className="bg-background border-border flex cursor-grabbing items-center gap-1.5 rounded-md border px-2 py-1 text-xs shadow-lg">
+			<FavIcon url={feed.faviconUrl} />
+			<span className="max-w-[160px] truncate">{feed.title}</span>
+		</div>
+	);
+}
+
 function FeedItem({
 	feed,
 	isActive,
@@ -108,9 +155,13 @@ function CategorySection({
 }) {
 	const isActive = activeCategoryId === category.id;
 	const [expanded, setExpanded] = useState(true);
+	const { setNodeRef, isOver } = useDroppable({ id: category.id });
 
 	return (
-		<div>
+		<div
+			ref={setNodeRef}
+			className={cn('rounded-md transition-colors', isOver && 'ring-accent/50 ring-2')}
+		>
 			<div className="flex items-center gap-0.5">
 				<Link
 					to="/dashboard"
@@ -122,6 +173,7 @@ function CategorySection({
 						isActive
 							? 'bg-accent text-accent-foreground font-medium'
 							: 'text-foreground hover:bg-muted',
+						isOver && !isActive && 'bg-accent/20',
 					)}
 				>
 					<Folder size={14} className="text-muted-foreground shrink-0" aria-hidden />
@@ -145,7 +197,7 @@ function CategorySection({
 			{expanded && category.feeds.length > 0 && (
 				<div className="border-border/50 mt-0.5 ml-4 space-y-0.5 border-l pl-2">
 					{category.feeds.map((feed) => (
-						<FeedItem
+						<DraggableFeedItem
 							key={feed.id}
 							feed={feed}
 							isActive={activeFeedId === feed.id}
@@ -158,6 +210,46 @@ function CategorySection({
 	);
 }
 
+function UncategorizedSection({
+	feeds,
+	activeFeedId,
+	onNavigate,
+}: {
+	feeds: Array<FeedNavItem>;
+	activeFeedId?: string;
+	onNavigate?: () => void;
+}) {
+	const { setNodeRef, isOver } = useDroppable({ id: '__uncategorized__' });
+
+	return (
+		<div
+			ref={setNodeRef}
+			className={cn('mt-1 rounded-md transition-colors', isOver && 'ring-accent/50 ring-2')}
+		>
+			{(feeds.length > 0 || isOver) && (
+				<p
+					className={cn(
+						'text-muted-foreground px-2 pb-1 text-xs font-medium',
+						isOver && 'text-foreground',
+					)}
+				>
+					Uncategorized
+				</p>
+			)}
+			<div className="space-y-0.5">
+				{feeds.map((feed) => (
+					<DraggableFeedItem
+						key={feed.id}
+						feed={feed}
+						isActive={activeFeedId === feed.id}
+						onNavigate={onNavigate}
+					/>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export function SidebarNav({
 	data,
 	activeView = 'all',
@@ -165,10 +257,43 @@ export function SidebarNav({
 	activeFeedId,
 	onNavigate,
 	onAddFeed,
+	onMoveFeed,
 }: SidebarNavProps) {
 	const isAllActive = activeView === 'all' && !activeCategoryId && !activeFeedId;
 	const isBookmarksActive = activeView === 'bookmarks';
 	const isDigestActive = activeView === 'digest';
+
+	const [activeDrag, setActiveDrag] = useState<FeedNavItem | null>(null);
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+		useSensor(KeyboardSensor),
+	);
+
+	function handleDragStart(event: DragStartEvent) {
+		const feed = event.active.data.current?.['feed'] as FeedNavItem | undefined;
+		setActiveDrag(feed ?? null);
+	}
+
+	function handleDragEnd(event: DragEndEvent) {
+		setActiveDrag(null);
+		const { active, over } = event;
+		if (!over || !onMoveFeed) return;
+
+		const feedId = String(active.id);
+		const targetCategoryId = over.id === '__uncategorized__' ? null : String(over.id);
+
+		if (targetCategoryId === null && data.uncategorized.some((f) => f.id === feedId)) return;
+		if (
+			targetCategoryId !== null &&
+			data.categories.find((c) => c.id === targetCategoryId)?.feeds.some((f) => f.id === feedId)
+		)
+			return;
+
+		onMoveFeed(feedId, targetCategoryId);
+	}
+
+	const hasCategoriesOrFeeds = data.categories.length > 0 || data.uncategorized.length > 0;
 
 	return (
 		<div className="flex flex-col gap-0.5">
@@ -229,37 +354,43 @@ export function SidebarNav({
 				<span className="flex-1">Weekly Digest</span>
 			</Link>
 
-			{(data.categories.length > 0 || data.uncategorized.length > 0) && (
+			{hasCategoriesOrFeeds && (
 				<div className="mt-3">
 					<p className="text-muted-foreground px-2 pb-1.5 text-xs font-semibold tracking-wider uppercase">
 						Feeds
 					</p>
-					<div className="space-y-0.5">
-						{data.categories.map((cat) => (
-							<CategorySection
-								key={cat.id}
-								category={cat}
-								activeCategoryId={activeCategoryId}
-								activeFeedId={activeFeedId}
-								onNavigate={onNavigate}
-							/>
-						))}
-						{data.uncategorized.length > 0 && (
-							<div className="mt-1">
-								<p className="text-muted-foreground px-2 pb-1 text-xs font-medium">Uncategorized</p>
-								<div className="space-y-0.5">
-									{data.uncategorized.map((feed) => (
-										<FeedItem
-											key={feed.id}
-											feed={feed}
-											isActive={activeFeedId === feed.id}
-											onNavigate={onNavigate}
-										/>
-									))}
-								</div>
+					{data.categories.length > 0 ? (
+						<DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+							<div className="space-y-0.5">
+								{data.categories.map((cat) => (
+									<CategorySection
+										key={cat.id}
+										category={cat}
+										activeCategoryId={activeCategoryId}
+										activeFeedId={activeFeedId}
+										onNavigate={onNavigate}
+									/>
+								))}
+								<UncategorizedSection
+									feeds={data.uncategorized}
+									activeFeedId={activeFeedId}
+									onNavigate={onNavigate}
+								/>
 							</div>
-						)}
-					</div>
+							<DragOverlay>{activeDrag && <FeedDragOverlay feed={activeDrag} />}</DragOverlay>
+						</DndContext>
+					) : (
+						<div className="space-y-0.5">
+							{data.uncategorized.map((feed) => (
+								<FeedItem
+									key={feed.id}
+									feed={feed}
+									isActive={activeFeedId === feed.id}
+									onNavigate={onNavigate}
+								/>
+							))}
+						</div>
+					)}
 				</div>
 			)}
 		</div>
