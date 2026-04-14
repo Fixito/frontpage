@@ -1,11 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import interFontUrl from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import appCss from '../styles.css?url';
 import type { AuthContext } from '@/lib/session';
 import { getAuthContext } from '@/lib/session';
-import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Lazy-load devtools only in development — the dead branch is tree-shaken in production,
 // so neither package appears in the prod bundle.
@@ -20,8 +19,6 @@ const TanStackRouterDevtoolsPanel = import.meta.env.PROD
 				default: m.TanStackRouterDevtoolsPanel,
 			})),
 		);
-
-const queryClient = new QueryClient();
 
 // Inline script to apply theme before first paint (no flash)
 const THEME_INIT_SCRIPT = `(function(){try{var stored=localStorage.getItem('theme');var prefersDark=matchMedia('(prefers-color-scheme: dark)').matches;var resolved=stored==='dark'||(!stored&&prefersDark)?'dark':'light';document.documentElement.setAttribute('data-theme',resolved);document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
@@ -41,7 +38,16 @@ export const Route = createRootRouteWithContext<AuthContext>()({
 					'A customizable RSS/Atom feed reader for developers, designers, and tech professionals.',
 			},
 		],
-		links: [{ rel: 'stylesheet', href: appCss }],
+		links: [
+			{
+				rel: 'preload',
+				href: interFontUrl,
+				as: 'font',
+				type: 'font/woff2',
+				crossOrigin: 'anonymous',
+			},
+			{ rel: 'stylesheet', href: appCss },
+		],
 	}),
 	shellComponent: RootDocument,
 });
@@ -61,9 +67,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				>
 					Skip to main content
 				</a>
-				<QueryClientProvider client={queryClient}>
-					<TooltipProvider>{children}</TooltipProvider>
-				</QueryClientProvider>
+				{children}
 				{import.meta.env.DEV && (
 					<Suspense fallback={null}>
 						<TanStackDevtools

@@ -19,7 +19,7 @@ const schema = z.object({
 	password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
-export const Route = createFileRoute('/sign-up')({
+export const Route = createFileRoute('/_app/sign-up')({
 	component: SignUpPage,
 });
 

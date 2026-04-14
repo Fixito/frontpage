@@ -45,7 +45,7 @@ const EMPTY_SIDEBAR_DATA: SidebarData = {
 	bookmarkCount: 0,
 };
 
-export const Route = createFileRoute('/dashboard')({
+export const Route = createFileRoute('/_app/dashboard')({
 	validateSearch: dashboardSearchSchema,
 	beforeLoad: async ({ context }) => {
 		if (!context.user && !context.guest) {

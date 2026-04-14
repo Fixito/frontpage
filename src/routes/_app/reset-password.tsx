@@ -25,13 +25,13 @@ const schema = z
 		path: ['confirm'],
 	});
 
-export const Route = createFileRoute('/reset-password')({
+export const Route = createFileRoute('/_app/reset-password')({
 	validateSearch: searchSchema,
 	component: ResetPasswordPage,
 });
 
 function ResetPasswordPage() {
-	const { token } = useSearch({ from: '/reset-password' });
+	const { token } = useSearch({ from: '/_app/reset-password' });
 	const navigate = useNavigate();
 
 	const mutation = useMutation({
