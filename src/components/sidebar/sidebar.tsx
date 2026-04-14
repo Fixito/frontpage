@@ -17,6 +17,8 @@ interface SidebarProps {
 	activeFeedId?: string;
 	onAddFeed?: () => void;
 	onManageCategories?: () => void;
+	dark: boolean;
+	onThemeToggle: () => void;
 }
 
 export function Sidebar({
@@ -26,6 +28,8 @@ export function Sidebar({
 	activeFeedId,
 	onAddFeed,
 	onManageCategories,
+	dark,
+	onThemeToggle,
 }: SidebarProps) {
 	return (
 		<aside
@@ -70,7 +74,7 @@ export function Sidebar({
 					</TooltipTrigger>
 					<TooltipContent side="top">Manage categories</TooltipContent>
 				</Tooltip>
-				<ThemeToggle />
+				<ThemeToggle dark={dark} onToggle={onThemeToggle} />
 			</div>
 		</aside>
 	);

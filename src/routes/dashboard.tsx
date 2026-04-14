@@ -8,7 +8,7 @@ import type { FeedLayout } from '@/components/ui/layout-toggle';
 import type { SidebarData } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
 import { LayoutToggle } from '@/components/ui/layout-toggle';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ThemeToggle, applyTheme, readStoredTheme } from '@/components/ui/theme-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { authClient } from '@/lib/auth-client';
 import { getSidebarDataFn } from '@/lib/category-service';
 import { refreshAllFeedsFn } from '@/lib/feed-service';
+import { getPreferenceFn, updateLayoutFn, updateThemeFn } from '@/lib/preference-service';
 import { enterGuestMode, exitGuestMode } from '@/lib/session';
 
 const dashboardSearchSchema = z.object({
@@ -53,14 +54,17 @@ export const Route = createFileRoute('/dashboard')({
 					data: { userId: context.guest.demoUserId },
 				});
 
-				return { sidebarData };
+				return { sidebarData, preferences: null };
 			}
 
-			return { sidebarData: EMPTY_SIDEBAR_DATA };
+			return { sidebarData: EMPTY_SIDEBAR_DATA, preferences: null };
 		}
 
-		const sidebarData = await getSidebarDataFn({ data: { userId: context.user.id } });
-		return { sidebarData };
+		const [sidebarData, preferences] = await Promise.all([
+			getSidebarDataFn({ data: { userId: context.user.id } }),
+			getPreferenceFn({ data: { userId: context.user.id } }),
+		]);
+		return { sidebarData, preferences };
 	},
 	component: DashboardPage,
 });
@@ -74,12 +78,22 @@ function getInitialLayout(): FeedLayout {
 
 function DashboardPage() {
 	const { user, guest } = Route.useRouteContext();
-	const { sidebarData: loaderSidebarData } = Route.useLoaderData();
+	const { sidebarData: loaderSidebarData, preferences: loaderPreferences } = Route.useLoaderData();
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
 	const router = useRouter();
 	const [mobileOpen, setMobileOpen] = useState(false);
-	const [layout, setLayout] = useState<FeedLayout>(getInitialLayout);
+	const [layout, setLayout] = useState<FeedLayout>(() => {
+		const dbLayout = loaderPreferences?.defaultLayout;
+		if (dbLayout === 'compact' || dbLayout === 'cards') return dbLayout;
+		if (dbLayout === 'list') return 'list';
+		return getInitialLayout();
+	});
+	const [dark, setDark] = useState(() => {
+		if (loaderPreferences?.theme === 'dark') return true;
+		if (loaderPreferences?.theme === 'light') return false;
+		return readStoredTheme();
+	});
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
@@ -100,6 +114,18 @@ function DashboardPage() {
 	function handleLayoutChange(next: FeedLayout) {
 		setLayout(next);
 		localStorage.setItem('feedLayout', next);
+		if (user?.id) {
+			void updateLayoutFn({ data: { userId: user.id, layout: next } });
+		}
+	}
+
+	function handleThemeToggle() {
+		const next = !dark;
+		setDark(next);
+		applyTheme(next);
+		if (user?.id) {
+			void updateThemeFn({ data: { userId: user.id, theme: next ? 'dark' : 'light' } });
+		}
 	}
 
 	async function handleSignOut() {
@@ -159,6 +185,8 @@ function DashboardPage() {
 					activeFeedId={feedId}
 					onAddFeed={() => setAddFeedOpen(true)}
 					onManageCategories={() => setManageCategoriesOpen(true)}
+					dark={dark}
+					onThemeToggle={handleThemeToggle}
 				/>
 			</div>
 
@@ -244,7 +272,7 @@ function DashboardPage() {
 							<TooltipContent>Refresh feeds</TooltipContent>
 						</Tooltip>
 
-						<ThemeToggle />
+						<ThemeToggle dark={dark} onToggle={handleThemeToggle} />
 
 						{user && (
 							<Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
