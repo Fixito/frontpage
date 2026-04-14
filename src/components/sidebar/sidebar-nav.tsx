@@ -107,7 +107,7 @@ function FeedDragOverlay({ feed }: { feed: FeedNavItem }) {
 	return (
 		<div className="bg-background border-border flex cursor-grabbing items-center gap-1.5 rounded-md border px-2 py-1 text-xs shadow-lg">
 			<FavIcon url={feed.faviconUrl} />
-			<span className="max-w-[160px] truncate">{feed.title}</span>
+			<span className="max-w-40 truncate">{feed.title}</span>
 		</div>
 	);
 }

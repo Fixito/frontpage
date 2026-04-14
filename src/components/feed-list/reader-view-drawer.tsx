@@ -28,6 +28,21 @@ function sanitize(html: string): string {
 	return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
 }
 
+interface ParsedSummary {
+	mainPoint: string;
+	keyPoints: Array<string>;
+}
+
+function parseSummary(text: string): ParsedSummary {
+	const lines = text
+		.split('\n')
+		.map((l) => l.trim())
+		.filter(Boolean);
+	const keyPoints = lines.filter((l) => /^[•\-*]/.test(l)).map((l) => l.replace(/^[•\-*]\s*/, ''));
+	const mainPoint = lines.filter((l) => !/^[•\-*]/.test(l)).join(' ');
+	return { mainPoint, keyPoints };
+}
+
 export function ReaderViewDrawer({
 	item,
 	open,
@@ -149,7 +164,31 @@ export function ReaderViewDrawer({
 												<Sparkles size={13} className="text-primary" aria-hidden />
 												<span className="text-primary text-xs font-semibold">AI Summary</span>
 											</div>
-											<p className="text-muted-foreground text-sm leading-relaxed">{summary}</p>
+											{(() => {
+												const { mainPoint, keyPoints } = parseSummary(summary);
+												return (
+													<>
+														{mainPoint && (
+															<p className="text-foreground text-sm leading-relaxed">{mainPoint}</p>
+														)}
+														{keyPoints.length > 0 && (
+															<ul className="mt-2 space-y-1">
+																{keyPoints.map((point, i) => (
+																	<li
+																		key={i}
+																		className="text-foreground flex gap-2 text-sm leading-relaxed"
+																	>
+																		<span className="text-primary mt-0.5 shrink-0" aria-hidden>
+																			•
+																		</span>
+																		{point}
+																	</li>
+																))}
+															</ul>
+														)}
+													</>
+												);
+											})()}
 										</div>
 									) : (
 										userId && (
@@ -181,7 +220,7 @@ export function ReaderViewDrawer({
 
 								{safeHtml ? (
 									<div
-										className="prose prose-sm dark:prose-invert max-w-none"
+										className="prose prose-sm max-w-none"
 										// eslint-disable-next-line react/no-danger
 										dangerouslySetInnerHTML={{ __html: safeHtml }}
 									/>

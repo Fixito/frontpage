@@ -7,7 +7,6 @@ import type { SidebarData } from './types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {
@@ -18,8 +17,6 @@ interface SidebarProps {
 	onAddFeed?: () => void;
 	onManageCategories?: () => void;
 	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
-	dark: boolean;
-	onThemeToggle: () => void;
 }
 
 export function Sidebar({
@@ -30,8 +27,6 @@ export function Sidebar({
 	onAddFeed,
 	onManageCategories,
 	onMoveFeed,
-	dark,
-	onThemeToggle,
 }: SidebarProps) {
 	return (
 		<aside
@@ -62,7 +57,7 @@ export function Sidebar({
 
 			<Separator />
 
-			<div className="flex h-12 shrink-0 items-center justify-between px-3">
+			<div className="flex h-12 shrink-0 items-center px-3">
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
@@ -77,7 +72,6 @@ export function Sidebar({
 					</TooltipTrigger>
 					<TooltipContent side="top">Manage categories</TooltipContent>
 				</Tooltip>
-				<ThemeToggle dark={dark} onToggle={onThemeToggle} />
 			</div>
 		</aside>
 	);

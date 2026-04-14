@@ -13,27 +13,65 @@ function getClient(): GoogleGenerativeAI {
 	return client;
 }
 
+function stripHtml(html: string): string {
+	return html
+		.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+		.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+		.replace(/<[^>]+>/g, ' ')
+		.replace(/&nbsp;/g, ' ')
+		.replace(/&amp;/g, '&')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
 export async function generateArticleSummary(title: string, content: string): Promise<string> {
 	const model = getClient().getGenerativeModel({ model: MODEL });
-	const prompt = `Summarize this article in 2-3 sentences. Article title: ${title}\n\nContent: ${content.slice(0, 3000)}`;
+	const plainText = stripHtml(content).slice(0, 8000);
+	const prompt = `You are an editorial assistant. Summarize the following article for a busy reader.
+
+Rules:
+- First line: one clear, specific sentence stating the main finding, argument, or news event. Be direct — no "this article discusses" or "the author explains". Start with the subject.
+- Then a blank line.
+- Then 2–3 bullet points (each starting with "•") covering the most important specific details, facts, data, or takeaways.
+- Use plain language. Be factual and precise. No preamble.
+
+Article title: ${title}
+
+Article content:
+${plainText}`;
 	const result = await model.generateContent(prompt);
-	return result.response.text();
+	return result.response.text().trim();
 }
 
 export async function suggestCategory(
 	feedTitle: string,
 	feedDescription: string | null,
 	existingCategories: ReadonlyArray<string>,
-): Promise<string | null> {
-	if (existingCategories.length === 0) return null;
+): Promise<{ name: string; isNew: boolean } | null> {
 	const model = getClient().getGenerativeModel({ model: MODEL });
 	const descPart = feedDescription ? ` with description: "${feedDescription}"` : '';
-	const prompt = `Given a feed titled "${feedTitle}"${descPart}, pick the best matching category from this list: ${existingCategories.join(', ')}. Respond with ONLY the category name exactly as written, or "none" if none fit.`;
+	const hasExisting = existingCategories.length > 0;
+	const listPart = hasExisting
+		? `\nExisting categories: ${existingCategories.join(', ')}`
+		: '\nNo categories exist yet.';
+	const prompt = `Given a feed titled "${feedTitle}"${descPart}, suggest the best category for it.${listPart}
+
+Rules:
+- If one of the existing categories clearly fits, respond with ONLY that category name exactly as written.
+- If no existing category fits well, or there are no existing categories, respond with "NEW: <CategoryName>" where <CategoryName> is a short, descriptive category name (2–3 words max, title case).
+- Never explain your answer. Respond with only the category name or the NEW: prefix format.`;
 	const result = await model.generateContent(prompt);
 	const text = result.response.text().trim();
-	if (text.toLowerCase() === 'none') return null;
+	if (text.toUpperCase().startsWith('NEW:')) {
+		const name = text.slice(4).trim();
+		if (!name) return null;
+		return { name, isNew: true };
+	}
 	const match = existingCategories.find((c) => c.toLowerCase() === text.toLowerCase());
-	return match ?? null;
+	return match ? { name: match, isNew: false } : null;
 }
 
 // ── Error helpers ──────────────────────────────────────────────────────────────
@@ -52,6 +90,16 @@ export function parseAiError(err: unknown): AiError {
 	}
 	if (raw.includes('429')) {
 		return { error: 'AI quota exceeded. Please check your Google AI Studio plan.' };
+	}
+	if (
+		raw.includes('API key') ||
+		raw.includes('API_KEY') ||
+		raw.includes('401') ||
+		raw.includes('403') ||
+		raw.toLowerCase().includes('invalid') ||
+		raw.toLowerCase().includes('unauthorized')
+	) {
+		return { error: 'AI API key is invalid or expired. Please update your GEMINI_API_KEY.' };
 	}
 	return { error: 'AI unavailable. Please try again.' };
 }

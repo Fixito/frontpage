@@ -307,6 +307,35 @@
 	--container-page: 80rem;
 }
 
+/* ── Prose (typography plugin) ───────────────────────────
+ * Override --tw-prose-* variables with brand tokens so prose
+ * content is always readable regardless of dark-mode mechanism
+ * (media-query or [data-theme]). Removes the need for dark:prose-invert.
+ * ────────────────────────────────────────────────────────── */
+
+@layer base {
+	.prose {
+		--tw-prose-body: var(--color-text-primary);
+		--tw-prose-headings: var(--color-text-primary);
+		--tw-prose-lead: var(--color-text-secondary);
+		--tw-prose-links: var(--color-accent);
+		--tw-prose-bold: var(--color-text-primary);
+		--tw-prose-counters: var(--color-text-secondary);
+		--tw-prose-bullets: var(--color-border);
+		--tw-prose-hr: var(--color-border);
+		--tw-prose-quotes: var(--color-text-primary);
+		--tw-prose-quote-borders: var(--color-border);
+		--tw-prose-captions: var(--color-text-secondary);
+		--tw-prose-kbd: var(--color-text-primary);
+		--tw-prose-kbd-shadows: transparent;
+		--tw-prose-code: var(--color-text-primary);
+		--tw-prose-pre-code: var(--color-text-primary);
+		--tw-prose-pre-bg: var(--color-bg-secondary);
+		--tw-prose-th-borders: var(--color-border);
+		--tw-prose-td-borders: var(--color-border-subtle);
+	}
+}
+
 /* ── Base styles ─────────────────────────────────────────── */
 
 @layer base {

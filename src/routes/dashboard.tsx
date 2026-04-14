@@ -233,8 +233,6 @@ function DashboardPage() {
 					onAddFeed={() => setAddFeedOpen(true)}
 					onManageCategories={() => setManageCategoriesOpen(true)}
 					onMoveFeed={user ? handleMoveFeed : undefined}
-					dark={dark}
-					onThemeToggle={handleThemeToggle}
 				/>
 			</div>
 

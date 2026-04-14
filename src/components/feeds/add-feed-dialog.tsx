@@ -6,6 +6,7 @@ import { z } from 'zod';
 import type { FeedPreview } from '@/lib/feed-service';
 import { addFeedFn, validateFeedUrlFn } from '@/lib/feed-service';
 import { suggestCategoryFn } from '@/lib/ai-service';
+import { createCategoryFn } from '@/lib/category-service';
 import {
 	Dialog,
 	DialogContent,
@@ -50,8 +51,13 @@ export function AddFeedDialog({
 	const [step, setStep] = useState<Step>('url');
 	const [preview, setPreview] = useState<FeedPreview | null>(null);
 	const [selectedCategoryId, setSelectedCategoryId] = useState('__none__');
-	const [suggestedCategory, setSuggestedCategory] = useState<string | null>(null);
+	const [suggestedCategory, setSuggestedCategory] = useState<{
+		name: string;
+		isNew: boolean;
+	} | null>(null);
 	const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+	const [isSuggestingCategory, setIsSuggestingCategory] = useState(false);
+	const [pendingNewCategoryName, setPendingNewCategoryName] = useState<string | null>(null);
 	const suggestionRequestId = useRef(0);
 
 	const checkFeedMutation = useMutation({
@@ -59,36 +65,40 @@ export function AddFeedDialog({
 		onSuccess: (result) => {
 			setPreview(result);
 			setStep('preview');
-			if (categories.length > 0) {
-				const requestId = ++suggestionRequestId.current;
-				void suggestCategoryFn({
-					data: {
-						feedTitle: result.title,
-						feedDescription: result.description ?? null,
-						categoryNames: categories.map((c) => c.name),
-					},
+			const requestId = ++suggestionRequestId.current;
+			setIsSuggestingCategory(true);
+			void suggestCategoryFn({
+				data: {
+					feedTitle: result.title,
+					feedDescription: result.description ?? null,
+					categoryNames: categories.map((c) => c.name),
+				},
+			})
+				.then((suggestion) => {
+					if (requestId === suggestionRequestId.current) {
+						if (suggestion) setSuggestedCategory(suggestion);
+						setIsSuggestingCategory(false);
+					}
 				})
-					.then((suggestion) => {
-						if (suggestion && requestId === suggestionRequestId.current) {
-							setSuggestedCategory(suggestion);
-						}
-					})
-					.catch(() => {
-						// ignore suggestion errors
-					});
-			}
+				.catch(() => {
+					if (requestId === suggestionRequestId.current) {
+						setIsSuggestingCategory(false);
+					}
+				});
 		},
 	});
 
 	const addFeedMutation = useMutation({
-		mutationFn: (categoryId: string) => {
+		mutationFn: async (categoryId: string) => {
 			if (!preview) throw new Error('No feed preview available');
+			let resolvedCategoryId = categoryId === '__none__' ? null : categoryId;
+			if (pendingNewCategoryName && categoryId === '__none__') {
+				resolvedCategoryId = await createCategoryFn({
+					data: { userId, name: pendingNewCategoryName },
+				});
+			}
 			return addFeedFn({
-				data: {
-					userId,
-					url: preview.finalUrl,
-					categoryId: categoryId === '__none__' ? null : categoryId,
-				},
+				data: { userId, url: preview.finalUrl, categoryId: resolvedCategoryId },
 			});
 		},
 		onSuccess: () => {
@@ -104,6 +114,8 @@ export function AddFeedDialog({
 		setSelectedCategoryId('__none__');
 		setSuggestedCategory(null);
 		setSuggestionDismissed(false);
+		setIsSuggestingCategory(false);
+		setPendingNewCategoryName(null);
 		checkFeedMutation.reset();
 		addFeedMutation.reset();
 		urlForm.reset();
@@ -124,7 +136,7 @@ export function AddFeedDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="overflow-hidden sm:max-w-md">
 				{step === 'url' ? (
 					<>
 						<DialogHeader>
@@ -137,7 +149,7 @@ export function AddFeedDialog({
 								e.preventDefault();
 								urlForm.handleSubmit();
 							}}
-							className="flex flex-col gap-3"
+							className="flex min-w-0 flex-col gap-3"
 						>
 							<urlForm.Field name="url">
 								{(field) => {
@@ -187,8 +199,8 @@ export function AddFeedDialog({
 						</DialogHeader>
 
 						{preview && (
-							<div className="flex flex-col gap-4">
-								<div className="bg-muted/50 flex items-start gap-3 rounded-md p-3">
+							<div className="flex min-w-0 flex-col gap-4">
+								<div className="bg-muted/50 flex items-start gap-3 overflow-hidden rounded-md p-3">
 									{preview.faviconUrl && (
 										<img
 											src={preview.faviconUrl}
@@ -213,28 +225,70 @@ export function AddFeedDialog({
 									</div>
 								</div>
 
-								{suggestedCategory && !suggestionDismissed && selectedCategoryId === '__none__' && (
-									<div className="bg-accent/40 flex items-center gap-2 rounded-md px-3 py-2 text-xs">
+								{isSuggestingCategory && !suggestedCategory && !suggestionDismissed && (
+									<div className="bg-accent/40 flex animate-pulse items-center gap-2 rounded-md px-3 py-2">
+										<div className="bg-muted-foreground/30 h-3 w-3 shrink-0 rounded-full" />
+										<div className="bg-muted-foreground/20 h-3 flex-1 rounded" />
+									</div>
+								)}
+
+								{suggestedCategory &&
+									!suggestionDismissed &&
+									selectedCategoryId === '__none__' &&
+									!pendingNewCategoryName && (
+										<div className="bg-accent/40 flex items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-xs">
+											<Sparkles size={12} className="text-primary shrink-0" aria-hidden />
+											<span className="text-muted-foreground min-w-0 flex-1 truncate">
+												{suggestedCategory.isNew ? (
+													<>
+														AI suggests new:{' '}
+														<strong className="text-foreground">{suggestedCategory.name}</strong>
+													</>
+												) : (
+													<>
+														AI suggests:{' '}
+														<strong className="text-foreground">{suggestedCategory.name}</strong>
+													</>
+												)}
+											</span>
+											<button
+												type="button"
+												className="text-primary font-medium hover:underline"
+												onClick={() => {
+													if (suggestedCategory.isNew) {
+														setPendingNewCategoryName(suggestedCategory.name);
+													} else {
+														const cat = categories.find((c) => c.name === suggestedCategory.name);
+														if (cat) setSelectedCategoryId(cat.id);
+													}
+													setSuggestionDismissed(true);
+												}}
+											>
+												{suggestedCategory.isNew ? 'Create & Apply' : 'Apply'}
+											</button>
+											<button
+												type="button"
+												className="text-muted-foreground hover:text-foreground ml-1"
+												onClick={() => setSuggestionDismissed(true)}
+												aria-label="Dismiss suggestion"
+											>
+												✕
+											</button>
+										</div>
+									)}
+
+								{pendingNewCategoryName && selectedCategoryId === '__none__' && (
+									<div className="bg-accent/40 flex items-center gap-2 overflow-hidden rounded-md px-3 py-2 text-xs">
 										<Sparkles size={12} className="text-primary shrink-0" aria-hidden />
-										<span className="text-muted-foreground flex-1">
-											AI suggests: <strong className="text-foreground">{suggestedCategory}</strong>
+										<span className="text-muted-foreground min-w-0 flex-1 truncate">
+											New category:{' '}
+											<strong className="text-foreground">{pendingNewCategoryName}</strong>
 										</span>
 										<button
 											type="button"
-											className="text-primary font-medium hover:underline"
-											onClick={() => {
-												const cat = categories.find((c) => c.name === suggestedCategory);
-												if (cat) setSelectedCategoryId(cat.id);
-												setSuggestionDismissed(true);
-											}}
-										>
-											Apply
-										</button>
-										<button
-											type="button"
 											className="text-muted-foreground hover:text-foreground ml-1"
-											onClick={() => setSuggestionDismissed(true)}
-											aria-label="Dismiss suggestion"
+											onClick={() => setPendingNewCategoryName(null)}
+											aria-label="Cancel new category"
 										>
 											✕
 										</button>

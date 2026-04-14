@@ -67,7 +67,7 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 		(data: { feedTitle: string; feedDescription: string | null; categoryNames: Array<string> }) =>
 			data,
 	)
-	.handler(async ({ data }): Promise<string | null> => {
+	.handler(async ({ data }): Promise<{ name: string; isNew: boolean } | null> => {
 		try {
 			return await suggestCategory(data.feedTitle, data.feedDescription, data.categoryNames);
 		} catch {
