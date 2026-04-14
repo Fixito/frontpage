@@ -1,10 +1,12 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss, Sparkles } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+import { cn } from '@/lib/utils';
 
 interface SidebarNavProps {
 	data: SidebarData;
@@ -17,10 +19,11 @@ interface SidebarNavProps {
 
 function UnreadBadge({ count }: { count: number }) {
 	if (count === 0) return null;
+
 	return (
 		<Badge
 			variant="secondary"
-			className="ml-auto h-4 min-w-4 shrink-0 px-1 text-[10px] tabular-nums"
+			className="ml-auto h-4 min-w-4 shrink-0 justify-center px-1 text-[10px]"
 		>
 			{count > 99 ? '99+' : count}
 		</Badge>
@@ -29,6 +32,7 @@ function UnreadBadge({ count }: { count: number }) {
 
 function HealthDot({ status }: { status: 'active' | 'stale' | 'error' }) {
 	if (status === 'active') return null;
+
 	return (
 		<span
 			role="img"
@@ -46,6 +50,7 @@ function FavIcon({ url }: { url: string | null }) {
 	if (!url || failed) {
 		return <Rss size={12} className="text-muted-foreground shrink-0" aria-hidden />;
 	}
+
 	return (
 		<img
 			src={url}

@@ -1,11 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { Rss, Settings2 } from 'lucide-react';
+
 import { SidebarNav } from './sidebar-nav';
 import type { SidebarData } from './types';
+
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SidebarProps {

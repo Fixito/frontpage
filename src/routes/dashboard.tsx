@@ -1,19 +1,24 @@
-import { useState } from 'react';
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
-import { LogOut, Menu, RefreshCw } from 'lucide-react';
-import type { SidebarData } from '@/components/sidebar';
+
 import type { FeedLayout } from '@/components/ui/layout-toggle';
-import { authClient } from '@/lib/auth-client';
-import { enterGuestMode, exitGuestMode } from '@/lib/session';
-import { getSidebarDataFn } from '@/lib/category-service';
+import type { SidebarData } from '@/components/sidebar';
+import { Button } from '@/components/ui/button';
+import { LayoutToggle } from '@/components/ui/layout-toggle';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { AddFeedDialog, ManageCategoriesDialog } from '@/components/feeds';
 import { DigestView, FeedContentArea } from '@/components/feed-list';
-import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { LayoutToggle } from '@/components/ui/layout-toggle';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+
+import { authClient } from '@/lib/auth-client';
+import { getSidebarDataFn } from '@/lib/category-service';
+import { refreshAllFeedsFn } from '@/lib/feed-service';
+import { enterGuestMode, exitGuestMode } from '@/lib/session';
 
 const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
@@ -35,6 +40,7 @@ export const Route = createFileRoute('/dashboard')({
 			const { available } = await enterGuestMode();
 			throw redirect({ to: available ? '/dashboard' : '/sign-in' });
 		}
+
 		return {
 			user: context.user,
 			guest: context.guest,
@@ -46,10 +52,13 @@ export const Route = createFileRoute('/dashboard')({
 				const sidebarData = await getSidebarDataFn({
 					data: { userId: context.guest.demoUserId },
 				});
+
 				return { sidebarData };
 			}
+
 			return { sidebarData: EMPTY_SIDEBAR_DATA };
 		}
+
 		const sidebarData = await getSidebarDataFn({ data: { userId: context.user.id } });
 		return { sidebarData };
 	},
@@ -65,7 +74,7 @@ function getInitialLayout(): FeedLayout {
 
 function DashboardPage() {
 	const { user, guest } = Route.useRouteContext();
-	const { sidebarData } = Route.useLoaderData();
+	const { sidebarData: loaderSidebarData } = Route.useLoaderData();
 	const { categoryId, feedId, view: rawView } = Route.useSearch();
 	const view = rawView ?? 'all';
 	const router = useRouter();
@@ -73,6 +82,18 @@ function DashboardPage() {
 	const [layout, setLayout] = useState<FeedLayout>(getInitialLayout);
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+	const [refreshing, setRefreshing] = useState(false);
+	const [feedRefreshKey, setFeedRefreshKey] = useState(0);
+
+	const effectiveUserId = user?.id ?? guest?.demoUserId ?? null;
+
+	const queryClient = useQueryClient();
+	const { data: sidebarData = EMPTY_SIDEBAR_DATA } = useQuery({
+		queryKey: ['sidebar', effectiveUserId],
+		queryFn: () => getSidebarDataFn({ data: { userId: effectiveUserId! } }),
+		initialData: loaderSidebarData,
+		enabled: !!effectiveUserId,
+	});
 
 	const categories = sidebarData.categories.map((c) => ({ id: c.id, name: c.name }));
 
@@ -87,11 +108,31 @@ function DashboardPage() {
 		} else {
 			await authClient.signOut();
 		}
+
 		await router.navigate({ to: '/' });
 	}
 
-	function handleRefreshSidebar() {
-		void router.invalidate();
+	async function handleRefreshSidebar() {
+		await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+	}
+
+	function handleBookmarkCountChange(delta: number) {
+		queryClient.setQueryData<SidebarData>(['sidebar', effectiveUserId], (prev) =>
+			prev ? { ...prev, bookmarkCount: Math.max(0, prev.bookmarkCount + delta) } : prev,
+		);
+	}
+
+	async function handleRefreshAll() {
+		if (!user) return;
+		setRefreshing(true);
+
+		try {
+			await refreshAllFeedsFn({ data: { userId: user.id } });
+			await queryClient.invalidateQueries({ queryKey: ['sidebar', effectiveUserId] });
+		} finally {
+			setFeedRefreshKey((k) => k + 1);
+			setRefreshing(false);
+		}
 	}
 
 	function getPageTitle() {
@@ -130,6 +171,7 @@ function DashboardPage() {
 							Frontpage
 						</Link>
 					</div>
+
 					<nav aria-label="Feed navigation" className="overflow-y-auto p-2">
 						<SidebarNav
 							data={sidebarData}
@@ -181,14 +223,26 @@ function DashboardPage() {
 					<div className="flex items-center gap-1">
 						<LayoutToggle value={layout} onChange={handleLayoutChange} />
 
-						<Button
-							variant="ghost"
-							size="icon"
-							aria-label="Refresh feeds"
-							onClick={handleRefreshSidebar}
-						>
-							<RefreshCw size={16} aria-hidden />
-						</Button>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									aria-label="Refresh feeds"
+									disabled={refreshing || !user}
+									onClick={() => {
+										void handleRefreshAll();
+									}}
+								>
+									{refreshing ? (
+										<Loader2 size={16} className="animate-spin" aria-hidden />
+									) : (
+										<RefreshCw size={16} aria-hidden />
+									)}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Refresh feeds</TooltipContent>
+						</Tooltip>
 
 						<ThemeToggle />
 
@@ -214,6 +268,8 @@ function DashboardPage() {
 							view={view}
 							layout={layout}
 							onSidebarRefresh={handleRefreshSidebar}
+							onBookmarkCountChange={handleBookmarkCountChange}
+							refreshKey={feedRefreshKey}
 						/>
 					)}
 				</main>
@@ -227,6 +283,7 @@ function DashboardPage() {
 				categories={categories}
 				onSuccess={handleRefreshSidebar}
 			/>
+
 			<ManageCategoriesDialog
 				open={manageCategoriesOpen}
 				onOpenChange={setManageCategoriesOpen}

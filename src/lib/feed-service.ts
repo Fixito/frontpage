@@ -172,6 +172,13 @@ async function _storeItems(
 	}
 }
 
+// ── Refresh all feeds for a user ──────────────────────────────────────────────
+
+export async function refreshAllFeeds(userId: string): Promise<void> {
+	const feeds = await db.select({ id: feed.id }).from(feed).where(eq(feed.userId, userId));
+	await Promise.allSettled(feeds.map((f) => refreshFeed(f.id)));
+}
+
 // ── Mark feeds as stale (last fetched > 30 days ago) ──────────────────────────
 
 export async function markStaleFeeds(): Promise<void> {
@@ -196,3 +203,7 @@ export const addFeedFn = createServerFn({ method: 'POST' })
 export const refreshFeedFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { feedId: string }) => data)
 	.handler(async ({ data }) => refreshFeed(data.feedId));
+
+export const refreshAllFeedsFn = createServerFn({ method: 'POST' })
+	.inputValidator((data: { userId: string }) => data)
+	.handler(async ({ data }) => refreshAllFeeds(data.userId));

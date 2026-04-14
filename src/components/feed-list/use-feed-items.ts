@@ -4,6 +4,7 @@ import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
 import {
 	getItemsFn,
 	markAllReadFn,
+	markAllUnreadFn,
 	markReadFn,
 	toggleBookmarkFn,
 	unmarkReadFn,
@@ -18,6 +19,8 @@ interface UseFeedItemsParams {
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
 	onSidebarRefresh: () => void;
+	onBookmarkCountChange?: (delta: number) => void;
+	refreshKey?: number;
 }
 
 export interface UseFeedItemsResult {
@@ -29,9 +32,11 @@ export interface UseFeedItemsResult {
 	error: string | null;
 	feedInfo: GetItemsResult['feedInfo'];
 	markingAllRead: boolean;
+	markingAllUnread: boolean;
 	handleMarkRead: (itemId: string) => void;
 	handleBookmarkToggle: (itemId: string) => void;
 	handleMarkAllRead: () => Promise<void>;
+	handleMarkAllUnread: () => Promise<void>;
 	handleLoadMore: () => Promise<void>;
 	handleRetry: () => void;
 }
@@ -43,6 +48,8 @@ export function useFeedItems({
 	categoryId,
 	view,
 	onSidebarRefresh,
+	onBookmarkCountChange,
+	refreshKey,
 }: UseFeedItemsParams): UseFeedItemsResult {
 	const [items, setItems] = useState<Array<FeedItemRow>>([]);
 	const [totalCount, setTotalCount] = useState(0);
@@ -53,6 +60,7 @@ export function useFeedItems({
 	const [error, setError] = useState<string | null>(null);
 	const [feedInfo, setFeedInfo] = useState<GetItemsResult['feedInfo']>(null);
 	const [markingAllRead, setMarkingAllRead] = useState(false);
+	const [markingAllUnread, setMarkingAllUnread] = useState(false);
 
 	const guestDemoUserId = guest?.demoUserId ?? null;
 
@@ -106,7 +114,7 @@ export function useFeedItems({
 		fetchItems(1).finally(() => {
 			setLoading(false);
 		});
-	}, [fetchItems]);
+	}, [fetchItems, refreshKey]);
 
 	const handleMarkRead = useCallback(
 		(itemId: string) => {
@@ -132,6 +140,7 @@ export function useFeedItems({
 			if (!userId) return;
 			const originalItem = items.find((i) => i.id === itemId);
 			if (!originalItem) return;
+			const delta = originalItem.isBookmarked ? -1 : 1;
 			setItems((prev) =>
 				view === 'bookmarks'
 					? prev.filter((item) => item.id !== itemId)
@@ -139,6 +148,7 @@ export function useFeedItems({
 							item.id === itemId ? { ...item, isBookmarked: !originalItem.isBookmarked } : item,
 						),
 			);
+			onBookmarkCountChange?.(delta);
 			void toggleBookmarkFn({ data: { userId, itemId } })
 				.then(() => {
 					onSidebarRefresh();
@@ -151,9 +161,10 @@ export function useFeedItems({
 								: [...prev, originalItem]
 							: prev.map((item) => (item.id === itemId ? originalItem : item)),
 					);
+					onBookmarkCountChange?.(-delta);
 				});
 		},
-		[userId, view, items, onSidebarRefresh],
+		[userId, view, items, onSidebarRefresh, onBookmarkCountChange],
 	);
 
 	const handleMarkAllRead = useCallback(async () => {
@@ -167,6 +178,20 @@ export function useFeedItems({
 			console.error('Failed to mark all as read', err);
 		} finally {
 			setMarkingAllRead(false);
+		}
+	}, [userId, feedId, categoryId, onSidebarRefresh]);
+
+	const handleMarkAllUnread = useCallback(async () => {
+		if (!userId) return;
+		setMarkingAllUnread(true);
+		try {
+			await markAllUnreadFn({ data: { userId, feedId, categoryId } });
+			setItems((prev) => prev.map((item) => ({ ...item, isRead: false })));
+			onSidebarRefresh();
+		} catch (err) {
+			console.error('Failed to mark all as unread', err);
+		} finally {
+			setMarkingAllUnread(false);
 		}
 	}, [userId, feedId, categoryId, onSidebarRefresh]);
 
@@ -198,9 +223,11 @@ export function useFeedItems({
 		error,
 		feedInfo,
 		markingAllRead,
+		markingAllUnread,
 		handleMarkRead,
 		handleBookmarkToggle,
 		handleMarkAllRead,
+		handleMarkAllUnread,
 		handleLoadMore,
 		handleRetry,
 	};
