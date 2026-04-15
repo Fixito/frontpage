@@ -21,7 +21,7 @@ const TanStackRouterDevtoolsPanel = import.meta.env.PROD
 		);
 
 // Inline script to apply theme before first paint (no flash)
-const THEME_INIT_SCRIPT = `(function(){try{var stored=localStorage.getItem('theme');var prefersDark=matchMedia('(prefers-color-scheme: dark)').matches;var resolved=stored==='dark'||(!stored&&prefersDark)?'dark':'light';document.documentElement.setAttribute('data-theme',resolved);document.documentElement.style.colorScheme=resolved;}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var stored=localStorage.getItem('theme');var prefersDark=matchMedia('(prefers-color-scheme: dark)').matches;var resolved=stored==='dark'||(!stored&&prefersDark)?'dark':'light';document.documentElement.setAttribute('data-theme',resolved);}catch(e){}})();`;
 
 export const Route = createRootRouteWithContext<AuthContext>()({
 	beforeLoad: async () => {
