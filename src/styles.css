@@ -150,42 +150,6 @@
  * (≥ 4.5:1) for both light and dark mode.
  * ────────────────────────────────────────────────────────── */
 
-:root {
-	--badge-0-bg: #dbeafe;
-	--badge-0-text: #1d4ed8;
-	--badge-0-border: #bfdbfe; /* blue */
-	--badge-1-bg: #ffedd5;
-	--badge-1-text: #c2410c;
-	--badge-1-border: #fed7aa; /* orange */
-	--badge-2-bg: #dcfce7;
-	--badge-2-text: #15803d;
-	--badge-2-border: #bbf7d0; /* green */
-	--badge-3-bg: #ede9fe;
-	--badge-3-text: #6d28d9;
-	--badge-3-border: #ddd6fe; /* violet */
-	--badge-4-bg: #ffe4e6;
-	--badge-4-text: #be123c;
-	--badge-4-border: #fecdd3; /* rose */
-	--badge-5-bg: #ccfbf1;
-	--badge-5-text: #0f766e;
-	--badge-5-border: #99f6e4; /* teal */
-	--badge-6-bg: #fef3c7;
-	--badge-6-text: #b45309;
-	--badge-6-border: #fde68a; /* amber */
-	--badge-7-bg: #e0e7ff;
-	--badge-7-text: #4338ca;
-	--badge-7-border: #c7d2fe; /* indigo */
-	/* Avatar backgrounds — -700 shades, white text, all ≥ 4.5:1 */
-	--avatar-0: #1d4ed8; /* blue-700   */
-	--avatar-1: #c2410c; /* orange-700 */
-	--avatar-2: #15803d; /* green-700  */
-	--avatar-3: #6d28d9; /* violet-700 */
-	--avatar-4: #be123c; /* rose-700   */
-	--avatar-5: #0f766e; /* teal-700   */
-	--avatar-6: #b45309; /* amber-700  */
-	--avatar-7: #4338ca; /* indigo-700 */
-}
-
 /* ── shadcn/ui semantic variable mappings ───────────────────
  * shadcn components reference these variables by name.
  * They are mapped to brand tokens so shadcn and the brand kit
@@ -226,6 +190,39 @@
 	--sidebar-accent-foreground: var(--color-accent);
 	--sidebar-border: var(--color-border-subtle);
 	--sidebar-ring: var(--color-accent);
+	--badge-0-bg: #dbeafe;
+	--badge-0-text: #1d4ed8;
+	--badge-0-border: #bfdbfe; /* blue */
+	--badge-1-bg: #ffedd5;
+	--badge-1-text: #c2410c;
+	--badge-1-border: #fed7aa; /* orange */
+	--badge-2-bg: #dcfce7;
+	--badge-2-text: #15803d;
+	--badge-2-border: #bbf7d0; /* green */
+	--badge-3-bg: #ede9fe;
+	--badge-3-text: #6d28d9;
+	--badge-3-border: #ddd6fe; /* violet */
+	--badge-4-bg: #ffe4e6;
+	--badge-4-text: #be123c;
+	--badge-4-border: #fecdd3; /* rose */
+	--badge-5-bg: #ccfbf1;
+	--badge-5-text: #0f766e;
+	--badge-5-border: #99f6e4; /* teal */
+	--badge-6-bg: #fef3c7;
+	--badge-6-text: #b45309;
+	--badge-6-border: #fde68a; /* amber */
+	--badge-7-bg: #e0e7ff;
+	--badge-7-text: #4338ca;
+	--badge-7-border: #c7d2fe; /* indigo */
+	/* Avatar backgrounds — -700 shades, white text, all ≥ 4.5:1 */
+	--avatar-0: #1d4ed8; /* blue-700   */
+	--avatar-1: #c2410c; /* orange-700 */
+	--avatar-2: #15803d; /* green-700  */
+	--avatar-3: #6d28d9; /* violet-700 */
+	--avatar-4: #be123c; /* rose-700   */
+	--avatar-5: #0f766e; /* teal-700   */
+	--avatar-6: #b45309; /* amber-700  */
+	--avatar-7: #4338ca; /* indigo-700 */
 }
 
 @theme inline {
@@ -389,12 +386,6 @@
 		color: var(--color-accent-hover);
 	}
 
-	:focus-visible {
-		outline: 2px solid var(--color-accent);
-		outline-offset: 2px;
-		border-radius: var(--radius-sm);
-	}
-
 	a,
 	button,
 	input,
@@ -405,6 +396,12 @@
 			border-color 150ms ease,
 			box-shadow 150ms ease,
 			opacity 150ms ease;
+	}
+
+	:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+		border-radius: var(--radius-sm);
 	}
 
 	::-webkit-scrollbar {
