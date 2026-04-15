@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+
 import { db } from './db';
 import * as schema from '@/db/schema';
 
@@ -11,14 +12,20 @@ async function sendPasswordResetEmail(email: string, url: string): Promise<void>
 		console.log(`[Auth] Password reset URL for ${email}: ${url}`);
 		return;
 	}
+
 	const { Resend } = await import('resend');
 	const resend = new Resend(apiKey);
-	await resend.emails.send({
+	const { error } = await resend.emails.send({
 		from,
 		to: email,
 		subject: 'Reset your Frontpage password',
 		html: `<p>Click the link below to reset your password. It expires in 1 hour.</p><p><a href="${url}">${url}</a></p>`,
 	});
+
+	if (error) {
+		console.error('[Auth] Failed to send password reset email:', error);
+		throw new Error(`Email delivery failed: ${error.message}`);
+	}
 }
 
 export const auth = betterAuth({
