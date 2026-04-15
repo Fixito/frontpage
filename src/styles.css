@@ -377,15 +377,6 @@
 		overflow-x: hidden;
 	}
 
-	a {
-		color: var(--color-accent);
-		text-decoration: none;
-	}
-
-	a:hover {
-		color: var(--color-accent-hover);
-	}
-
 	a,
 	button,
 	input,
@@ -396,6 +387,15 @@
 			border-color 150ms ease,
 			box-shadow 150ms ease,
 			opacity 150ms ease;
+	}
+
+	a {
+		color: var(--color-accent);
+		text-decoration: none;
+	}
+
+	a:hover {
+		color: var(--color-accent-hover);
 	}
 
 	:focus-visible {
