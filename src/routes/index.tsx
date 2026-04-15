@@ -81,51 +81,53 @@ function LandingPage() {
 				</nav>
 			</header>
 
-			{/* ── Hero ── */}
-			<section className="mx-auto max-w-(--container-page) px-6 pt-20 pb-16 text-center">
-				<Badge variant="secondary" className="mb-4">
-					RSS feed reader
-				</Badge>
+			<main id="main-content" tabIndex={-1}>
+				{/* ── Hero ── */}
+				<section className="mx-auto max-w-(--container-page) px-6 pt-20 pb-16 text-center">
+					<Badge variant="secondary" className="mb-4">
+						RSS feed reader
+					</Badge>
 
-				<h1 className="mx-auto mb-6 max-w-2xl text-2xl leading-tight font-bold sm:text-3xl">
-					Your personalized front page for tech content
-				</h1>
+					<h1 className="mx-auto mb-6 max-w-2xl text-2xl leading-tight font-bold sm:text-3xl">
+						Your personalized front page for tech content
+					</h1>
 
-				<p className="text-muted-foreground mx-auto mb-10 max-w-lg text-base leading-loose">
-					One calm, organized dashboard for all the blogs, newsletters, and publications you follow.
-					No more scattered tabs and forgotten links.
-				</p>
+					<p className="text-muted-foreground mx-auto mb-10 max-w-lg text-base leading-loose">
+						One calm, organized dashboard for all the blogs, newsletters, and publications you
+						follow. No more scattered tabs and forgotten links.
+					</p>
 
-				<div className="flex flex-wrap justify-center gap-3">
-					<Button asChild size="lg">
-						<Link to="/sign-up">
-							Get started free
-							<ArrowRight aria-hidden />
-						</Link>
-					</Button>
+					<div className="flex flex-wrap justify-center gap-3">
+						<Button asChild size="lg">
+							<Link to="/sign-up">
+								Get started free
+								<ArrowRight aria-hidden />
+							</Link>
+						</Button>
 
-					<Button variant="outline" size="lg" onClick={handleGuestMode}>
-						Try as guest
-					</Button>
-				</div>
-			</section>
+						<Button variant="outline" size="lg" onClick={handleGuestMode}>
+							Try as guest
+						</Button>
+					</div>
+				</section>
 
-			{/* ── Features ── */}
-			<section className="mx-auto max-w-(--container-page) px-6 pb-20">
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{FEATURES.map(({ icon: Icon, title, description }) => (
-						<article key={title} className="border-border bg-muted rounded-lg border p-6">
-							<div className="bg-accent text-accent-foreground mb-3 inline-flex rounded-md p-2">
-								<Icon size={18} aria-hidden />
-							</div>
+				{/* ── Features ── */}
+				<section className="mx-auto max-w-(--container-page) px-6 pb-20">
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{FEATURES.map(({ icon: Icon, title, description }) => (
+							<article key={title} className="border-border bg-muted rounded-lg border p-6">
+								<div className="bg-accent text-accent-foreground mb-3 inline-flex rounded-md p-2">
+									<Icon size={18} aria-hidden />
+								</div>
 
-							<h2 className="mb-2 text-base font-semibold">{title}</h2>
+								<h2 className="mb-2 text-base font-semibold">{title}</h2>
 
-							<p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
-						</article>
-					))}
-				</div>
-			</section>
+								<p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+							</article>
+						))}
+					</div>
+				</section>
+			</main>
 
 			{/* ── Footer ── */}
 			<footer className="border-border text-muted-foreground border-t px-6 py-8 text-center text-xs">

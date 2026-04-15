@@ -10,7 +10,11 @@ export function AuthLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="bg-background flex min-h-screen flex-col items-center justify-center p-6">
+		<main
+			id="main-content"
+			tabIndex={-1}
+			className="bg-background flex min-h-screen flex-col items-center justify-center p-6"
+		>
 			<div className="w-full max-w-sm">
 				<Link
 					to="/"
@@ -24,6 +28,6 @@ export function AuthLayout({
 					{children}
 				</div>
 			</div>
-		</div>
+		</main>
 	);
 }

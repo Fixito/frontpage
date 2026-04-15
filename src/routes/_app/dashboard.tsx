@@ -381,7 +381,7 @@ function DashboardPage() {
 				</header>
 
 				{/* Content */}
-				<main id="main-content" className="flex flex-1 flex-col overflow-hidden">
+				<main id="main-content" tabIndex={-1} className="flex flex-1 flex-col overflow-hidden">
 					{view === 'digest' ? (
 						<Suspense fallback={null}>
 							<DigestView userId={user?.id ?? null} />
