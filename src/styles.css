@@ -1,3 +1,7 @@
+﻿@import 'tailwindcss';
+@import './tokens.css';
+@plugin '@tailwindcss/typography';
+
 @font-face {
 	font-family: 'Inter Variable';
 	font-style: normal;
@@ -21,9 +25,6 @@
 		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-@import 'tailwindcss';
-@import './tokens.css';
-@plugin '@tailwindcss/typography';
 
 /* ── Dark mode overrides ────────────────────────────────────
  * tokens.css defines light mode defaults.
@@ -53,6 +54,39 @@
 		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
 		--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
 		--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+		--badge-0-bg: #172554;
+		--badge-0-text: #93c5fd;
+		--badge-0-border: #1e3a8a;
+		--badge-1-bg: #431407;
+		--badge-1-text: #fdba74;
+		--badge-1-border: #7c2d12;
+		--badge-2-bg: #052e16;
+		--badge-2-text: #86efac;
+		--badge-2-border: #14532d;
+		--badge-3-bg: #2e1065;
+		--badge-3-text: #c4b5fd;
+		--badge-3-border: #4c1d95;
+		--badge-4-bg: #4c0519;
+		--badge-4-text: #fda4af;
+		--badge-4-border: #881337;
+		--badge-5-bg: #042f2e;
+		--badge-5-text: #5eead4;
+		--badge-5-border: #134e4a;
+		--badge-6-bg: #451a03;
+		--badge-6-text: #fcd34d;
+		--badge-6-border: #78350f;
+		--badge-7-bg: #1e1b4b;
+		--badge-7-text: #a5b4fc;
+		--badge-7-border: #312e81;
+		/* Avatar backgrounds — -600 for better visibility on dark surfaces */
+		--avatar-0: #2563eb; /* blue-600   */
+		--avatar-1: #ea580c; /* orange-600 */
+		--avatar-2: #16a34a; /* green-600  */
+		--avatar-3: #7c3aed; /* violet-600 */
+		--avatar-4: #e11d48; /* rose-600   */
+		--avatar-5: #0d9488; /* teal-600   */
+		--avatar-6: #d97706; /* amber-600  */
+		--avatar-7: #4f46e5; /* indigo-600 */
 	}
 }
 
@@ -77,6 +111,38 @@
 	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
 	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
 	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+	--badge-0-bg: #172554;
+	--badge-0-text: #93c5fd;
+	--badge-0-border: #1e3a8a;
+	--badge-1-bg: #431407;
+	--badge-1-text: #fdba74;
+	--badge-1-border: #7c2d12;
+	--badge-2-bg: #052e16;
+	--badge-2-text: #86efac;
+	--badge-2-border: #14532d;
+	--badge-3-bg: #2e1065;
+	--badge-3-text: #c4b5fd;
+	--badge-3-border: #4c1d95;
+	--badge-4-bg: #4c0519;
+	--badge-4-text: #fda4af;
+	--badge-4-border: #881337;
+	--badge-5-bg: #042f2e;
+	--badge-5-text: #5eead4;
+	--badge-5-border: #134e4a;
+	--badge-6-bg: #451a03;
+	--badge-6-text: #fcd34d;
+	--badge-6-border: #78350f;
+	--badge-7-bg: #1e1b4b;
+	--badge-7-text: #a5b4fc;
+	--badge-7-border: #312e81;
+	--avatar-0: #2563eb;
+	--avatar-1: #ea580c;
+	--avatar-2: #16a34a;
+	--avatar-3: #7c3aed;
+	--avatar-4: #e11d48;
+	--avatar-5: #0d9488;
+	--avatar-6: #d97706;
+	--avatar-7: #4f46e5;
 }
 
 /* ── Palette tokens: badges + avatars ───────────────────────
@@ -118,79 +184,6 @@
 	--avatar-5: #0f766e; /* teal-700   */
 	--avatar-6: #b45309; /* amber-700  */
 	--avatar-7: #4338ca; /* indigo-700 */
-}
-
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme='light']) {
-		--badge-0-bg: #172554;
-		--badge-0-text: #93c5fd;
-		--badge-0-border: #1e3a8a;
-		--badge-1-bg: #431407;
-		--badge-1-text: #fdba74;
-		--badge-1-border: #7c2d12;
-		--badge-2-bg: #052e16;
-		--badge-2-text: #86efac;
-		--badge-2-border: #14532d;
-		--badge-3-bg: #2e1065;
-		--badge-3-text: #c4b5fd;
-		--badge-3-border: #4c1d95;
-		--badge-4-bg: #4c0519;
-		--badge-4-text: #fda4af;
-		--badge-4-border: #881337;
-		--badge-5-bg: #042f2e;
-		--badge-5-text: #5eead4;
-		--badge-5-border: #134e4a;
-		--badge-6-bg: #451a03;
-		--badge-6-text: #fcd34d;
-		--badge-6-border: #78350f;
-		--badge-7-bg: #1e1b4b;
-		--badge-7-text: #a5b4fc;
-		--badge-7-border: #312e81;
-		/* Avatar backgrounds — -600 for better visibility on dark surfaces */
-		--avatar-0: #2563eb; /* blue-600   */
-		--avatar-1: #ea580c; /* orange-600 */
-		--avatar-2: #16a34a; /* green-600  */
-		--avatar-3: #7c3aed; /* violet-600 */
-		--avatar-4: #e11d48; /* rose-600   */
-		--avatar-5: #0d9488; /* teal-600   */
-		--avatar-6: #d97706; /* amber-600  */
-		--avatar-7: #4f46e5; /* indigo-600 */
-	}
-}
-
-:root[data-theme='dark'] {
-	--badge-0-bg: #172554;
-	--badge-0-text: #93c5fd;
-	--badge-0-border: #1e3a8a;
-	--badge-1-bg: #431407;
-	--badge-1-text: #fdba74;
-	--badge-1-border: #7c2d12;
-	--badge-2-bg: #052e16;
-	--badge-2-text: #86efac;
-	--badge-2-border: #14532d;
-	--badge-3-bg: #2e1065;
-	--badge-3-text: #c4b5fd;
-	--badge-3-border: #4c1d95;
-	--badge-4-bg: #4c0519;
-	--badge-4-text: #fda4af;
-	--badge-4-border: #881337;
-	--badge-5-bg: #042f2e;
-	--badge-5-text: #5eead4;
-	--badge-5-border: #134e4a;
-	--badge-6-bg: #451a03;
-	--badge-6-text: #fcd34d;
-	--badge-6-border: #78350f;
-	--badge-7-bg: #1e1b4b;
-	--badge-7-text: #a5b4fc;
-	--badge-7-border: #312e81;
-	--avatar-0: #2563eb;
-	--avatar-1: #ea580c;
-	--avatar-2: #16a34a;
-	--avatar-3: #7c3aed;
-	--avatar-4: #e11d48;
-	--avatar-5: #0d9488;
-	--avatar-6: #d97706;
-	--avatar-7: #4f46e5;
 }
 
 /* ── shadcn/ui semantic variable mappings ───────────────────
@@ -371,8 +364,7 @@
 	}
 
 	html,
-	body,
-	#app {
+	body {
 		height: 100%;
 	}
 
@@ -403,8 +395,8 @@
 		border-radius: var(--radius-sm);
 	}
 
-	button,
 	a,
+	button,
 	input,
 	select {
 		transition:
@@ -416,8 +408,8 @@
 	}
 
 	::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
+		width: 0.375rem;
+		height: 0.375rem;
 	}
 	::-webkit-scrollbar-track {
 		background: transparent;
@@ -434,10 +426,10 @@
 		*,
 		*::before,
 		*::after {
-			animation-duration: 0.01ms !important;
-			animation-iteration-count: 1 !important;
-			transition-duration: 0.01ms !important;
-			scroll-behavior: auto !important;
+			animation-duration: 0.01ms;
+			animation-iteration-count: 1;
+			transition-duration: 0.01ms;
+			scroll-behavior: auto;
 		}
 	}
 }
