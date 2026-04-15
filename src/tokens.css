@@ -5,6 +5,7 @@
  */
 
 :root {
+	color-scheme: light;
 	/* Backgrounds */
 	--color-bg-primary: #ffffff;
 	--color-bg-secondary: #f8f9fa;
