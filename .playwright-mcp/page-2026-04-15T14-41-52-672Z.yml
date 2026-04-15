@@ -1,0 +1,979 @@
+- generic [ref=e1]:
+    - link "Skip to main content" [ref=e2] [cursor=pointer]:
+        - /url: '#main-content'
+    - generic [ref=e3]:
+        - complementary "Application sidebar" [ref=e5]:
+            - link "Frontpage" [ref=e7] [cursor=pointer]:
+                - /url: /
+                - img [ref=e8]
+                - text: Frontpage
+            - navigation "Feed navigation" [ref=e15]:
+                - generic [ref=e16]:
+                    - button "Add Feed" [ref=e18]:
+                        - img
+                        - text: Add Feed
+                    - link "All Items 99+" [ref=e19] [cursor=pointer]:
+                        - /url: /dashboard?view=all
+                        - img [ref=e20]
+                        - generic [ref=e24]: All Items
+                        - generic [ref=e25]: 99+
+                    - link "Bookmarks" [ref=e26] [cursor=pointer]:
+                        - /url: /dashboard?view=bookmarks
+                        - img [ref=e27]
+                        - generic [ref=e29]: Bookmarks
+                    - link "Weekly Digest" [ref=e30] [cursor=pointer]:
+                        - /url: /dashboard?view=digest
+                        - img [ref=e31]
+                        - generic [ref=e34]: Weekly Digest
+                    - generic [ref=e35]:
+                        - paragraph [ref=e36]: Feeds
+                        - generic [ref=e37]:
+                            - generic [ref=e38]:
+                                - generic [ref=e39]:
+                                    - link "Frontend 99+" [ref=e40] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=0eb2387f-e1e5-42c3-9887-7f18d0e650e3&view=all
+                                        - img [ref=e41]
+                                        - generic [ref=e43]: Frontend
+                                        - generic [ref=e44]: 99+
+                                    - button "Collapse Frontend" [expanded] [ref=e45]:
+                                        - img [ref=e46]
+                                - generic [ref=e48]:
+                                    - button "Articles on Smashing Magazine — For Web Designers And Developers 40" [ref=e49]:
+                                        - link "Articles on Smashing Magazine — For Web Designers And Developers 40" [ref=e50] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=95275e25-ca2e-40e9-bb05-ffc16a142ee7&view=all
+                                            - img [ref=e51]
+                                            - generic [ref=e52]: Articles on Smashing Magazine — For Web Designers And Developers
+                                            - generic [ref=e53]: '40'
+                                    - button "Kent C. Dodds Blog 99+" [ref=e54]:
+                                        - link "Kent C. Dodds Blog 99+" [ref=e55] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=d86ca64b-ff74-488d-98d9-31abf527587a&view=all
+                                            - img [ref=e56]
+                                            - generic [ref=e57]: Kent C. Dodds Blog
+                                            - generic [ref=e58]: 99+
+                                    - button "CSS-Tricks 15" [ref=e59]:
+                                        - link "CSS-Tricks 15" [ref=e60] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=45897efb-bbb8-4732-803e-249cde9252d3&view=all
+                                            - img [ref=e61]
+                                            - generic [ref=e62]: CSS-Tricks
+                                            - generic [ref=e63]: '15'
+                                    - button "MDN Blog 69" [ref=e64]:
+                                        - link "MDN Blog 69" [ref=e65] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=12eec19c-1f00-4f60-93ce-53d2d9144dd0&view=all
+                                            - img [ref=e66]
+                                            - generic [ref=e67]: MDN Blog
+                                            - generic [ref=e68]: '69'
+                                    - 'button "web.dev: Blog 10" [ref=e69]':
+                                        - 'link "web.dev: Blog 10" [ref=e70] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=1f4b1577-0685-4f7a-8c26-b55ff5ea3e4b&view=all
+                                            - img [ref=e71]
+                                            - generic [ref=e72]: 'web.dev: Blog'
+                                            - generic [ref=e73]: '10'
+                                    - button "Josh W. Comeau Feed error" [ref=e74]:
+                                        - link "Josh W. Comeau Feed error" [ref=e75] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=a9e7f093-f24b-4913-af6c-57b4dae8d5c9&view=all
+                                            - img [ref=e76]
+                                            - generic [ref=e77]: Josh W. Comeau
+                                            - img "Feed error" [ref=e78]
+                            - generic [ref=e79]:
+                                - generic [ref=e80]:
+                                    - link "Design 50" [ref=e81] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=0d8ce5ec-76f8-492a-9396-68a7b55153a4&view=all
+                                        - img [ref=e82]
+                                        - generic [ref=e84]: Design
+                                        - generic [ref=e85]: '50'
+                                    - button "Collapse Design" [expanded] [ref=e86]:
+                                        - img [ref=e87]
+                                - generic [ref=e89]:
+                                    - button "Figma Blog Feed error" [ref=e90]:
+                                        - link "Figma Blog Feed error" [ref=e91] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=9d341b79-6ec1-42c1-969e-7184feba7564&view=all
+                                            - img [ref=e92]
+                                            - generic [ref=e93]: Figma Blog
+                                            - img "Feed error" [ref=e94]
+                                    - button "UX Collective - Medium 10" [ref=e95]:
+                                        - link "UX Collective - Medium 10" [ref=e96] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=55932db2-b001-486e-99f2-9605fb54ac04&view=all
+                                            - img [ref=e97]
+                                            - generic [ref=e98]: UX Collective - Medium
+                                            - generic [ref=e99]: '10'
+                                    - button "Sidebar 20" [ref=e100]:
+                                        - link "Sidebar 20" [ref=e101] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=7b48a2e9-74e0-4bac-bd0b-0de098402e6a&view=all
+                                            - img [ref=e102]
+                                            - generic [ref=e103]: Sidebar
+                                            - generic [ref=e104]: '20'
+                                    - 'button "A List Apart: The Full Feed 20" [ref=e105]':
+                                        - 'link "A List Apart: The Full Feed 20" [ref=e106] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=dbcd2c61-b531-4a01-aa3d-1cb621ef2866&view=all
+                                            - img [ref=e107]
+                                            - generic [ref=e108]: 'A List Apart: The Full Feed'
+                                            - generic [ref=e109]: '20'
+                                    - button "Nielsen Norman Group Feed error" [ref=e110]:
+                                        - link "Nielsen Norman Group Feed error" [ref=e111] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=3de3cc5e-1e7d-4ad8-b3e6-87dd6c6d0b68&view=all
+                                            - img [ref=e112]
+                                            - generic [ref=e113]: Nielsen Norman Group
+                                            - img "Feed error" [ref=e114]
+                            - generic [ref=e115]:
+                                - generic [ref=e116]:
+                                    - link "Backend & DevOps 30" [ref=e117] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=c3e2b07b-3fcb-4e4a-88c4-a4ac77270eb2&view=all
+                                        - img [ref=e118]
+                                        - generic [ref=e120]: Backend & DevOps
+                                        - generic [ref=e121]: '30'
+                                    - button "Collapse Backend & DevOps" [expanded] [ref=e122]:
+                                        - img [ref=e123]
+                                - generic [ref=e125]:
+                                    - button "The Cloudflare Blog 20" [ref=e126]:
+                                        - link "The Cloudflare Blog 20" [ref=e127] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=d82eccf0-bcac-4a86-a6f3-2702d3e349e4&view=all
+                                            - img [ref=e128]
+                                            - generic [ref=e129]: The Cloudflare Blog
+                                            - generic [ref=e130]: '20'
+                                    - button "Vercel Blog Feed error" [ref=e131]:
+                                        - link "Vercel Blog Feed error" [ref=e132] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=32868bf8-76c1-4ae9-bb73-27da5a66f9b6&view=all
+                                            - img [ref=e133]
+                                            - generic [ref=e134]: Vercel Blog
+                                            - img "Feed error" [ref=e135]
+                                    - button "The GitHub Blog 10" [ref=e136]:
+                                        - link "The GitHub Blog 10" [ref=e137] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=fe95711d-e4f2-4174-900f-723ca41d494a&view=all
+                                            - img [ref=e138]
+                                            - generic [ref=e139]: The GitHub Blog
+                                            - generic [ref=e140]: '10'
+                                    - button "Netlify Blog Feed error" [ref=e141]:
+                                        - link "Netlify Blog Feed error" [ref=e142] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=f1575732-5648-4b35-95e1-b40d4b5d5295&view=all
+                                            - img [ref=e143]
+                                            - generic [ref=e144]: Netlify Blog
+                                            - img "Feed error" [ref=e145]
+                            - generic [ref=e146]:
+                                - generic [ref=e147]:
+                                    - link "General Tech 45" [ref=e148] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=109c864b-c7f8-4daa-80b9-e00526e72b31&view=all
+                                        - img [ref=e149]
+                                        - generic [ref=e151]: General Tech
+                                        - generic [ref=e152]: '45'
+                                    - button "Collapse General Tech" [expanded] [ref=e153]:
+                                        - img [ref=e154]
+                                - generic [ref=e156]:
+                                    - 'button "Hacker News: Best 30" [ref=e157]':
+                                        - 'link "Hacker News: Best 30" [ref=e158] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=0934e8b3-75bd-437c-82fe-c65e540d7704&view=all
+                                            - img [ref=e159]
+                                            - generic [ref=e160]: 'Hacker News: Best'
+                                            - generic [ref=e161]: '30'
+                                    - button "The Pragmatic Engineer 15" [ref=e162]:
+                                        - link "The Pragmatic Engineer 15" [ref=e163] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=3de8e26e-581e-4a39-afd8-d2be5b11ee8d&view=all
+                                            - img [ref=e164]
+                                            - generic [ref=e165]: The Pragmatic Engineer
+                                            - generic [ref=e166]: '15'
+                            - generic [ref=e167]:
+                                - generic [ref=e168]:
+                                    - link "AI & ML 99+" [ref=e169] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=10b5a787-4251-49c1-8ab1-2891182fcc5e&view=all
+                                        - img [ref=e170]
+                                        - generic [ref=e172]: AI & ML
+                                        - generic [ref=e173]: 99+
+                                    - button "Collapse AI & ML" [expanded] [ref=e174]:
+                                        - img [ref=e175]
+                                - generic [ref=e177]:
+                                    - button "Simon Willison's Weblog Feed error" [ref=e178]:
+                                        - link "Simon Willison's Weblog Feed error" [ref=e179] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=2e956363-ad94-423d-8bf6-c9f766d21a66&view=all
+                                            - img [ref=e180]
+                                            - generic [ref=e181]: Simon Willison's Weblog
+                                            - img "Feed error" [ref=e182]
+                                    - button "Hugging Face - Blog 99+" [ref=e183]:
+                                        - link "Hugging Face - Blog 99+" [ref=e184] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=90af9b9b-ca92-48a9-a715-728bab6473e3&view=all
+                                            - img [ref=e185]
+                                            - generic [ref=e186]: Hugging Face - Blog
+                                            - generic [ref=e187]: 99+
+                        - status [ref=e248]
+            - button "Manage categories" [ref=e189]:
+                - img
+        - generic [ref=e190]:
+            - generic [ref=e191]:
+                - paragraph [ref=e192]:
+                    - text: You're browsing as a guest.
+                    - link "Create an account" [ref=e193] [cursor=pointer]:
+                        - /url: /sign-up
+                    - text: to save your feeds and settings.
+                - button "Exit guest" [ref=e194]
+            - banner [ref=e195]:
+                - heading "All Items" [level=1] [ref=e196]
+                - generic [ref=e197]:
+                    - group "Feed layout" [ref=e198]:
+                        - button "List view" [ref=e199]:
+                            - img [ref=e200]
+                        - button "Compact view" [active] [pressed] [ref=e201]:
+                            - img [ref=e202]
+                        - button "Cards view" [ref=e203]:
+                            - img [ref=e204]
+                    - button "Refresh feeds" [disabled]:
+                        - img
+                    - button "Switch to dark mode" [ref=e209]:
+                        - img
+            - main [ref=e210]:
+                - generic [ref=e249]:
+                    - paragraph [ref=e251]: 1222 articles
+                    - generic [ref=e252]:
+                        - generic [ref=e253]:
+                            - article [ref=e254]:
+                                - generic [ref=e1204]: U
+                                - generic [ref=e1205]: UX Collective - Medium
+                                - button "The long and short of telephone progress" [ref=e1206] [cursor=pointer]
+                                - generic [ref=e1208]: Design
+                                - time [ref=e1209]: 2w ago
+                                - generic [ref=e1211]:
+                                    - button "Mark as read" [ref=e1212]:
+                                        - img
+                                    - button "Bookmark" [ref=e1213]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1214] [cursor=pointer]:
+                                        - /url: https://uxdesign.cc/the-long-and-short-of-telephone-progress-e51cc1570847?source=rss----138adf9c44c---4
+                                        - button [ref=e1215]:
+                                            - img
+                            - article [ref=e273]:
+                                - generic [ref=e1216]: H
+                                - generic [ref=e1217]: 'Hacker News: Best'
+                                - button "Say No to Palantir in Europe" [ref=e1218] [cursor=pointer]
+                                - generic [ref=e1220]: General Tech
+                                - time [ref=e1221]: 2w ago
+                                - generic [ref=e1223]:
+                                    - button "Mark as read" [ref=e1224]:
+                                        - img
+                                    - button "Bookmark" [ref=e1225]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1226] [cursor=pointer]:
+                                        - /url: https://action.wemove.eu/sign/2026-03-palantir-petition-EN
+                                        - button [ref=e1227]:
+                                            - img
+                            - article [ref=e292]:
+                                - generic [ref=e1228]: H
+                                - generic [ref=e1229]: 'Hacker News: Best'
+                                - 'button "Miasma: A tool to trap AI web scrapers in an endless poison pit" [ref=e1230] [cursor=pointer]'
+                                - generic [ref=e1232]: General Tech
+                                - time [ref=e1233]: 2w ago
+                                - generic [ref=e1235]:
+                                    - button "Mark as read" [ref=e1236]:
+                                        - img
+                                    - button "Bookmark" [ref=e1237]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1238] [cursor=pointer]:
+                                        - /url: https://github.com/austin-weeks/miasma
+                                        - button [ref=e1239]:
+                                            - img
+                            - article [ref=e311]:
+                                - generic [ref=e1240]: H
+                                - generic [ref=e1241]: 'Hacker News: Best'
+                                - button "Nitrile and latex gloves may cause overestimation of microplastics" [ref=e1242] [cursor=pointer]
+                                - generic [ref=e1244]: General Tech
+                                - time [ref=e1245]: 2w ago
+                                - generic [ref=e1247]:
+                                    - button "Mark as read" [ref=e1248]:
+                                        - img
+                                    - button "Bookmark" [ref=e1249]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1250] [cursor=pointer]:
+                                        - /url: https://news.umich.edu/nitrile-and-latex-gloves-may-cause-overestimation-of-microplastics-u-m-study-reveals/
+                                        - button [ref=e1251]:
+                                            - img
+                            - article [ref=e330]:
+                                - generic [ref=e1252]: H
+                                - generic [ref=e1253]: 'Hacker News: Best'
+                                - button "LinkedIn uses 2.4 GB RAM across two tabs" [ref=e1254] [cursor=pointer]
+                                - generic [ref=e1256]: General Tech
+                                - time [ref=e1257]: 2w ago
+                                - generic [ref=e1259]:
+                                    - button "Mark as read" [ref=e1260]:
+                                        - img
+                                    - button "Bookmark" [ref=e1261]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1262] [cursor=pointer]:
+                                        - /url: https://news.ycombinator.com/item?id=47561489
+                                        - button [ref=e1263]:
+                                            - img
+                            - article [ref=e349]:
+                                - generic [ref=e1264]: H
+                                - generic [ref=e1265]: 'Hacker News: Best'
+                                - button "Alzheimer's disease mortality among taxi and ambulance drivers (2024)" [ref=e1266] [cursor=pointer]
+                                - generic [ref=e1268]: General Tech
+                                - time [ref=e1269]: 2w ago
+                                - generic [ref=e1271]:
+                                    - button "Mark as read" [ref=e1272]:
+                                        - img
+                                    - button "Bookmark" [ref=e1273]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1274] [cursor=pointer]:
+                                        - /url: https://www.bmj.com/content/387/bmj-2024-082194
+                                        - button [ref=e1275]:
+                                            - img
+                            - article [ref=e368]:
+                                - generic [ref=e1276]: H
+                                - generic [ref=e1277]: 'Hacker News: Best'
+                                - button "South Korea Mandates Solar Panels for Public Parking Lots" [ref=e1278] [cursor=pointer]
+                                - generic [ref=e1280]: General Tech
+                                - time [ref=e1281]: 2w ago
+                                - generic [ref=e1283]:
+                                    - button "Mark as read" [ref=e1284]:
+                                        - img
+                                    - button "Bookmark" [ref=e1285]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1286] [cursor=pointer]:
+                                        - /url: https://www.reutersconnect.com/item/south-korea-mandates-solar-panels-for-public-parking-lots/dGFnOnJldXRlcnMuY29tLDIwMjY6bmV3c21sX01UMU5VUlBITzAwMFZKRjFZQQ
+                                        - button [ref=e1287]:
+                                            - img
+                            - article [ref=e387]:
+                                - generic [ref=e1288]: H
+                                - generic [ref=e1289]: 'Hacker News: Best'
+                                - button "Private equity turned vulnerable elderly people into human ATMs" [ref=e1290] [cursor=pointer]
+                                - generic [ref=e1292]: General Tech
+                                - time [ref=e1293]: 2w ago
+                                - generic [ref=e1295]:
+                                    - button "Mark as read" [ref=e1296]:
+                                        - img
+                                    - button "Bookmark" [ref=e1297]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1298] [cursor=pointer]:
+                                        - /url: https://www.theguardian.com/society/2026/mar/28/the-great-care-home-cash-grab-how-private-equity-turned-vulnerable-elderly-people-into-human-atms
+                                        - button [ref=e1299]:
+                                            - img
+                            - article [ref=e406]:
+                                - generic [ref=e1300]: H
+                                - generic [ref=e1301]: 'Hacker News: Best'
+                                - button "CSS is DOOMed" [ref=e1302] [cursor=pointer]
+                                - generic [ref=e1304]: General Tech
+                                - time [ref=e1305]: 2w ago
+                                - generic [ref=e1307]:
+                                    - button "Mark as read" [ref=e1308]:
+                                        - img
+                                    - button "Bookmark" [ref=e1309]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1310] [cursor=pointer]:
+                                        - /url: https://nielsleenheer.com/articles/2026/css-is-doomed-rendering-doom-in-3d-with-css/
+                                        - button [ref=e1311]:
+                                            - img
+                            - article [ref=e425]:
+                                - generic [ref=e1312]: H
+                                - generic [ref=e1313]: 'Hacker News: Best'
+                                - button "The first 40 months of the AI era" [ref=e1314] [cursor=pointer]
+                                - generic [ref=e1316]: General Tech
+                                - time [ref=e1317]: 2w ago
+                                - generic [ref=e1319]:
+                                    - button "Mark as read" [ref=e1320]:
+                                        - img
+                                    - button "Bookmark" [ref=e1321]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1322] [cursor=pointer]:
+                                        - /url: https://lzon.ca/posts/other/thoughts-ai-era/
+                                        - button [ref=e1323]:
+                                            - img
+                            - article [ref=e444]:
+                                - generic [ref=e1324]: H
+                                - generic [ref=e1325]: 'Hacker News: Best'
+                                - button "Further human + AI + proof assistant work on Knuth's \"Claude Cycles\" problem" [ref=e1326] [cursor=pointer]
+                                - generic [ref=e1328]: General Tech
+                                - time [ref=e1329]: 2w ago
+                                - generic [ref=e1331]:
+                                    - button "Mark as read" [ref=e1332]:
+                                        - img
+                                    - button "Bookmark" [ref=e1333]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1334] [cursor=pointer]:
+                                        - /url: https://twitter.com/BoWang87/status/2037648937453232504
+                                        - button [ref=e1335]:
+                                            - img
+                            - article [ref=e463]:
+                                - generic [ref=e1336]: H
+                                - generic [ref=e1337]: 'Hacker News: Best'
+                                - button "OpenCiv1 – open-source rewrite of Civ1" [ref=e1338] [cursor=pointer]
+                                - generic [ref=e1340]: General Tech
+                                - time [ref=e1341]: 2w ago
+                                - generic [ref=e1343]:
+                                    - button "Mark as read" [ref=e1344]:
+                                        - img
+                                    - button "Bookmark" [ref=e1345]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1346] [cursor=pointer]:
+                                        - /url: https://github.com/rajko-horvat/OpenCiv1
+                                        - button [ref=e1347]:
+                                            - img
+                            - article [ref=e482]:
+                                - generic [ref=e1348]: H
+                                - generic [ref=e1349]: 'Hacker News: Best'
+                                - button "Founder of GitLab battles cancer by founding companies" [ref=e1350] [cursor=pointer]
+                                - generic [ref=e1352]: General Tech
+                                - time [ref=e1353]: 2w ago
+                                - generic [ref=e1355]:
+                                    - button "Mark as read" [ref=e1356]:
+                                        - img
+                                    - button "Bookmark" [ref=e1357]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1358] [cursor=pointer]:
+                                        - /url: https://sytse.com/cancer/
+                                        - button [ref=e1359]:
+                                            - img
+                            - article [ref=e501]:
+                                - generic [ref=e1360]: H
+                                - generic [ref=e1361]: 'Hacker News: Best'
+                                - button "Linux is an interpreter" [ref=e1362] [cursor=pointer]
+                                - generic [ref=e1364]: General Tech
+                                - time [ref=e1365]: 2w ago
+                                - generic [ref=e1367]:
+                                    - button "Mark as read" [ref=e1368]:
+                                        - img
+                                    - button "Bookmark" [ref=e1369]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1370] [cursor=pointer]:
+                                        - /url: https://astrid.tech/2026/03/28/0/linux-is-an-interpreter/
+                                        - button [ref=e1371]:
+                                            - img
+                            - article [ref=e520]:
+                                - generic [ref=e1372]: H
+                                - generic [ref=e1373]: 'Hacker News: Best'
+                                - button "I decompiled the White House's new app" [ref=e1374] [cursor=pointer]
+                                - generic [ref=e1376]: General Tech
+                                - time [ref=e1377]: 2w ago
+                                - generic [ref=e1379]:
+                                    - button "Mark as read" [ref=e1380]:
+                                        - img
+                                    - button "Bookmark" [ref=e1381]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1382] [cursor=pointer]:
+                                        - /url: https://thereallo.dev/blog/decompiling-the-white-house-app
+                                        - button [ref=e1383]:
+                                            - img
+                            - article [ref=e539]:
+                                - generic [ref=e1384]: U
+                                - generic [ref=e1385]: UX Collective - Medium
+                                - button "Disruption has a shape. Design history shows us what it is." [ref=e1386] [cursor=pointer]
+                                - generic [ref=e1388]: Design
+                                - time [ref=e1389]: 2w ago
+                                - generic [ref=e1391]:
+                                    - button "Mark as read" [ref=e1392]:
+                                        - img
+                                    - button "Bookmark" [ref=e1393]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1394] [cursor=pointer]:
+                                        - /url: https://uxdesign.cc/disruption-has-a-shape-design-history-shows-us-what-it-is-47c0aaa6bbbf?source=rss----138adf9c44c---4
+                                        - button [ref=e1395]:
+                                            - img
+                            - article [ref=e557]:
+                                - generic [ref=e1396]: H
+                                - generic [ref=e1397]: 'Hacker News: Best'
+                                - button "Folk are getting dangerously attached to AI that always tells them they're right" [ref=e1398] [cursor=pointer]
+                                - generic [ref=e1400]: General Tech
+                                - time [ref=e1401]: 2w ago
+                                - generic [ref=e1403]:
+                                    - button "Mark as read" [ref=e1404]:
+                                        - img
+                                    - button "Bookmark" [ref=e1405]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1406] [cursor=pointer]:
+                                        - /url: https://www.theregister.com/2026/03/27/sycophantic_ai_risks/
+                                        - button [ref=e1407]:
+                                            - img
+                            - article [ref=e576]:
+                                - generic [ref=e1408]: H
+                                - generic [ref=e1409]: 'Hacker News: Best'
+                                - button "AI overly affirms users asking for personal advice" [ref=e1410] [cursor=pointer]
+                                - generic [ref=e1412]: General Tech
+                                - time [ref=e1413]: 2w ago
+                                - generic [ref=e1415]:
+                                    - button "Mark as read" [ref=e1416]:
+                                        - img
+                                    - button "Bookmark" [ref=e1417]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1418] [cursor=pointer]:
+                                        - /url: https://news.stanford.edu/stories/2026/03/ai-advice-sycophantic-models-research
+                                        - button [ref=e1419]:
+                                            - img
+                            - article [ref=e595]:
+                                - generic [ref=e1420]: H
+                                - generic [ref=e1421]: 'Hacker News: Best'
+                                - button "Spanish legislation as a Git repo" [ref=e1422] [cursor=pointer]
+                                - generic [ref=e1424]: General Tech
+                                - time [ref=e1425]: 2w ago
+                                - generic [ref=e1427]:
+                                    - button "Mark as read" [ref=e1428]:
+                                        - img
+                                    - button "Bookmark" [ref=e1429]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1430] [cursor=pointer]:
+                                        - /url: https://github.com/EnriqueLop/legalize-es
+                                        - button [ref=e1431]:
+                                            - img
+                            - article [ref=e614]:
+                                - generic [ref=e1432]: H
+                                - generic [ref=e1433]: 'Hacker News: Best'
+                                - button "I Built an Open-World Engine for the N64 [video]" [ref=e1434] [cursor=pointer]
+                                - generic [ref=e1436]: General Tech
+                                - time [ref=e1437]: 2w ago
+                                - generic [ref=e1439]:
+                                    - button "Mark as read" [ref=e1440]:
+                                        - img
+                                    - button "Bookmark" [ref=e1441]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1442] [cursor=pointer]:
+                                        - /url: https://www.youtube.com/watch?v=lXxmIw9axWw
+                                        - button [ref=e1443]:
+                                            - img
+                            - article [ref=e633]:
+                                - generic [ref=e1444]: H
+                                - generic [ref=e1445]: 'Hacker News: Best'
+                                - button "Britain today generating 90%+ of electricity from renewables" [ref=e1446] [cursor=pointer]
+                                - generic [ref=e1448]: General Tech
+                                - time [ref=e1449]: 2w ago
+                                - generic [ref=e1451]:
+                                    - button "Mark as read" [ref=e1452]:
+                                        - img
+                                    - button "Bookmark" [ref=e1453]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1454] [cursor=pointer]:
+                                        - /url: https://grid.iamkate.com/
+                                        - button [ref=e1455]:
+                                            - img
+                            - article [ref=e652]:
+                                - generic [ref=e1456]: H
+                                - generic [ref=e1457]: 'Hacker News: Best'
+                                - button "Cocoa-Way – Native macOS Wayland compositor for running Linux apps seamlessly" [ref=e1458] [cursor=pointer]
+                                - generic [ref=e1460]: General Tech
+                                - time [ref=e1461]: 2w ago
+                                - generic [ref=e1463]:
+                                    - button "Mark as read" [ref=e1464]:
+                                        - img
+                                    - button "Bookmark" [ref=e1465]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1466] [cursor=pointer]:
+                                        - /url: https://github.com/J-x-Z/cocoa-way
+                                        - button [ref=e1467]:
+                                            - img
+                            - article [ref=e671]:
+                                - generic [ref=e1468]: H
+                                - generic [ref=e1469]: 'Hacker News: Best'
+                                - button "CERN uses ultra-compact AI models on FPGAs for real-time LHC data filtering" [ref=e1470] [cursor=pointer]
+                                - generic [ref=e1472]: General Tech
+                                - time [ref=e1473]: 2w ago
+                                - generic [ref=e1475]:
+                                    - button "Mark as read" [ref=e1476]:
+                                        - img
+                                    - button "Bookmark" [ref=e1477]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1478] [cursor=pointer]:
+                                        - /url: https://theopenreader.org/Journalism:CERN_Uses_Tiny_AI_Models_Burned_into_Silicon_for_Real-Time_LHC_Data_Filtering
+                                        - button [ref=e1479]:
+                                            - img
+                            - article [ref=e690]:
+                                - generic [ref=e1480]: U
+                                - generic [ref=e1481]: UX Collective - Medium
+                                - button "Google Stitch, design maturity guide, livable products" [ref=e1482] [cursor=pointer]
+                                - generic [ref=e1484]: Design
+                                - time [ref=e1485]: 2w ago
+                                - generic [ref=e1487]:
+                                    - button "Mark as read" [ref=e1488]:
+                                        - img
+                                    - button "Bookmark" [ref=e1489]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1490] [cursor=pointer]:
+                                        - /url: https://uxdesign.cc/google-stitch-design-maturity-guide-livable-products-f2c960170b07?source=rss----138adf9c44c---4
+                                        - button [ref=e1491]:
+                                            - img
+                            - article [ref=e708]:
+                                - generic [ref=e1492]: H
+                                - generic [ref=e1493]: 'Hacker News: Best'
+                                - button "AMD's Ryzen 9 9950X3D2 Dual Edition crams 208MB of cache into a single chip" [ref=e1494] [cursor=pointer]
+                                - generic [ref=e1496]: General Tech
+                                - time [ref=e1497]: 2w ago
+                                - generic [ref=e1499]:
+                                    - button "Mark as read" [ref=e1500]:
+                                        - img
+                                    - button "Bookmark" [ref=e1501]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1502] [cursor=pointer]:
+                                        - /url: https://arstechnica.com/gadgets/2026/03/amds-ryzen-9-9950x3d2-dual-edition-crams-208mb-of-cache-into-a-single-chip/
+                                        - button [ref=e1503]:
+                                            - img
+                            - article [ref=e727]:
+                                - generic [ref=e1504]: H
+                                - generic [ref=e1505]: 'Hacker News: Best'
+                                - button "Go hard on agents, not on your filesystem" [ref=e1506] [cursor=pointer]
+                                - generic [ref=e1508]: General Tech
+                                - time [ref=e1509]: 2w ago
+                                - generic [ref=e1511]:
+                                    - button "Mark as read" [ref=e1512]:
+                                        - img
+                                    - button "Bookmark" [ref=e1513]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1514] [cursor=pointer]:
+                                        - /url: https://jai.scs.stanford.edu/
+                                        - button [ref=e1515]:
+                                            - img
+                            - article [ref=e746]:
+                                - generic [ref=e1516]: H
+                                - generic [ref=e1517]: 'Hacker News: Best'
+                                - button "DOJ confirms FBI Director Kash Patel's personal email was hacked" [ref=e1518] [cursor=pointer]
+                                - generic [ref=e1520]: General Tech
+                                - time [ref=e1521]: 2w ago
+                                - generic [ref=e1523]:
+                                    - button "Mark as read" [ref=e1524]:
+                                        - img
+                                    - button "Bookmark" [ref=e1525]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1526] [cursor=pointer]:
+                                        - /url: https://arstechnica.com/tech-policy/2026/03/doj-confirms-fbi-director-kash-patels-personal-email-was-hacked/
+                                        - button [ref=e1527]:
+                                            - img
+                            - article [ref=e765]:
+                                - generic [ref=e1528]: H
+                                - generic [ref=e1529]: 'Hacker News: Best'
+                                - button "If you don't opt out by Apr 24 GitHub will train on your private repos" [ref=e1530] [cursor=pointer]
+                                - generic [ref=e1532]: General Tech
+                                - time [ref=e1533]: 2w ago
+                                - generic [ref=e1535]:
+                                    - button "Mark as read" [ref=e1536]:
+                                        - img
+                                    - button "Bookmark" [ref=e1537]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1538] [cursor=pointer]:
+                                        - /url: https://news.ycombinator.com/item?id=47548243
+                                        - button [ref=e1539]:
+                                            - img
+                            - article [ref=e784]:
+                                - generic [ref=e1540]: H
+                                - generic [ref=e1541]: 'Hacker News: Best'
+                                - button "Slovenia becomes first EU country to introduce fuel rationing" [ref=e1542] [cursor=pointer]
+                                - generic [ref=e1544]: General Tech
+                                - time [ref=e1545]: 2w ago
+                                - generic [ref=e1547]:
+                                    - button "Mark as read" [ref=e1548]:
+                                        - img
+                                    - button "Bookmark" [ref=e1549]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1550] [cursor=pointer]:
+                                        - /url: https://www.bbc.com/news/articles/c77m4zx6zvmo
+                                        - button [ref=e1551]:
+                                            - img
+                            - article [ref=e803]:
+                                - generic [ref=e1552]: U
+                                - generic [ref=e1553]: UX Collective - Medium
+                                - button "Taste is not a feature" [ref=e1554] [cursor=pointer]
+                                - generic [ref=e1556]: Design
+                                - time [ref=e1557]: 2w ago
+                                - generic [ref=e1559]:
+                                    - button "Mark as read" [ref=e1560]:
+                                        - img
+                                    - button "Bookmark" [ref=e1561]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1562] [cursor=pointer]:
+                                        - /url: https://uxdesign.cc/taste-is-not-a-feature-720ca15366c7?source=rss----138adf9c44c---4
+                                        - button [ref=e1563]:
+                                            - img
+                            - article [ref=e821]:
+                                - generic [ref=e1564]: H
+                                - generic [ref=e1565]: 'Hacker News: Best'
+                                - button "Velxio 2.0 – Emulate Arduino, ESP32, and Raspberry Pi 3 in the Browser" [ref=e1566] [cursor=pointer]
+                                - generic [ref=e1568]: General Tech
+                                - time [ref=e1569]: 2w ago
+                                - generic [ref=e1571]:
+                                    - button "Mark as read" [ref=e1572]:
+                                        - img
+                                    - button "Bookmark" [ref=e1573]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1574] [cursor=pointer]:
+                                        - /url: https://github.com/davidmonterocrespo24/velxio
+                                        - button [ref=e1575]:
+                                            - img
+                            - article [ref=e840]:
+                                - generic [ref=e1576]: H
+                                - generic [ref=e1577]: 'Hacker News: Best'
+                                - button "ISBN Visualization" [ref=e1578] [cursor=pointer]
+                                - generic [ref=e1580]: General Tech
+                                - time [ref=e1581]: 2w ago
+                                - generic [ref=e1583]:
+                                    - button "Mark as read" [ref=e1584]:
+                                        - img
+                                    - button "Bookmark" [ref=e1585]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1586] [cursor=pointer]:
+                                        - /url: https://annas-archive.gd/isbn-visualization?
+                                        - button [ref=e1587]:
+                                            - img
+                            - article [ref=e859]:
+                                - generic [ref=e1588]: H
+                                - generic [ref=e1589]: 'Hacker News: Best'
+                                - button "Make macOS consistently bad unironically" [ref=e1590] [cursor=pointer]
+                                - generic [ref=e1592]: General Tech
+                                - time [ref=e1593]: 2w ago
+                                - generic [ref=e1595]:
+                                    - button "Mark as read" [ref=e1596]:
+                                        - img
+                                    - button "Bookmark" [ref=e1597]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1598] [cursor=pointer]:
+                                        - /url: https://lr0.org/blog/p/macos/
+                                        - button [ref=e1599]:
+                                            - img
+                            - article [ref=e878]:
+                                - generic [ref=e1600]: H
+                                - generic [ref=e1601]: 'Hacker News: Best'
+                                - button "AI got the blame for the Iran school bombing. The truth is more worrying" [ref=e1602] [cursor=pointer]
+                                - generic [ref=e1604]: General Tech
+                                - time [ref=e1605]: 2w ago
+                                - generic [ref=e1607]:
+                                    - button "Mark as read" [ref=e1608]:
+                                        - img
+                                    - button "Bookmark" [ref=e1609]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1610] [cursor=pointer]:
+                                        - /url: https://www.theguardian.com/news/2026/mar/26/ai-got-the-blame-for-the-iran-school-bombing-the-truth-is-far-more-worrying
+                                        - button [ref=e1611]:
+                                            - img
+                            - article [ref=e897]:
+                                - generic [ref=e1612]: T
+                                - generic [ref=e1613]: The Cloudflare Blog
+                                - button "How we use Abstract Syntax Trees (ASTs) to turn Workflows code into visual diagrams" [ref=e1614] [cursor=pointer]
+                                - generic [ref=e1616]: Backend & DevOps
+                                - time [ref=e1617]: 2w ago
+                                - generic [ref=e1619]:
+                                    - button "Mark as read" [ref=e1620]:
+                                        - img
+                                    - button "Bookmark" [ref=e1621]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1622] [cursor=pointer]:
+                                        - /url: https://blog.cloudflare.com/workflow-diagrams/
+                                        - button [ref=e1623]:
+                                            - img
+                            - article [ref=e916]:
+                                - generic [ref=e1624]: T
+                                - generic [ref=e1625]: The Pragmatic Engineer
+                                - button "Is the FDE role becoming less desirable?" [ref=e1626] [cursor=pointer]
+                                - generic [ref=e1628]: General Tech
+                                - time [ref=e1629]: 2w ago
+                                - generic [ref=e1631]:
+                                    - button "Mark as read" [ref=e1632]:
+                                        - img
+                                    - button "Bookmark" [ref=e1633]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1634] [cursor=pointer]:
+                                        - /url: https://blog.pragmaticengineer.com/is-the-fde-role-becoming-less-desirable/
+                                        - button [ref=e1635]:
+                                            - img
+                            - article [ref=e935]:
+                                - generic [ref=e1636]: W
+                                - generic [ref=e1637]: 'web.dev: Blog'
+                                - link "New to the web platform in March" [ref=e1638] [cursor=pointer]:
+                                    - /url: https://web.dev/blog/web-platform-03-2026?hl=en
+                                - generic [ref=e1640]: Frontend
+                                - time [ref=e1641]: 2w ago
+                                - generic [ref=e1643]:
+                                    - button "Mark as read" [ref=e1644]:
+                                        - img
+                                    - button "Bookmark" [ref=e1645]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1646] [cursor=pointer]:
+                                        - /url: https://web.dev/blog/web-platform-03-2026?hl=en
+                                        - button [ref=e1647]:
+                                            - img
+                            - article [ref=e954]:
+                                - generic [ref=e1648]: S
+                                - generic [ref=e1649]: Sidebar
+                                - button "The evolution of craft" [ref=e1650] [cursor=pointer]
+                                - generic [ref=e1652]: Design
+                                - time [ref=e1653]: 2w ago
+                                - generic [ref=e1655]:
+                                    - button "Mark as read" [ref=e1656]:
+                                        - img
+                                    - button "Bookmark" [ref=e1657]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1658] [cursor=pointer]:
+                                        - /url: https://carlsz.dev/posts/evolution-of-craft
+                                        - button [ref=e1659]:
+                                            - img
+                            - article [ref=e973]:
+                                - generic [ref=e1660]: S
+                                - generic [ref=e1661]: Sidebar
+                                - 'button "Shadcn/ui: the foundation for your design system" [ref=e1662] [cursor=pointer]'
+                                - generic [ref=e1664]: Design
+                                - time [ref=e1665]: 2w ago
+                                - generic [ref=e1667]:
+                                    - button "Mark as read" [ref=e1668]:
+                                        - img
+                                    - button "Bookmark" [ref=e1669]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1670] [cursor=pointer]:
+                                        - /url: https://ui.shadcn.com/
+                                        - button [ref=e1671]:
+                                            - img
+                            - article [ref=e992]:
+                                - generic [ref=e1672]: S
+                                - generic [ref=e1673]: Sidebar
+                                - button "The three thirds" [ref=e1674] [cursor=pointer]
+                                - generic [ref=e1676]: Design
+                                - time [ref=e1677]: 2w ago
+                                - generic [ref=e1679]:
+                                    - button "Mark as read" [ref=e1680]:
+                                        - img
+                                    - button "Bookmark" [ref=e1681]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1682] [cursor=pointer]:
+                                        - /url: https://uxdesign.cc/the-three-thirds-2fba0a893a85
+                                        - button [ref=e1683]:
+                                            - img
+                            - article [ref=e1011]:
+                                - generic [ref=e1684]: S
+                                - generic [ref=e1685]: Sidebar
+                                - button "Anything Counter" [ref=e1686] [cursor=pointer]
+                                - generic [ref=e1688]: Design
+                                - time [ref=e1689]: 2w ago
+                                - generic [ref=e1691]:
+                                    - button "Mark as read" [ref=e1692]:
+                                        - img
+                                    - button "Bookmark" [ref=e1693]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1694] [cursor=pointer]:
+                                        - /url: https://anythingconverter.com/anythingcounter/
+                                        - button [ref=e1695]:
+                                            - img
+                            - article [ref=e1030]:
+                                - generic [ref=e1696]: S
+                                - generic [ref=e1697]: Sidebar
+                                - button "The curse of the cursor" [ref=e1698] [cursor=pointer]
+                                - generic [ref=e1700]: Design
+                                - time [ref=e1701]: 2w ago
+                                - generic [ref=e1703]:
+                                    - button "Mark as read" [ref=e1704]:
+                                        - img
+                                    - button "Bookmark" [ref=e1705]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1706] [cursor=pointer]:
+                                        - /url: https://unsung.aresluna.org/the-curse-of-the-cursor/
+                                        - button [ref=e1707]:
+                                            - img
+                            - article [ref=e1049]:
+                                - generic [ref=e1708]: H
+                                - generic [ref=e1709]: Hugging Face - Blog
+                                - link "Liberate your OpenClaw" [ref=e1710] [cursor=pointer]:
+                                    - /url: https://huggingface.co/blog/liberate-your-openclaw
+                                - generic [ref=e1712]: AI & ML
+                                - time [ref=e1713]: 2w ago
+                                - generic [ref=e1715]:
+                                    - button "Mark as read" [ref=e1716]:
+                                        - img
+                                    - button "Bookmark" [ref=e1717]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1718] [cursor=pointer]:
+                                        - /url: https://huggingface.co/blog/liberate-your-openclaw
+                                        - button [ref=e1719]:
+                                            - img
+                            - article [ref=e1067]:
+                                - generic [ref=e1720]: T
+                                - generic [ref=e1721]: The GitHub Blog
+                                - button "What’s coming to our GitHub Actions 2026 security roadmap" [ref=e1722] [cursor=pointer]
+                                - generic [ref=e1724]: Backend & DevOps
+                                - time [ref=e1725]: 2w ago
+                                - generic [ref=e1727]:
+                                    - button "Mark as read" [ref=e1728]:
+                                        - img
+                                    - button "Bookmark" [ref=e1729]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1730] [cursor=pointer]:
+                                        - /url: https://github.blog/news-insights/product-news/whats-coming-to-our-github-actions-2026-security-roadmap/
+                                        - button [ref=e1731]:
+                                            - img
+                            - article [ref=e1086]:
+                                - generic [ref=e1732]: T
+                                - generic [ref=e1733]: The GitHub Blog
+                                - 'button "A year of open source vulnerability trends: CVEs, advisories, and malware" [ref=e1734] [cursor=pointer]'
+                                - generic [ref=e1736]: Backend & DevOps
+                                - time [ref=e1737]: 2w ago
+                                - generic [ref=e1739]:
+                                    - button "Mark as read" [ref=e1740]:
+                                        - img
+                                    - button "Bookmark" [ref=e1741]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1742] [cursor=pointer]:
+                                        - /url: https://github.blog/security/supply-chain-security/a-year-of-open-source-vulnerability-trends-cves-advisories-and-malware/
+                                        - button [ref=e1743]:
+                                            - img
+                            - article [ref=e1105]:
+                                - generic [ref=e1744]: C
+                                - generic [ref=e1745]: CSS-Tricks
+                                - button "Generative UI Notes" [ref=e1746] [cursor=pointer]
+                                - generic [ref=e1748]: Frontend
+                                - time [ref=e1749]: 2w ago
+                                - generic [ref=e1751]:
+                                    - button "Mark as read" [ref=e1752]:
+                                        - img
+                                    - button "Bookmark" [ref=e1753]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1754] [cursor=pointer]:
+                                        - /url: https://css-tricks.com/generative-ui-notes/
+                                        - button [ref=e1755]:
+                                            - img
+                            - article [ref=e1124]:
+                                - generic [ref=e1756]: T
+                                - generic [ref=e1757]: The Cloudflare Blog
+                                - button "A one-line Kubernetes fix that saved 600 hours a year" [ref=e1758] [cursor=pointer]
+                                - generic [ref=e1760]: Backend & DevOps
+                                - time [ref=e1761]: 2w ago
+                                - generic [ref=e1763]:
+                                    - button "Mark as read" [ref=e1764]:
+                                        - img
+                                    - button "Bookmark" [ref=e1765]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1766] [cursor=pointer]:
+                                        - /url: https://blog.cloudflare.com/one-line-kubernetes-fix-saved-600-hours-a-year/
+                                        - button [ref=e1767]:
+                                            - img
+                            - article [ref=e1143]:
+                                - generic [ref=e1768]: A
+                                - generic [ref=e1769]: Articles on Smashing Magazine — For Web Designers And Developers
+                                - 'button "The Site-Search Paradox: Why The Big Box Always Wins" [ref=e1770] [cursor=pointer]'
+                                - generic [ref=e1772]: Frontend
+                                - time [ref=e1773]: 2w ago
+                                - generic [ref=e1775]:
+                                    - button "Mark as read" [ref=e1776]:
+                                        - img
+                                    - button "Bookmark" [ref=e1777]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1778] [cursor=pointer]:
+                                        - /url: https://smashingmagazine.com/2026/03/site-search-paradox-why-big-box-always-wins/
+                                        - button [ref=e1779]:
+                                            - img
+                            - article [ref=e1162]:
+                                - generic [ref=e1780]: S
+                                - generic [ref=e1781]: Sidebar
+                                - button "So where are all the AI apps?" [ref=e1782] [cursor=pointer]
+                                - generic [ref=e1784]: Design
+                                - time [ref=e1785]: 2w ago
+                                - generic [ref=e1787]:
+                                    - button "Mark as read" [ref=e1788]:
+                                        - img
+                                    - button "Bookmark" [ref=e1789]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1790] [cursor=pointer]:
+                                        - /url: https://www.answer.ai/posts/2026-03-12-so-where-are-all-the-ai-apps.html
+                                        - button [ref=e1791]:
+                                            - img
+                            - article [ref=e1181]:
+                                - generic [ref=e1792]: S
+                                - generic [ref=e1793]: Sidebar
+                                - button "Typeflow.tools" [ref=e1794] [cursor=pointer]
+                                - generic [ref=e1796]: Design
+                                - time [ref=e1797]: 2w ago
+                                - generic [ref=e1799]:
+                                    - button "Mark as read" [ref=e1800]:
+                                        - img
+                                    - button "Bookmark" [ref=e1801]:
+                                        - img
+                                    - link "Open in new tab" [ref=e1802] [cursor=pointer]:
+                                        - /url: https://typeflow.tools/
+                                        - button [ref=e1803]:
+                                            - img
+                        - button "Load more" [ref=e1201]
+    - button "Open TanStack Devtools" [ref=e1202] [cursor=pointer]:
+        - img "TanStack Devtools" [ref=e1203]

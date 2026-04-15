@@ -3,7 +3,7 @@ import { ItemActions } from './item-actions';
 import { KeyboardShortcutsHelp } from './keyboard-shortcuts-help';
 import type { FeedItemRow } from './types';
 import { formatAbsoluteDate, formatRelativeTime } from '@/lib/time';
-import { cn, hashToHex, hashToIndex, stripHtml } from '@/lib/utils';
+import { cn, hashToIndex, stripHtml } from '@/lib/utils';
 
 const ReaderViewDrawer = lazy(() =>
 	import('./reader-view-drawer').then((m) => ({ default: m.ReaderViewDrawer })),
@@ -17,7 +17,7 @@ function FeedAvatar({ feedId, feedTitle }: { feedId: string; feedTitle: string }
 	const idx = hashToIndex(feedId, 8);
 	return (
 		<div
-			className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-[11px] font-bold text-white"
+			className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
 			style={{ backgroundColor: `var(--avatar-${idx})` }}
 			aria-hidden
 		>
@@ -50,7 +50,10 @@ function CategoryBadge({
 				};
 			})();
 	return (
-		<span className="inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium" style={style}>
+		<span
+			className="inline-flex rounded-full px-2 py-0.5 text-[10px] leading-tight font-medium"
+			style={style}
+		>
 			{name}
 		</span>
 	);
@@ -58,15 +61,29 @@ function CategoryBadge({
 
 // ── Shared source+time row ────────────────────────────────────────────────────
 
-function SourceRow({ item }: { item: FeedItemRow }) {
+function SourceRow({ item, showCategory }: { item: FeedItemRow; showCategory?: boolean }) {
 	return (
-		<p className="text-muted-foreground flex items-center gap-1 text-xs">
-			<span className="text-foreground/70 max-w-40 truncate font-medium">{item.feedTitle}</span>
-			<span aria-hidden>·</span>
+		<div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+			<span className="text-foreground/80 max-w-44 truncate font-medium">{item.feedTitle}</span>
+			<span className="text-text-tertiary" aria-hidden>
+				·
+			</span>
 			<time title={formatAbsoluteDate(item.publishedAt)} dateTime={item.publishedAt?.toISOString()}>
 				{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
 			</time>
-		</p>
+			{showCategory && item.categoryName && (
+				<>
+					<span className="text-text-tertiary" aria-hidden>
+						·
+					</span>
+					<CategoryBadge
+						name={item.categoryName}
+						categoryId={item.categoryId}
+						color={item.categoryColor}
+					/>
+				</>
+			)}
+		</div>
 	);
 }
 
@@ -141,19 +158,15 @@ function FeedItemCard({
 
 	// ── Cards layout ──────────────────────────────────────────────────────────
 	if (isCards) {
-		const accentHex = hashToHex(item.categoryId ?? item.feedId);
 		return (
 			<article
 				data-item-index={index}
 				className={cn(
-					'group bg-card flex flex-col overflow-hidden rounded-xl shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
-					item.isRead && 'opacity-60',
+					'group bg-card border-border-subtle/60 hover:border-border-base flex flex-col overflow-hidden rounded-xl border transition-all duration-200 hover:shadow-md',
+					item.isRead && 'opacity-55 hover:opacity-80',
 					isFocused && 'ring-primary ring-2 ring-inset',
 				)}
 			>
-				{/* Colored top accent bar */}
-				<div className="h-1 w-full shrink-0" style={{ backgroundColor: accentHex }} />
-
 				<div className="flex flex-1 flex-col gap-2.5 p-4">
 					{/* Header */}
 					<div className="flex items-center gap-2">
@@ -161,7 +174,7 @@ function FeedItemCard({
 						<SourceRow item={item} />
 						{!item.isRead && (
 							<span
-								className="h-2 w-2 shrink-0 rounded-full bg-blue-500"
+								className="bg-unread h-2 w-2 shrink-0 rounded-full"
 								role="img"
 								aria-label="Unread"
 							/>
@@ -171,34 +184,39 @@ function FeedItemCard({
 					{/* Title */}
 					<TitleEl
 						item={item}
-						className="line-clamp-2 text-base leading-snug font-semibold"
+						className={cn(
+							'line-clamp-2 text-base leading-snug',
+							item.isRead ? 'font-medium' : 'font-semibold',
+						)}
 						onOpenReader={onOpenReader}
 						onMarkRead={onMarkRead}
 					/>
 
 					{/* Description */}
 					{item.description && (
-						<p className="text-muted-foreground line-clamp-3 flex-1 text-sm leading-relaxed">
+						<p className="text-muted-foreground line-clamp-2 flex-1 text-[13px] leading-relaxed">
 							{stripHtml(item.description)}
 						</p>
 					)}
+				</div>
 
-					{/* Footer */}
-					<div className="border-border/50 mt-auto flex items-center gap-2 border-t pt-2.5">
-						{item.categoryName && (
-							<CategoryBadge
-								name={item.categoryName}
-								categoryId={item.categoryId}
-								color={item.categoryColor}
-							/>
-						)}
-						<div className="invisible ml-auto flex group-hover:visible">
-							<ItemActions
-								item={item}
-								onReadToggle={() => onMarkRead(item.id)}
-								onBookmarkToggle={() => onMarkBookmark(item.id)}
-							/>
-						</div>
+				{/* Footer */}
+				<div className="border-border-subtle/50 flex items-center gap-2 border-t px-4 py-2.5">
+					{item.categoryName ? (
+						<CategoryBadge
+							name={item.categoryName}
+							categoryId={item.categoryId}
+							color={item.categoryColor}
+						/>
+					) : (
+						<span />
+					)}
+					<div className="ml-auto flex opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+						<ItemActions
+							item={item}
+							onReadToggle={() => onMarkRead(item.id)}
+							onBookmarkToggle={() => onMarkBookmark(item.id)}
+						/>
 					</div>
 				</div>
 			</article>
@@ -211,29 +229,38 @@ function FeedItemCard({
 			<article
 				data-item-index={index}
 				className={cn(
-					'group hover:bg-accent/30 flex items-center gap-2 px-4 py-2 transition-colors',
-					item.isRead && 'opacity-60',
+					'group hover:bg-accent/30 flex items-center gap-2 border-l-[3px] px-4 py-2 transition-colors',
+					item.isRead
+						? 'border-l-transparent opacity-55 hover:opacity-80'
+						: 'border-l-[var(--color-unread-indicator)]',
 					isFocused && 'ring-primary ring-2 ring-inset',
 				)}
 			>
-				<div className="flex w-3 shrink-0 justify-center">
-					{!item.isRead && (
-						<span className="bg-unread h-1.5 w-1.5 rounded-full" role="img" aria-label="Unread" />
-					)}
-				</div>
-
 				<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
 
-				<span className="text-muted-foreground w-28 shrink-0 truncate text-xs">
+				<span className="text-muted-foreground w-32 shrink-0 truncate text-xs font-medium">
 					{item.feedTitle}
 				</span>
 
 				<TitleEl
 					item={item}
-					className="min-w-0 flex-1 truncate text-sm font-medium"
+					className={cn(
+						'min-w-0 flex-1 truncate text-sm',
+						item.isRead ? 'font-medium' : 'font-semibold',
+					)}
 					onOpenReader={onOpenReader}
 					onMarkRead={onMarkRead}
 				/>
+
+				{item.categoryName && (
+					<span className="hidden shrink-0 sm:block">
+						<CategoryBadge
+							name={item.categoryName}
+							categoryId={item.categoryId}
+							color={item.categoryColor}
+						/>
+					</span>
+				)}
 
 				<time
 					className="text-muted-foreground shrink-0 text-xs"
@@ -243,7 +270,7 @@ function FeedItemCard({
 					{formatRelativeTime(item.publishedAt ?? item.fetchedAt)}
 				</time>
 
-				<div className="invisible flex shrink-0 group-hover:visible">
+				<div className="flex shrink-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
 					<ItemActions
 						item={item}
 						onReadToggle={() => onMarkRead(item.id)}
@@ -259,52 +286,37 @@ function FeedItemCard({
 		<article
 			data-item-index={index}
 			className={cn(
-				'group hover:bg-accent/30 flex gap-3 px-4 py-3 transition-colors',
-				item.isRead && 'opacity-60',
+				'group hover:bg-accent/30 flex gap-3 border-l-[3px] px-5 py-4 transition-colors',
+				item.isRead
+					? 'border-l-transparent opacity-55 hover:opacity-80'
+					: 'border-l-[var(--color-unread-indicator)]',
 				isFocused && 'ring-primary ring-2 ring-inset',
 			)}
 		>
-			{/* Unread indicator */}
-			<div className="flex w-3 shrink-0 items-start justify-center pt-2">
-				{!item.isRead && (
-					<span className="bg-unread h-2 w-2 rounded-full" role="img" aria-label="Unread" />
-				)}
-			</div>
-
 			<div className="shrink-0 pt-0.5">
 				<FeedAvatar feedId={item.feedId} feedTitle={item.feedTitle} />
 			</div>
 
 			<div className="min-w-0 flex-1">
 				<div className="mb-0.5">
-					<SourceRow item={item} />
+					<SourceRow item={item} showCategory />
 				</div>
 
 				<TitleEl
 					item={item}
-					className="text-sm leading-snug font-semibold"
+					className={cn('text-sm leading-snug', item.isRead ? 'font-medium' : 'font-semibold')}
 					onOpenReader={onOpenReader}
 					onMarkRead={onMarkRead}
 				/>
 
 				{item.description && (
-					<p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-relaxed">
+					<p className="text-muted-foreground mt-1 line-clamp-2 text-[13px] leading-relaxed">
 						{stripHtml(item.description)}
 					</p>
 				)}
-
-				{item.categoryName && (
-					<div className="mt-2">
-						<CategoryBadge
-							name={item.categoryName}
-							categoryId={item.categoryId}
-							color={item.categoryColor}
-						/>
-					</div>
-				)}
 			</div>
 
-			<div className="invisible flex shrink-0 items-start pt-0.5 group-hover:visible">
+			<div className="flex shrink-0 items-start pt-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
 				<ItemActions
 					item={item}
 					onReadToggle={() => onMarkRead(item.id)}
@@ -416,7 +428,7 @@ export function FeedItemList({
 	if (layout === 'cards') {
 		return (
 			<>
-				<div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-5 p-5 sm:grid-cols-2 lg:grid-cols-3">
 					{items.map((item, index) => (
 						<FeedItemCard
 							key={item.id}
@@ -449,7 +461,7 @@ export function FeedItemList({
 
 	return (
 		<>
-			<div className={cn('divide-y', layout === 'compact' && 'divide-y-0')}>
+			<div className="divide-border-subtle/50 divide-y">
 				{items.map((item, index) => (
 					<FeedItemCard
 						key={item.id}

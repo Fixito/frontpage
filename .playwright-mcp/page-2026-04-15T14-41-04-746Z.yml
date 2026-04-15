@@ -1,0 +1,220 @@
+- generic [active] [ref=e1]:
+    - link "Skip to main content" [ref=e2] [cursor=pointer]:
+        - /url: '#main-content'
+    - generic [ref=e3]:
+        - complementary "Application sidebar" [ref=e5]:
+            - link "Frontpage" [ref=e7] [cursor=pointer]:
+                - /url: /
+                - img [ref=e8]
+                - text: Frontpage
+            - navigation "Feed navigation" [ref=e15]:
+                - generic [ref=e16]:
+                    - button "Add Feed" [ref=e18]:
+                        - img
+                        - text: Add Feed
+                    - link "All Items 99+" [ref=e19] [cursor=pointer]:
+                        - /url: /dashboard?view=all
+                        - img [ref=e20]
+                        - generic [ref=e24]: All Items
+                        - generic [ref=e25]: 99+
+                    - link "Bookmarks" [ref=e26] [cursor=pointer]:
+                        - /url: /dashboard?view=bookmarks
+                        - img [ref=e27]
+                        - generic [ref=e29]: Bookmarks
+                    - link "Weekly Digest" [ref=e30] [cursor=pointer]:
+                        - /url: /dashboard?view=digest
+                        - img [ref=e31]
+                        - generic [ref=e34]: Weekly Digest
+                    - generic [ref=e35]:
+                        - paragraph [ref=e36]: Feeds
+                        - generic [ref=e37]:
+                            - generic [ref=e38]:
+                                - generic [ref=e39]:
+                                    - link "Frontend 99+" [ref=e40] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=0eb2387f-e1e5-42c3-9887-7f18d0e650e3&view=all
+                                        - img [ref=e41]
+                                        - generic [ref=e43]: Frontend
+                                        - generic [ref=e44]: 99+
+                                    - button "Collapse Frontend" [expanded] [ref=e45]:
+                                        - img [ref=e46]
+                                - generic [ref=e48]:
+                                    - button "Articles on Smashing Magazine — For Web Designers And Developers 40" [ref=e49]:
+                                        - link "Articles on Smashing Magazine — For Web Designers And Developers 40" [ref=e50] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=95275e25-ca2e-40e9-bb05-ffc16a142ee7&view=all
+                                            - img [ref=e51]
+                                            - generic [ref=e52]: Articles on Smashing Magazine — For Web Designers And Developers
+                                            - generic [ref=e53]: '40'
+                                    - button "Kent C. Dodds Blog 99+" [ref=e54]:
+                                        - link "Kent C. Dodds Blog 99+" [ref=e55] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=d86ca64b-ff74-488d-98d9-31abf527587a&view=all
+                                            - img [ref=e56]
+                                            - generic [ref=e57]: Kent C. Dodds Blog
+                                            - generic [ref=e58]: 99+
+                                    - button "CSS-Tricks 15" [ref=e59]:
+                                        - link "CSS-Tricks 15" [ref=e60] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=45897efb-bbb8-4732-803e-249cde9252d3&view=all
+                                            - img [ref=e61]
+                                            - generic [ref=e62]: CSS-Tricks
+                                            - generic [ref=e63]: '15'
+                                    - button "MDN Blog 69" [ref=e64]:
+                                        - link "MDN Blog 69" [ref=e65] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=12eec19c-1f00-4f60-93ce-53d2d9144dd0&view=all
+                                            - img [ref=e66]
+                                            - generic [ref=e67]: MDN Blog
+                                            - generic [ref=e68]: '69'
+                                    - 'button "web.dev: Blog 10" [ref=e69]':
+                                        - 'link "web.dev: Blog 10" [ref=e70] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=1f4b1577-0685-4f7a-8c26-b55ff5ea3e4b&view=all
+                                            - img [ref=e71]
+                                            - generic [ref=e72]: 'web.dev: Blog'
+                                            - generic [ref=e73]: '10'
+                                    - button "Josh W. Comeau Feed error" [ref=e74]:
+                                        - link "Josh W. Comeau Feed error" [ref=e75] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=a9e7f093-f24b-4913-af6c-57b4dae8d5c9&view=all
+                                            - img [ref=e76]
+                                            - generic [ref=e77]: Josh W. Comeau
+                                            - img "Feed error" [ref=e78]
+                            - generic [ref=e79]:
+                                - generic [ref=e80]:
+                                    - link "Design 50" [ref=e81] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=0d8ce5ec-76f8-492a-9396-68a7b55153a4&view=all
+                                        - img [ref=e82]
+                                        - generic [ref=e84]: Design
+                                        - generic [ref=e85]: '50'
+                                    - button "Collapse Design" [expanded] [ref=e86]:
+                                        - img [ref=e87]
+                                - generic [ref=e89]:
+                                    - button "Figma Blog Feed error" [ref=e90]:
+                                        - link "Figma Blog Feed error" [ref=e91] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=9d341b79-6ec1-42c1-969e-7184feba7564&view=all
+                                            - img [ref=e92]
+                                            - generic [ref=e93]: Figma Blog
+                                            - img "Feed error" [ref=e94]
+                                    - button "UX Collective - Medium 10" [ref=e95]:
+                                        - link "UX Collective - Medium 10" [ref=e96] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=55932db2-b001-486e-99f2-9605fb54ac04&view=all
+                                            - img [ref=e97]
+                                            - generic [ref=e98]: UX Collective - Medium
+                                            - generic [ref=e99]: '10'
+                                    - button "Sidebar 20" [ref=e100]:
+                                        - link "Sidebar 20" [ref=e101] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=7b48a2e9-74e0-4bac-bd0b-0de098402e6a&view=all
+                                            - img [ref=e102]
+                                            - generic [ref=e103]: Sidebar
+                                            - generic [ref=e104]: '20'
+                                    - 'button "A List Apart: The Full Feed 20" [ref=e105]':
+                                        - 'link "A List Apart: The Full Feed 20" [ref=e106] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=dbcd2c61-b531-4a01-aa3d-1cb621ef2866&view=all
+                                            - img [ref=e107]
+                                            - generic [ref=e108]: 'A List Apart: The Full Feed'
+                                            - generic [ref=e109]: '20'
+                                    - button "Nielsen Norman Group Feed error" [ref=e110]:
+                                        - link "Nielsen Norman Group Feed error" [ref=e111] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=3de3cc5e-1e7d-4ad8-b3e6-87dd6c6d0b68&view=all
+                                            - img [ref=e112]
+                                            - generic [ref=e113]: Nielsen Norman Group
+                                            - img "Feed error" [ref=e114]
+                            - generic [ref=e115]:
+                                - generic [ref=e116]:
+                                    - link "Backend & DevOps 30" [ref=e117] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=c3e2b07b-3fcb-4e4a-88c4-a4ac77270eb2&view=all
+                                        - img [ref=e118]
+                                        - generic [ref=e120]: Backend & DevOps
+                                        - generic [ref=e121]: '30'
+                                    - button "Collapse Backend & DevOps" [expanded] [ref=e122]:
+                                        - img [ref=e123]
+                                - generic [ref=e125]:
+                                    - button "The Cloudflare Blog 20" [ref=e126]:
+                                        - link "The Cloudflare Blog 20" [ref=e127] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=d82eccf0-bcac-4a86-a6f3-2702d3e349e4&view=all
+                                            - img [ref=e128]
+                                            - generic [ref=e129]: The Cloudflare Blog
+                                            - generic [ref=e130]: '20'
+                                    - button "Vercel Blog Feed error" [ref=e131]:
+                                        - link "Vercel Blog Feed error" [ref=e132] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=32868bf8-76c1-4ae9-bb73-27da5a66f9b6&view=all
+                                            - img [ref=e133]
+                                            - generic [ref=e134]: Vercel Blog
+                                            - img "Feed error" [ref=e135]
+                                    - button "The GitHub Blog 10" [ref=e136]:
+                                        - link "The GitHub Blog 10" [ref=e137] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=fe95711d-e4f2-4174-900f-723ca41d494a&view=all
+                                            - img [ref=e138]
+                                            - generic [ref=e139]: The GitHub Blog
+                                            - generic [ref=e140]: '10'
+                                    - button "Netlify Blog Feed error" [ref=e141]:
+                                        - link "Netlify Blog Feed error" [ref=e142] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=f1575732-5648-4b35-95e1-b40d4b5d5295&view=all
+                                            - img [ref=e143]
+                                            - generic [ref=e144]: Netlify Blog
+                                            - img "Feed error" [ref=e145]
+                            - generic [ref=e146]:
+                                - generic [ref=e147]:
+                                    - link "General Tech 45" [ref=e148] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=109c864b-c7f8-4daa-80b9-e00526e72b31&view=all
+                                        - img [ref=e149]
+                                        - generic [ref=e151]: General Tech
+                                        - generic [ref=e152]: '45'
+                                    - button "Collapse General Tech" [expanded] [ref=e153]:
+                                        - img [ref=e154]
+                                - generic [ref=e156]:
+                                    - 'button "Hacker News: Best 30" [ref=e157]':
+                                        - 'link "Hacker News: Best 30" [ref=e158] [cursor=pointer]':
+                                            - /url: /dashboard?feedId=0934e8b3-75bd-437c-82fe-c65e540d7704&view=all
+                                            - img [ref=e159]
+                                            - generic [ref=e160]: 'Hacker News: Best'
+                                            - generic [ref=e161]: '30'
+                                    - button "The Pragmatic Engineer 15" [ref=e162]:
+                                        - link "The Pragmatic Engineer 15" [ref=e163] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=3de8e26e-581e-4a39-afd8-d2be5b11ee8d&view=all
+                                            - img [ref=e164]
+                                            - generic [ref=e165]: The Pragmatic Engineer
+                                            - generic [ref=e166]: '15'
+                            - generic [ref=e167]:
+                                - generic [ref=e168]:
+                                    - link "AI & ML 99+" [ref=e169] [cursor=pointer]:
+                                        - /url: /dashboard?categoryId=10b5a787-4251-49c1-8ab1-2891182fcc5e&view=all
+                                        - img [ref=e170]
+                                        - generic [ref=e172]: AI & ML
+                                        - generic [ref=e173]: 99+
+                                    - button "Collapse AI & ML" [expanded] [ref=e174]:
+                                        - img [ref=e175]
+                                - generic [ref=e177]:
+                                    - button "Simon Willison's Weblog Feed error" [ref=e178]:
+                                        - link "Simon Willison's Weblog Feed error" [ref=e179] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=2e956363-ad94-423d-8bf6-c9f766d21a66&view=all
+                                            - img [ref=e180]
+                                            - generic [ref=e181]: Simon Willison's Weblog
+                                            - img "Feed error" [ref=e182]
+                                    - button "Hugging Face - Blog 99+" [ref=e183]:
+                                        - link "Hugging Face - Blog 99+" [ref=e184] [cursor=pointer]:
+                                            - /url: /dashboard?feedId=90af9b9b-ca92-48a9-a715-728bab6473e3&view=all
+                                            - img [ref=e185]
+                                            - generic [ref=e186]: Hugging Face - Blog
+                                            - generic [ref=e187]: 99+
+            - button "Manage categories" [ref=e189]:
+                - img
+        - generic [ref=e190]:
+            - generic [ref=e191]:
+                - paragraph [ref=e192]:
+                    - text: You're browsing as a guest.
+                    - link "Create an account" [ref=e193] [cursor=pointer]:
+                        - /url: /sign-up
+                    - text: to save your feeds and settings.
+                - button "Exit guest" [ref=e194]
+            - banner [ref=e195]:
+                - heading "All Items" [level=1] [ref=e196]
+                - generic [ref=e197]:
+                    - group "Feed layout" [ref=e198]:
+                        - button "List view" [pressed] [ref=e199]:
+                            - img [ref=e200]
+                        - button "Compact view" [ref=e201]:
+                            - img [ref=e202]
+                        - button "Cards view" [ref=e203]:
+                            - img [ref=e204]
+                    - button "Refresh feeds" [disabled]:
+                        - img
+                    - button "Switch to dark mode" [ref=e209]:
+                        - img
+            - main [ref=e210]:
+                - status "Loading articles…" [ref=e211]

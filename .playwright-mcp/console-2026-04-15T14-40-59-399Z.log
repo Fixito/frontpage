@@ -1,0 +1,336 @@
+[    6854ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=4f26fc91:20102
+[  618593ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/node_modules/.vite/deps/react-dom_client.js?v=4f26fc91:20102
+[  618869ms] [ERROR] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+%s%s https://react.dev/link/hydration-mismatch 
+
+  ...
+    <nav aria-label="Feed navig..." className="p-2" data-tsd-source="/src/compo...">
+      <SidebarNav data={{...}} activeView="all" activeCategoryId={undefined} activeFeedId={undefined} ...>
+        <div className="flex flex-..." data-tsd-source="/src/compo...">
+          <div>
+          <a>
+          <a>
+          <a>
+          <div className="mt-3" data-tsd-source="/src/compo...">
+            <p>
+            <DndContext2 sensors={[...]} onDragStart={function handleDragStart} onDragEnd={function handleDragEnd} ...>
+              <div className="space-y-0.5" data-tsd-source="/src/compo...">
+                <CategorySection category={{id:"0eb238...", ...}} activeCategoryId={undefined} activeFeedId={undefined} ...>
+                  <div ref={function} className="rounded-md..." data-tsd-source="/src/compo...">
+                    <div>
+                    <div className="border-bor..." data-tsd-source="/src/compo...">
+                      <DraggableFeedItem feed={{id:"95275e...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"d86ca6...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"45897e...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"12eec1...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"1f4b15...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"a9e7f0...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                <CategorySection category={{id:"0d8ce5...", ...}} activeCategoryId={undefined} activeFeedId={undefined} ...>
+                  <div ref={function} className="rounded-md..." data-tsd-source="/src/compo...">
+                    <div>
+                    <div className="border-bor..." data-tsd-source="/src/compo...">
+                      <DraggableFeedItem feed={{id:"9d341b...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"55932d...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"7b48a2...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"dbcd2c...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"3de3cc...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                <CategorySection category={{id:"c3e2b0...", ...}} activeCategoryId={undefined} activeFeedId={undefined} ...>
+                  <div ref={function} className="rounded-md..." data-tsd-source="/src/compo...">
+                    <div>
+                    <div className="border-bor..." data-tsd-source="/src/compo...">
+                      <DraggableFeedItem feed={{id:"d82ecc...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"32868b...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"fe9571...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"f15757...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                <CategorySection category={{id:"109c86...", ...}} activeCategoryId={undefined} activeFeedId={undefined} ...>
+                  <div ref={function} className="rounded-md..." data-tsd-source="/src/compo...">
+                    <div>
+                    <div className="border-bor..." data-tsd-source="/src/compo...">
+                      <DraggableFeedItem feed={{id:"0934e8...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"3de8e2...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                <CategorySection category={{id:"10b5a7...", ...}} activeCategoryId={undefined} activeFeedId={undefined} ...>
+                  <div ref={function} className="rounded-md..." data-tsd-source="/src/compo...">
+                    <div>
+                    <div className="border-bor..." data-tsd-source="/src/compo...">
+                      <DraggableFeedItem feed={{id:"2e9563...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                      <DraggableFeedItem feed={{id:"90af9b...", ...}} isActive={false} onNavigate={undefined} ...>
+                        <div
+                          ref={function}
+                          onPointerDown={function}
+                          onKeyDown={function}
+                          role="button"
+                          tabIndex={0}
+                          aria-disabled={false}
+                          aria-pressed={undefined}
+                          aria-roledescription="draggable"
++                         aria-describedby="DndDescribedBy-0"
+-                         aria-describedby="DndDescribedBy-1"
+                          className="cursor-grab touch-none active:cursor-grabbing"
+                          data-tsd-source="/src/components/sidebar/sidebar-nav.tsx:95:3"
+                        >
+                ...
+              ...
+              ...
+              ...
+ @ http://localhost:3001/src/routes/__root.tsx:49
