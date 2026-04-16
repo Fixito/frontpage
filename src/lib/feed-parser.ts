@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 const xmlParser = new XMLParser({
 	ignoreAttributes: false,
 	attributeNamePrefix: '@_',
-	processEntities: true,
+	processEntities: { enabled: true, maxTotalExpansions: 50_000 },
 	htmlEntities: true,
 	allowBooleanAttributes: true,
 	trimValues: true,
@@ -139,15 +139,20 @@ function parseAtom(feedNode: XmlNode): ParsedFeed {
 		const url = getAtomLink(entry['link']) ?? '';
 		const guid = getText(entry['id']) ?? url;
 
-		const contentNode = entry['content'];
+		// Fall back to <summary> when <content> is absent (e.g. xkcd)
+		const contentNode = entry['content'] ?? entry['summary'];
 		const contentText = getText(contentNode);
 		const contentType =
 			typeof contentNode === 'object' && contentNode !== null
 				? ((contentNode as XmlNode)['@_type'] as string | undefined)
 				: undefined;
-		const isHtml = contentType === 'html' || contentType === 'xhtml';
+		const isHtml =
+			contentType === 'html' ||
+			contentType === 'xhtml' ||
+			(!contentType && contentText !== null && contentText.includes('<'));
 
-		const authorNode = entry['author'];
+		// Fall back to feed-level <author> when entry has none (e.g. xkcd)
+		const authorNode = entry['author'] ?? feedNode['author'];
 		const author = getText(
 			typeof authorNode === 'object' && authorNode !== null
 				? (authorNode as XmlNode)['name']
