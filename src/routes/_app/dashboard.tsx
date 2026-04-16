@@ -1,5 +1,5 @@
 import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
-import { Suspense, lazy, useState, useSyncExternalStore } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
 import { z } from 'zod';
@@ -137,9 +137,30 @@ function DashboardPage() {
 	const [refreshing, setRefreshing] = useState(false);
 	const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
+	const hasAutoRefreshed = useRef(false);
+
 	const effectiveUserId = user?.id ?? guest?.demoUserId ?? null;
 
 	const queryClient = useQueryClient();
+
+	/* eslint-disable react-you-might-not-need-an-effect/no-event-handler, react-you-might-not-need-an-effect/no-chain-state-updates */
+	useEffect(() => {
+		if (!user?.id || hasAutoRefreshed.current) return;
+		hasAutoRefreshed.current = true;
+		const userId = user.id;
+		setRefreshing(true);
+		void refreshAllFeedsFn({ data: { userId } })
+			.then(() =>
+				queryClient.invalidateQueries({
+					queryKey: sidebarQueryOptions(userId).queryKey,
+				}),
+			)
+			.finally(() => {
+				setFeedRefreshKey((k) => k + 1);
+				setRefreshing(false);
+			});
+	}, [user?.id, queryClient]);
+	/* eslint-enable react-you-might-not-need-an-effect/no-event-handler, react-you-might-not-need-an-effect/no-chain-state-updates */
 	const { data: sidebarData = EMPTY_SIDEBAR_DATA } = useQuery({
 		...sidebarQueryOptions(effectiveUserId),
 		initialData: loaderSidebarData,
