@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie, getRequest, setCookie } from '@tanstack/react-start/server';
+import { redirect } from '@tanstack/react-router';
 
 import { auth } from './auth';
 
@@ -66,3 +67,7 @@ export const enterGuestMode = createServerFn({ method: 'POST' }).handler(
 export const exitGuestMode = createServerFn({ method: 'POST' }).handler(() => {
 	setCookie('frontpage-guest', '', { maxAge: 0, path: '/' });
 });
+
+export function redirectIfAuthenticated(context: AuthContext) {
+	if (context.user || context.guest) throw redirect({ to: '/dashboard' });
+}

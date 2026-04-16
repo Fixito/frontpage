@@ -11,7 +11,7 @@ import { AuthLayout } from '@/components/auth';
 
 import { authClient } from '@/lib/auth-client';
 import { toErrors } from '@/lib/form-utils';
-import { enterGuestMode } from '@/lib/session';
+import { enterGuestMode, redirectIfAuthenticated } from '@/lib/session';
 
 const schema = z.object({
 	email: z.email('Enter a valid email'),
@@ -19,6 +19,7 @@ const schema = z.object({
 });
 
 export const Route = createFileRoute('/_app/sign-in')({
+	beforeLoad: ({ context }) => redirectIfAuthenticated(context),
 	component: SignInPage,
 });
 

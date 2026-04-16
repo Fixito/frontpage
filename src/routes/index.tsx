@@ -13,9 +13,12 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { enterGuestMode } from '@/lib/session';
+import { enterGuestMode, redirectIfAuthenticated } from '@/lib/session';
 
-export const Route = createFileRoute('/')({ component: LandingPage });
+export const Route = createFileRoute('/')({
+	beforeLoad: ({ context }) => redirectIfAuthenticated(context),
+	component: LandingPage,
+});
 
 const FEATURES = [
 	{
