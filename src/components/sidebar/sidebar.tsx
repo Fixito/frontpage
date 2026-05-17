@@ -42,7 +42,7 @@ export function Sidebar({
 
 			<Separator />
 
-			<ScrollArea className="flex-1">
+			<ScrollArea className="no-scrollbar flex-1 overflow-y-auto">
 				<nav aria-label="Feed navigation" className="p-2">
 					<SidebarNav
 						data={data}
