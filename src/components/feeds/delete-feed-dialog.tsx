@@ -15,17 +15,10 @@ interface DeleteFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	feed: { id: string; title: string };
-	userId: string;
 	onSuccess: () => void;
 }
 
-export function DeleteFeedDialog({
-	open,
-	onOpenChange,
-	feed,
-	userId,
-	onSuccess,
-}: DeleteFeedDialogProps) {
+export function DeleteFeedDialog({ open, onOpenChange, feed, onSuccess }: DeleteFeedDialogProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +26,7 @@ export function DeleteFeedDialog({
 		setLoading(true);
 		setError(null);
 		try {
-			await deleteFeedFn({ data: { userId, feedId: feed.id } });
+			await deleteFeedFn({ data: { feedId: feed.id } });
 			onOpenChange(false);
 			setTimeout(() => onSuccess(), 0);
 		} catch (err) {

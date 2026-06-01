@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, count, desc, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { withAuth, withMutation } from './server-fn-helpers';
 import { db } from './db';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
@@ -309,25 +310,47 @@ export async function toggleBookmark(userId: string, itemId: string): Promise<bo
 // ── Server function wrappers ──────────────────────────────────────────────────
 
 export const getItemsFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: GetItemsParams) => data)
-	.handler(async ({ data }) => getItems(data));
+	.inputValidator((data: Omit<GetItemsParams, 'userId'>) => data)
+	.handler(
+		withAuth(async (userId: string, data: Omit<GetItemsParams, 'userId'>) =>
+			getItems({ ...data, userId }),
+		),
+	);
 
 export const markReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; itemId: string }) => data)
-	.handler(async ({ data }) => markRead(data.userId, data.itemId));
+	.inputValidator((data: { itemId: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { itemId: string }) => markRead(userId, data.itemId)),
+	);
 
 export const unmarkReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; itemId: string }) => data)
-	.handler(async ({ data }) => unmarkRead(data.userId, data.itemId));
+	.inputValidator((data: { itemId: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { itemId: string }) =>
+			unmarkRead(userId, data.itemId),
+		),
+	);
 
 export const markAllReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; feedId?: string; categoryId?: string }) => data)
-	.handler(async ({ data }) => markAllRead(data.userId, data.feedId, data.categoryId));
+	.inputValidator((data: { feedId?: string; categoryId?: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
+			markAllRead(userId, data.feedId, data.categoryId),
+		),
+	);
 
 export const markAllUnreadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; feedId?: string; categoryId?: string }) => data)
-	.handler(async ({ data }) => markAllUnread(data.userId, data.feedId, data.categoryId));
+	.inputValidator((data: { feedId?: string; categoryId?: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
+			markAllUnread(userId, data.feedId, data.categoryId),
+		),
+	);
 
 export const toggleBookmarkFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; itemId: string }) => data)
-	.handler(async ({ data }) => toggleBookmark(data.userId, data.itemId));
+	.inputValidator((data: { itemId: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { itemId: string }) =>
+			toggleBookmark(userId, data.itemId),
+		),
+	);

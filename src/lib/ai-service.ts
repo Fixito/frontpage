@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, gte, isNotNull, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { withAuth, withMutation } from './server-fn-helpers';
 import { generateArticleSummary, generateWeeklyDigest, parseAiError, suggestCategory } from './ai';
 import { db } from './db';
 import { feed, feedItem, readState } from '@/db/schema';
@@ -20,44 +21,47 @@ export interface DigestItem {
 // ── generateSummaryFn ─────────────────────────────────────────────────────────
 
 export const generateSummaryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; itemId: string }) => data)
+	.inputValidator((data: { itemId: string }) => data)
 	.handler(
-		async ({
-			data,
-		}): Promise<
-			{ summary: string; cached: boolean } | { summary: null; error: string; retryIn?: number }
-		> => {
-			const rows = await db
-				.select({
-					id: feedItem.id,
-					title: feedItem.title,
-					description: feedItem.description,
-					contentHtml: feedItem.contentHtml,
-					aiSummary: feedItem.aiSummary,
-				})
-				.from(feedItem)
-				.innerJoin(feed, eq(feed.id, feedItem.feedId))
-				.where(and(eq(feedItem.id, data.itemId), eq(feed.userId, data.userId)))
-				.limit(1);
+		withMutation(
+			async (
+				userId: string,
+				data: { itemId: string },
+			): Promise<
+				{ summary: string; cached: boolean } | { summary: null; error: string; retryIn?: number }
+			> => {
+				const rows = await db
+					.select({
+						id: feedItem.id,
+						title: feedItem.title,
+						description: feedItem.description,
+						contentHtml: feedItem.contentHtml,
+						aiSummary: feedItem.aiSummary,
+					})
+					.from(feedItem)
+					.innerJoin(feed, eq(feed.id, feedItem.feedId))
+					.where(and(eq(feedItem.id, data.itemId), eq(feed.userId, userId)))
+					.limit(1);
 
-			if (rows.length === 0) return { summary: null, error: 'AI unavailable' };
+				if (rows.length === 0) return { summary: null, error: 'AI unavailable' };
 
-			const item = rows[0];
+				const item = rows[0];
 
-			if (item.aiSummary) {
-				return { summary: item.aiSummary, cached: true };
-			}
+				if (item.aiSummary) {
+					return { summary: item.aiSummary, cached: true };
+				}
 
-			try {
-				const content = item.contentHtml ?? item.description ?? '';
-				const summary = await generateArticleSummary(item.title, content);
-				await db.update(feedItem).set({ aiSummary: summary }).where(eq(feedItem.id, data.itemId));
-				return { summary, cached: false };
-			} catch (err) {
-				console.error('[AI] generateSummaryFn error:', err);
-				return { summary: null, ...parseAiError(err) };
-			}
-		},
+				try {
+					const content = item.contentHtml ?? item.description ?? '';
+					const summary = await generateArticleSummary(item.title, content);
+					await db.update(feedItem).set({ aiSummary: summary }).where(eq(feedItem.id, data.itemId));
+					return { summary, cached: false };
+				} catch (err) {
+					console.error('[AI] generateSummaryFn error:', err);
+					return { summary: null, ...parseAiError(err) };
+				}
+			},
+		),
 	);
 
 // ── suggestCategoryFn ─────────────────────────────────────────────────────────
@@ -77,9 +81,8 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 
 // ── getWeeklyDigestFn ─────────────────────────────────────────────────────────
 
-export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
+export const getWeeklyDigestFn = createServerFn({ method: 'POST' }).handler(
+	withAuth(async (userId): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
 		const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
 		const rs = alias(readState, 'rs');
@@ -97,10 +100,10 @@ export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 			})
 			.from(feedItem)
 			.innerJoin(feed, eq(feed.id, feedItem.feedId))
-			.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, data.userId)))
+			.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
 			.where(
 				and(
-					eq(feed.userId, data.userId),
+					eq(feed.userId, userId),
 					gte(feedItem.publishedAt, sevenDaysAgo),
 					isNull(rs.itemId),
 					or(isNotNull(feedItem.description), isNotNull(feedItem.contentHtml)),
@@ -134,4 +137,5 @@ export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 		}
 
 		return { briefing, items: digestItems };
-	});
+	}),
+);

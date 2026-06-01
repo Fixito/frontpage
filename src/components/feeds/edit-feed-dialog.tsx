@@ -27,7 +27,6 @@ interface EditFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	feed: { id: string; title: string; categoryId: string | null; url: string };
-	userId: string;
 	categories: Array<{ id: string; name: string }>;
 	onSuccess: () => void;
 }
@@ -36,7 +35,6 @@ export function EditFeedDialog({
 	open,
 	onOpenChange,
 	feed,
-	userId,
 	categories,
 	onSuccess,
 }: EditFeedDialogProps) {
@@ -47,7 +45,6 @@ export function EditFeedDialog({
 					<EditFeedForm
 						key={feed.id}
 						feed={feed}
-						userId={userId}
 						categories={categories}
 						onOpenChange={onOpenChange}
 						onSuccess={onSuccess}
@@ -60,7 +57,6 @@ export function EditFeedDialog({
 
 interface EditFeedFormProps {
 	feed: { id: string; title: string; categoryId: string | null; url: string };
-	userId: string;
 	categories: Array<{ id: string; name: string }>;
 	onOpenChange: (open: boolean) => void;
 	onSuccess: () => void;
@@ -71,12 +67,11 @@ const schema = z.object({
 	categoryId: z.string(),
 });
 
-function EditFeedForm({ feed, userId, categories, onOpenChange, onSuccess }: EditFeedFormProps) {
+function EditFeedForm({ feed, categories, onOpenChange, onSuccess }: EditFeedFormProps) {
 	const mutation = useMutation({
 		mutationFn: async (values: z.infer<typeof schema>) => {
 			await updateFeedFn({
 				data: {
-					userId,
 					feedId: feed.id,
 					customTitle: values.title.trim(),
 					categoryId: values.categoryId === '__none__' ? null : values.categoryId,

@@ -30,7 +30,6 @@ import { toErrors } from '@/lib/form-utils';
 interface AddFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	userId: string;
 	categories: Array<{ id: string; name: string }>;
 	onSuccess: () => void;
 }
@@ -41,13 +40,7 @@ const urlSchema = z.object({
 	url: z.string().url('Please enter a valid URL'),
 });
 
-export function AddFeedDialog({
-	open,
-	onOpenChange,
-	userId,
-	categories,
-	onSuccess,
-}: AddFeedDialogProps) {
+export function AddFeedDialog({ open, onOpenChange, categories, onSuccess }: AddFeedDialogProps) {
 	const [step, setStep] = useState<Step>('url');
 	const [preview, setPreview] = useState<FeedPreview | null>(null);
 	const [selectedCategoryId, setSelectedCategoryId] = useState('__none__');
@@ -94,11 +87,11 @@ export function AddFeedDialog({
 			let resolvedCategoryId = categoryId === '__none__' ? null : categoryId;
 			if (pendingNewCategoryName && categoryId === '__none__') {
 				resolvedCategoryId = await createCategoryFn({
-					data: { userId, name: pendingNewCategoryName },
+					data: { name: pendingNewCategoryName },
 				});
 			}
 			return addFeedFn({
-				data: { userId, url: preview.finalUrl, categoryId: resolvedCategoryId },
+				data: { url: preview.finalUrl, categoryId: resolvedCategoryId },
 			});
 		},
 		onSuccess: () => {
