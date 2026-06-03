@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { eq, sql } from 'drizzle-orm';
+import { withMutation } from './server-fn-helpers';
 import { db } from './db';
 import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
@@ -197,13 +198,17 @@ export const validateFeedUrlFn = createServerFn({ method: 'POST' })
 	.handler(async ({ data }) => validateAndPreviewFeed(data.url));
 
 export const addFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; url: string; categoryId: string | null }) => data)
-	.handler(async ({ data }) => addFeed(data.userId, data.url, data.categoryId));
+	.inputValidator((data: { url: string; categoryId: string | null }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { url: string; categoryId: string | null }) =>
+			addFeed(userId, data.url, data.categoryId),
+		),
+	);
 
 export const refreshFeedFn = createServerFn({ method: 'POST' })
 	.inputValidator((data: { feedId: string }) => data)
 	.handler(async ({ data }) => refreshFeed(data.feedId));
 
-export const refreshAllFeedsFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }) => refreshAllFeeds(data.userId));
+export const refreshAllFeedsFn = createServerFn({ method: 'POST' }).handler(
+	withMutation(async (userId) => refreshAllFeeds(userId)),
+);

@@ -61,20 +61,14 @@ export const Route = createFileRoute('/_app/dashboard')({
 	loader: async ({ context }) => {
 		if (!context.user) {
 			if (context.guest?.demoUserId) {
-				const sidebarData = await getSidebarDataFn({
-					data: { userId: context.guest.demoUserId },
-				});
-
+				const sidebarData = await getSidebarDataFn();
 				return { sidebarData, preferences: null };
 			}
 
 			return { sidebarData: EMPTY_SIDEBAR_DATA, preferences: null };
 		}
 
-		const [sidebarData, preferences] = await Promise.all([
-			getSidebarDataFn({ data: { userId: context.user.id } }),
-			getPreferenceFn({ data: { userId: context.user.id } }),
-		]);
+		const [sidebarData, preferences] = await Promise.all([getSidebarDataFn(), getPreferenceFn()]);
 		return { sidebarData, preferences };
 	},
 	component: DashboardPage,
@@ -83,7 +77,7 @@ export const Route = createFileRoute('/_app/dashboard')({
 const sidebarQueryOptions = (userId: string | null) =>
 	queryOptions({
 		queryKey: ['sidebar', userId],
-		queryFn: () => getSidebarDataFn({ data: { userId: userId! } }),
+		queryFn: () => getSidebarDataFn(),
 		enabled: !!userId,
 	});
 
@@ -149,7 +143,7 @@ function DashboardPage() {
 		hasAutoRefreshed.current = true;
 		const userId = user.id;
 		setRefreshing(true);
-		void refreshAllFeedsFn({ data: { userId } })
+		void refreshAllFeedsFn()
 			.then(() =>
 				queryClient.invalidateQueries({
 					queryKey: sidebarQueryOptions(userId).queryKey,
@@ -172,7 +166,7 @@ function DashboardPage() {
 		setLayoutOverride(next);
 		localStorage.setItem('feedLayout', next);
 		if (user?.id) {
-			void updateLayoutFn({ data: { userId: user.id, layout: next } });
+			void updateLayoutFn({ data: { layout: next } });
 		}
 	}
 
@@ -181,7 +175,7 @@ function DashboardPage() {
 		setDarkOverride(next);
 		applyTheme(next);
 		if (user?.id) {
-			void updateThemeFn({ data: { userId: user.id, theme: next ? 'dark' : 'light' } });
+			void updateThemeFn({ data: { theme: next ? 'dark' : 'light' } });
 		}
 	}
 
@@ -212,7 +206,7 @@ function DashboardPage() {
 		setRefreshing(true);
 
 		try {
-			await refreshAllFeedsFn({ data: { userId: user.id } });
+			await refreshAllFeedsFn();
 			await queryClient.invalidateQueries({
 				queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
 			});
@@ -263,7 +257,7 @@ function DashboardPage() {
 		});
 
 		updateFeedFn({
-			data: { userId: user.id, feedId: targetFeedId, categoryId: targetCategoryId },
+			data: { feedId: targetFeedId, categoryId: targetCategoryId },
 		}).catch(() => {
 			void queryClient.invalidateQueries({
 				queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
@@ -428,7 +422,6 @@ function DashboardPage() {
 				<AddFeedDialog
 					open={addFeedOpen}
 					onOpenChange={setAddFeedOpen}
-					userId={user?.id ?? ''}
 					categories={categories}
 					onSuccess={handleRefreshSidebar}
 				/>
@@ -438,7 +431,6 @@ function DashboardPage() {
 				<ManageCategoriesDialog
 					open={manageCategoriesOpen}
 					onOpenChange={setManageCategoriesOpen}
-					userId={user?.id ?? ''}
 					categories={categories}
 					onSuccess={handleRefreshSidebar}
 				/>

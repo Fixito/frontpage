@@ -85,7 +85,6 @@ export function useFeedItems({
 			try {
 				const result = await getItemsFn({
 					data: {
-						userId: effectiveUserId,
 						feedId,
 						categoryId,
 						view,
@@ -124,8 +123,8 @@ export function useFeedItems({
 				prev.map((item) => (item.id === itemId ? { ...item, isRead: !item.isRead } : item)),
 			);
 			const fn = isCurrentlyRead
-				? unmarkReadFn({ data: { userId, itemId } })
-				: markReadFn({ data: { userId, itemId } });
+				? unmarkReadFn({ data: { itemId } })
+				: markReadFn({ data: { itemId } });
 			void fn.catch(() => {
 				setItems((prev) =>
 					prev.map((item) => (item.id === itemId ? { ...item, isRead: isCurrentlyRead } : item)),
@@ -149,7 +148,7 @@ export function useFeedItems({
 						),
 			);
 			onBookmarkCountChange?.(delta);
-			void toggleBookmarkFn({ data: { userId, itemId } })
+			void toggleBookmarkFn({ data: { itemId } })
 				.then(() => {
 					onSidebarRefresh();
 				})
@@ -171,7 +170,7 @@ export function useFeedItems({
 		if (!userId) return;
 		setMarkingAllRead(true);
 		try {
-			await markAllReadFn({ data: { userId, feedId, categoryId } });
+			await markAllReadFn({ data: { feedId, categoryId } });
 			setItems((prev) => prev.map((item) => ({ ...item, isRead: true })));
 			onSidebarRefresh();
 		} catch (err) {
@@ -185,7 +184,7 @@ export function useFeedItems({
 		if (!userId) return;
 		setMarkingAllUnread(true);
 		try {
-			await markAllUnreadFn({ data: { userId, feedId, categoryId } });
+			await markAllUnreadFn({ data: { feedId, categoryId } });
 			setItems((prev) => prev.map((item) => ({ ...item, isRead: false })));
 			onSidebarRefresh();
 		} catch (err) {

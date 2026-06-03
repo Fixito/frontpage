@@ -84,7 +84,7 @@ export function ReaderViewDrawer({
 		setSummarizing(true);
 		setSummaryError(null);
 		try {
-			const result = await generateSummaryFn({ data: { userId, itemId: item.id } });
+			const result = await generateSummaryFn({ data: { itemId: item.id } });
 			if (result.summary) {
 				setGeneratedSummary(result.summary);
 			} else {

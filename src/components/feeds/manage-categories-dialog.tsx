@@ -26,7 +26,6 @@ import { toErrors } from '@/lib/form-utils';
 interface ManageCategoriesDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	userId: string;
 	categories: Array<{ id: string; name: string }>;
 	onSuccess: () => void;
 }
@@ -39,7 +38,6 @@ interface LocalCategory {
 export function ManageCategoriesDialog({
 	open,
 	onOpenChange,
-	userId,
 	categories,
 	onSuccess,
 }: ManageCategoriesDialogProps) {
@@ -53,7 +51,7 @@ export function ManageCategoriesDialog({
 
 	const addMutation = useMutation({
 		mutationFn: async (name: string) => {
-			const id = await createCategoryFn({ data: { userId, name } });
+			const id = await createCategoryFn({ data: { name } });
 			return { id, name };
 		},
 		onSuccess: ({ id, name }) => {
@@ -95,7 +93,7 @@ export function ManageCategoriesDialog({
 		setLoading(true);
 		setError(null);
 		try {
-			await updateCategoryFn({ data: { userId, id, name } });
+			await updateCategoryFn({ data: { id, name } });
 			setLocalCats((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
 			cancelEdit();
 			onSuccess();
@@ -110,7 +108,7 @@ export function ManageCategoriesDialog({
 		setLoading(true);
 		setError(null);
 		try {
-			await deleteCategoryFn({ data: { userId, id } });
+			await deleteCategoryFn({ data: { id } });
 			setLocalCats((prev) => prev.filter((c) => c.id !== id));
 			setDeletingId(null);
 			onSuccess();
@@ -136,7 +134,7 @@ export function ManageCategoriesDialog({
 		setError(null);
 		try {
 			await reorderCategoriesFn({
-				data: { userId, orderedIds: newOrder.map((c) => c.id) },
+				data: { orderedIds: newOrder.map((c) => c.id) },
 			});
 			onSuccess();
 		} catch (err) {

@@ -1,17 +1,17 @@
 import { createServerFn } from '@tanstack/react-start';
 import { eq } from 'drizzle-orm';
+import { withAuth, withMutation } from './server-fn-helpers';
 import { db } from './db';
 import { userPreference } from '@/db/schema';
 
 // ── getPreference ──────────────────────────────────────────────────────────────
 
-export const getPreferenceFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }) => {
+export const getPreferenceFn = createServerFn({ method: 'POST' }).handler(
+	withAuth(async (userId) => {
 		const row = await db
 			.select()
 			.from(userPreference)
-			.where(eq(userPreference.userId, data.userId))
+			.where(eq(userPreference.userId, userId))
 			.limit(1)
 			.then((rows) => rows.at(0));
 
@@ -20,7 +20,7 @@ export const getPreferenceFn = createServerFn({ method: 'POST' })
 		await db
 			.insert(userPreference)
 			.values({
-				userId: data.userId,
+				userId,
 				defaultLayout: 'list',
 				theme: 'system',
 				refreshInterval: 'off',
@@ -28,42 +28,47 @@ export const getPreferenceFn = createServerFn({ method: 'POST' })
 			.onConflictDoNothing();
 
 		return { defaultLayout: 'list', theme: 'system' };
-	});
+	}),
+);
 
 // ── updateLayout ───────────────────────────────────────────────────────────────
 
 export const updateLayoutFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; layout: 'list' | 'compact' | 'cards' }) => data)
-	.handler(async ({ data }) => {
-		await db
-			.insert(userPreference)
-			.values({
-				userId: data.userId,
-				defaultLayout: data.layout,
-				refreshInterval: 'off',
-				theme: 'system',
-			})
-			.onConflictDoUpdate({
-				target: userPreference.userId,
-				set: { defaultLayout: data.layout, updatedAt: new Date() },
-			});
-	});
+	.inputValidator((data: { layout: 'list' | 'compact' | 'cards' }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { layout: 'list' | 'compact' | 'cards' }) => {
+			await db
+				.insert(userPreference)
+				.values({
+					userId,
+					defaultLayout: data.layout,
+					refreshInterval: 'off',
+					theme: 'system',
+				})
+				.onConflictDoUpdate({
+					target: userPreference.userId,
+					set: { defaultLayout: data.layout, updatedAt: new Date() },
+				});
+		}),
+	);
 
 // ── updateTheme ────────────────────────────────────────────────────────────────
 
 export const updateThemeFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; theme: 'light' | 'dark' | 'system' }) => data)
-	.handler(async ({ data }) => {
-		await db
-			.insert(userPreference)
-			.values({
-				userId: data.userId,
-				theme: data.theme,
-				refreshInterval: 'off',
-				defaultLayout: 'list',
-			})
-			.onConflictDoUpdate({
-				target: userPreference.userId,
-				set: { theme: data.theme, updatedAt: new Date() },
-			});
-	});
+	.inputValidator((data: { theme: 'light' | 'dark' | 'system' }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { theme: 'light' | 'dark' | 'system' }) => {
+			await db
+				.insert(userPreference)
+				.values({
+					userId,
+					theme: data.theme,
+					refreshInterval: 'off',
+					defaultLayout: 'list',
+				})
+				.onConflictDoUpdate({
+					target: userPreference.userId,
+					set: { theme: data.theme, updatedAt: new Date() },
+				});
+		}),
+	);

@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, max, sql } from 'drizzle-orm';
+import { withAuth, withMutation } from './server-fn-helpers';
 import { db } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
@@ -177,40 +178,61 @@ export async function deleteFeed(userId: string, feedId: string): Promise<void> 
 
 // ── Server function wrappers ───────────────────────────────────────────────────
 
-export const getSidebarDataFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string }) => data)
-	.handler(async ({ data }) => getSidebarData(data.userId));
+export const getSidebarDataFn = createServerFn({ method: 'POST' }).handler(
+	withAuth(async (userId) => getSidebarData(userId)),
+);
 
 export const createCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; name: string }) => data)
-	.handler(async ({ data }) => createCategory(data.userId, data.name));
+	.inputValidator((data: { name: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { name: string }) =>
+			createCategory(userId, data.name),
+		),
+	);
 
 export const updateCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; id: string; name?: string; position?: number }) => data)
-	.handler(async ({ data }) =>
-		updateCategory(data.userId, data.id, { name: data.name, position: data.position }),
+	.inputValidator((data: { id: string; name?: string; position?: number }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { id: string; name?: string; position?: number }) =>
+			updateCategory(userId, data.id, { name: data.name, position: data.position }),
+		),
 	);
 
 export const deleteCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; id: string }) => data)
-	.handler(async ({ data }) => deleteCategory(data.userId, data.id));
+	.inputValidator((data: { id: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { id: string }) => deleteCategory(userId, data.id)),
+	);
 
 export const reorderCategoriesFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; orderedIds: Array<string> }) => data)
-	.handler(async ({ data }) => reorderCategories(data.userId, data.orderedIds));
+	.inputValidator((data: { orderedIds: Array<string> }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { orderedIds: Array<string> }) =>
+			reorderCategories(userId, data.orderedIds),
+		),
+	);
 
 export const updateFeedFn = createServerFn({ method: 'POST' })
 	.inputValidator(
-		(data: { userId: string; feedId: string; customTitle?: string; categoryId?: string | null }) =>
-			data,
+		(data: { feedId: string; customTitle?: string; categoryId?: string | null }) => data,
 	)
-	.handler(async ({ data }) =>
-		updateFeed(data.userId, data.feedId, {
-			customTitle: data.customTitle,
-			categoryId: data.categoryId,
-		}),
+	.handler(
+		withMutation(
+			async (
+				userId: string,
+				data: { feedId: string; customTitle?: string; categoryId?: string | null },
+			) =>
+				updateFeed(userId, data.feedId, {
+					customTitle: data.customTitle,
+					categoryId: data.categoryId,
+				}),
+		),
 	);
 
 export const deleteFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { userId: string; feedId: string }) => data)
-	.handler(async ({ data }) => deleteFeed(data.userId, data.feedId));
+	.inputValidator((data: { feedId: string }) => data)
+	.handler(
+		withMutation(async (userId: string, data: { feedId: string }) =>
+			deleteFeed(userId, data.feedId),
+		),
+	);

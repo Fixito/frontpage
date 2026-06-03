@@ -20,7 +20,7 @@ export function DigestView({ userId }: DigestViewProps) {
 		setLoading(true);
 		setError(null);
 		try {
-			const result = await getWeeklyDigestFn({ data: { userId } });
+			const result = await getWeeklyDigestFn();
 			setBriefing(result.briefing);
 			setItems(result.items);
 		} catch {
