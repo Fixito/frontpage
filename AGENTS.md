@@ -31,3 +31,17 @@ Encourage documenting significant design and product choices in the README. Aim 
 - When writing plans, be extremely concise. Sacrifice grammar for the sake of concision.
 - At the end of each plan, list unresolved questions. Ask about edge cases, error handling, and unclear requirements before proceeding.
 - End every plan with a numbered list of concrete steps. This should be the last thing visible in the terminal.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`Fixito/frontpage`), managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
