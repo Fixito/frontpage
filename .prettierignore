@@ -1,1 +1,6 @@
 **/routeTree.gen.ts
+
+# Vendored agent skills (mattpocock/skills), keep byte-identical to upstream
+.agents/
+.claude/skills/
+skills-lock.json
