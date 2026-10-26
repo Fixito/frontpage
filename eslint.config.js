@@ -9,7 +9,17 @@ import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need
 import pluginQuery from '@tanstack/eslint-plugin-query';
 
 export default defineConfig(
-	{ ignores: ['**/routeTree.gen.ts', 'dist/**', '.output/**', 'eslint.config.js'] },
+	{
+		ignores: [
+			'**/routeTree.gen.ts',
+			'dist/**',
+			'.output/**',
+			'eslint.config.js',
+			// Vendored agent skills (mattpocock/skills)
+			'.agents/**',
+			'.claude/**',
+		],
+	},
 	...tanstackConfig,
 	// eslint-plugin-react is not yet ESLint v10 compatible — use fixupPluginRules shim
 	{
