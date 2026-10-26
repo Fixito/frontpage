@@ -109,7 +109,7 @@ export function useFeedItems({
 
 	// Refetch when filters change (items are async data, cannot be computed during render)
 	useEffect(() => {
-		// eslint-disable-next-line react-you-might-not-need-an-effect/no-derived-state
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching; candidate for useQuery
 		fetchItems(1).finally(() => {
 			setLoading(false);
 		});

@@ -21,7 +21,7 @@ export interface DigestItem {
 // ── generateSummaryFn ─────────────────────────────────────────────────────────
 
 export const generateSummaryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { itemId: string }) => data)
+	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(
 			async (
@@ -67,7 +67,7 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 // ── suggestCategoryFn ─────────────────────────────────────────────────────────
 
 export const suggestCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator(
+	.validator(
 		(data: { feedTitle: string; feedDescription: string | null; categoryNames: Array<string> }) =>
 			data,
 	)

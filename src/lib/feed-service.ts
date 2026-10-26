@@ -194,11 +194,11 @@ export async function markStaleFeeds(): Promise<void> {
 // ── Server function wrappers ───────────────────────────────────────────────────
 
 export const validateFeedUrlFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { url: string }) => data)
+	.validator((data: { url: string }) => data)
 	.handler(async ({ data }) => validateAndPreviewFeed(data.url));
 
 export const addFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { url: string; categoryId: string | null }) => data)
+	.validator((data: { url: string; categoryId: string | null }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { url: string; categoryId: string | null }) =>
 			addFeed(userId, data.url, data.categoryId),
@@ -206,7 +206,7 @@ export const addFeedFn = createServerFn({ method: 'POST' })
 	);
 
 export const refreshFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { feedId: string }) => data)
+	.validator((data: { feedId: string }) => data)
 	.handler(async ({ data }) => refreshFeed(data.feedId));
 
 export const refreshAllFeedsFn = createServerFn({ method: 'POST' }).handler(
