@@ -26,6 +26,10 @@ Frontpage is a **Product Challenge** on [Frontend Mentor](https://www.frontendme
 
 Encourage documenting significant design and product choices in the README. Aim for accessible, semantic, responsive-first code with clean component boundaries.
 
+## Pull Requests
+
+Right after opening a PR, comment `@coderabbitai review` on it (`gh pr comment <n> --body "@coderabbitai review"`). CodeRabbit skips automatic reviews on this repo (fewer than 10 GitHub stars), so this comment is what starts the review.
+
 ## Plan Mode
 
 - When writing plans, be extremely concise. Sacrifice grammar for the sake of concision.
