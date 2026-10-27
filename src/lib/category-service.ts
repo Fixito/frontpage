@@ -183,7 +183,7 @@ export const getSidebarDataFn = createServerFn({ method: 'POST' }).handler(
 );
 
 export const createCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { name: string }) => data)
+	.validator((data: { name: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { name: string }) =>
 			createCategory(userId, data.name),
@@ -191,7 +191,7 @@ export const createCategoryFn = createServerFn({ method: 'POST' })
 	);
 
 export const updateCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { id: string; name?: string; position?: number }) => data)
+	.validator((data: { id: string; name?: string; position?: number }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { id: string; name?: string; position?: number }) =>
 			updateCategory(userId, data.id, { name: data.name, position: data.position }),
@@ -199,13 +199,13 @@ export const updateCategoryFn = createServerFn({ method: 'POST' })
 	);
 
 export const deleteCategoryFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { id: string }) => data)
+	.validator((data: { id: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { id: string }) => deleteCategory(userId, data.id)),
 	);
 
 export const reorderCategoriesFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { orderedIds: Array<string> }) => data)
+	.validator((data: { orderedIds: Array<string> }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { orderedIds: Array<string> }) =>
 			reorderCategories(userId, data.orderedIds),
@@ -213,9 +213,7 @@ export const reorderCategoriesFn = createServerFn({ method: 'POST' })
 	);
 
 export const updateFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator(
-		(data: { feedId: string; customTitle?: string; categoryId?: string | null }) => data,
-	)
+	.validator((data: { feedId: string; customTitle?: string; categoryId?: string | null }) => data)
 	.handler(
 		withMutation(
 			async (
@@ -230,7 +228,7 @@ export const updateFeedFn = createServerFn({ method: 'POST' })
 	);
 
 export const deleteFeedFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { feedId: string }) => data)
+	.validator((data: { feedId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId: string }) =>
 			deleteFeed(userId, data.feedId),

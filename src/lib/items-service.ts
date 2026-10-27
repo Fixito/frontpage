@@ -123,7 +123,7 @@ export async function getItems(params: GetItemsParams): Promise<GetItemsResult> 
 	}
 
 	return {
-		items: rows as Array<FeedItemRow>,
+		items: rows,
 		totalCount,
 		hasMore: offset + rows.length < totalCount,
 		feedInfo,
@@ -310,7 +310,7 @@ export async function toggleBookmark(userId: string, itemId: string): Promise<bo
 // ── Server function wrappers ──────────────────────────────────────────────────
 
 export const getItemsFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: Omit<GetItemsParams, 'userId'>) => data)
+	.validator((data: Omit<GetItemsParams, 'userId'>) => data)
 	.handler(
 		withAuth(async (userId: string, data: Omit<GetItemsParams, 'userId'>) =>
 			getItems({ ...data, userId }),
@@ -318,13 +318,13 @@ export const getItemsFn = createServerFn({ method: 'POST' })
 	);
 
 export const markReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { itemId: string }) => data)
+	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { itemId: string }) => markRead(userId, data.itemId)),
 	);
 
 export const unmarkReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { itemId: string }) => data)
+	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { itemId: string }) =>
 			unmarkRead(userId, data.itemId),
@@ -332,7 +332,7 @@ export const unmarkReadFn = createServerFn({ method: 'POST' })
 	);
 
 export const markAllReadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { feedId?: string; categoryId?: string }) => data)
+	.validator((data: { feedId?: string; categoryId?: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
 			markAllRead(userId, data.feedId, data.categoryId),
@@ -340,7 +340,7 @@ export const markAllReadFn = createServerFn({ method: 'POST' })
 	);
 
 export const markAllUnreadFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { feedId?: string; categoryId?: string }) => data)
+	.validator((data: { feedId?: string; categoryId?: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
 			markAllUnread(userId, data.feedId, data.categoryId),
@@ -348,7 +348,7 @@ export const markAllUnreadFn = createServerFn({ method: 'POST' })
 	);
 
 export const toggleBookmarkFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { itemId: string }) => data)
+	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { itemId: string }) =>
 			toggleBookmark(userId, data.itemId),

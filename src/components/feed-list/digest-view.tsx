@@ -31,6 +31,7 @@ export function DigestView({ userId }: DigestViewProps) {
 	}, [userId]);
 
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching; candidate for useQuery
 		void fetchDigest();
 	}, [fetchDigest]);
 

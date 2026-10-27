@@ -102,13 +102,13 @@ function DashboardPage() {
 		() => () => {},
 		() => {
 			const db = loaderPreferences?.defaultLayout;
-			if (db === 'compact' || db === 'cards' || db === 'list') return db as FeedLayout;
+			if (db === 'compact' || db === 'cards' || db === 'list') return db;
 			return getInitialLayout();
 		},
 		() => {
 			const db = loaderPreferences?.defaultLayout;
-			if (db === 'compact' || db === 'cards' || db === 'list') return db as FeedLayout;
-			return 'list' as FeedLayout;
+			if (db === 'compact' || db === 'cards' || db === 'list') return db;
+			return 'list';
 		},
 	);
 	const [layoutOverride, setLayoutOverride] = useState<FeedLayout | undefined>(undefined);
@@ -137,7 +137,6 @@ function DashboardPage() {
 
 	const queryClient = useQueryClient();
 
-	/* eslint-disable react-you-might-not-need-an-effect/no-event-handler, react-you-might-not-need-an-effect/no-chain-state-updates */
 	useEffect(() => {
 		if (!user?.id || hasAutoRefreshed.current) return;
 		hasAutoRefreshed.current = true;
@@ -154,7 +153,7 @@ function DashboardPage() {
 				setRefreshing(false);
 			});
 	}, [user?.id, queryClient]);
-	/* eslint-enable react-you-might-not-need-an-effect/no-event-handler, react-you-might-not-need-an-effect/no-chain-state-updates */
+
 	const { data: sidebarData = EMPTY_SIDEBAR_DATA } = useQuery({
 		...sidebarQueryOptions(effectiveUserId),
 		initialData: loaderSidebarData,

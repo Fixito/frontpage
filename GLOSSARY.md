@@ -36,14 +36,14 @@ withAuth(async (userId: string, data?: ...) => { ... })
 withMutation(async (userId: string, data?: ...) => { ... })
 ```
 
-Both HOFs read the session server-side (via Better Auth `getSession` + `getRequest()`) and inject a verified `userId` as the first argument. **`userId` is never accepted from the client payload** — it was removed from all `inputValidator` schemas.
+Both HOFs read the session server-side (via Better Auth `getSession` + `getRequest()`) and inject a verified `userId` as the first argument. **`userId` is never accepted from the client payload** — it was removed from all `validator` schemas.
 
 ### Rules
 
 - `withAuth` — allows both authenticated Users and Guests (guest cookie → guest user record). Use for all reads.
 - `withMutation` — throws `'Unauthorized'` for Guests. Use for all writes.
-- Zero-payload server fns (no `.inputValidator()`) use a 1-param callback: `async (userId) => ...`
-- Data-carrying server fns use a 2-param callback with explicit types matching the `inputValidator` schema: `async (userId: string, data: { ... }) => ...` (explicit types required to avoid TypeScript's overload resolution ambiguity).
+- Zero-payload server fns (no `.validator()`) use a 1-param callback: `async (userId) => ...`
+- Data-carrying server fns use a 2-param callback with explicit types matching the `validator` schema: `async (userId: string, data: { ... }) => ...` (explicit types required to avoid TypeScript's overload resolution ambiguity).
 
 ### Files
 

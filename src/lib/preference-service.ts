@@ -34,7 +34,7 @@ export const getPreferenceFn = createServerFn({ method: 'POST' }).handler(
 // ── updateLayout ───────────────────────────────────────────────────────────────
 
 export const updateLayoutFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { layout: 'list' | 'compact' | 'cards' }) => data)
+	.validator((data: { layout: 'list' | 'compact' | 'cards' }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { layout: 'list' | 'compact' | 'cards' }) => {
 			await db
@@ -55,7 +55,7 @@ export const updateLayoutFn = createServerFn({ method: 'POST' })
 // ── updateTheme ────────────────────────────────────────────────────────────────
 
 export const updateThemeFn = createServerFn({ method: 'POST' })
-	.inputValidator((data: { theme: 'light' | 'dark' | 'system' }) => data)
+	.validator((data: { theme: 'light' | 'dark' | 'system' }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { theme: 'light' | 'dark' | 'system' }) => {
 			await db

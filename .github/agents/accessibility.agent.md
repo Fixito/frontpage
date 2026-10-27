@@ -291,7 +291,7 @@ Accessibility review:
 - Contrast/visual focus: [OK/Issue]
 - Forms/errors/help: [OK/Issue]
   Actions: …
-  Refs: WCAG 2.2 [2.4.*, 3.3.*, 2.5.*] as applicable.
+  Refs: WCAG 2.2 [2.4.\*, 3.3.\*, 2.5.\*] as applicable.
 ```
 
 ## CI Example (GitHub Actions)
