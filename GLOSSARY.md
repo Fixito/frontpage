@@ -41,7 +41,7 @@ Both HOFs read the session server-side (via Better Auth `getSession` + `getReque
 ### Rules
 
 - `withAuth` — allows both authenticated Users and Guests (guest cookie → guest user record). Use for all reads.
-- `withMutation` — throws `'Unauthorized'` for Guests. Use for all writes.
+- `withMutation` — throws `'Unauthorized'` for Guests. Use for all writes, and for any read that fetches arbitrary URLs or calls Gemini (Feed URL validation, category suggestion, Weekly Digest).
 - Zero-payload server fns (no `.validator()`) use a 1-param callback: `async (userId) => ...`
 - Data-carrying server fns use a 2-param callback with explicit types matching the `validator` schema: `async (userId: string, data: { ... }) => ...` (explicit types required to avoid TypeScript's overload resolution ambiguity).
 
@@ -55,6 +55,7 @@ Both HOFs read the session server-side (via Better Auth `getSession` + `getReque
 | `src/lib/feed-service.ts`       | Add / refresh feed server fns                    |
 | `src/lib/preference-service.ts` | Layout + theme preference server fns             |
 | `src/lib/ai-service.ts`         | Article summary + weekly digest server fns       |
+| `src/lib/url-guard.ts`          | Blocks non-http(s) and private-network Feed URLs |
 
 ---
 
