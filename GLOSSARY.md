@@ -6,19 +6,19 @@ A customizable RSS/Atom feed aggregator: fetch, parse, store, and read articles 
 
 ## Domain Glossary
 
-| Term                | Definition                                                                                                                                                                                         |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Feed**            | A URL pointing to an RSS or Atom document. Stored in the `feed` table.                                                                                                                             |
-| **Feed Item**       | A single article parsed from a Feed. Stored in `feedItem`.                                                                                                                                         |
-| **Category**        | A user-defined group of Feeds. Belongs to a User.                                                                                                                                                  |
-| **Sidebar Data**    | The aggregated list of Categories + their Feeds, fetched once per session load.                                                                                                                    |
-| **User**            | An authenticated Better Auth account with persistent prefs, history, and bookmarks.                                                                                                                |
-| **Guest**           | An unauthenticated visitor whose identity is tracked via a stable guest cookie. Guests share a fixed set of 19 curated tech feeds and get read/bookmark state stored in DB against their guest ID. |
-| **Preference**      | Per-user layout (`list` \| `compact` \| `cards`) and theme (`light` \| `dark` \| `system`) stored in `userPreference`.                                                                             |
-| **Reading History** | The set of `feedItem` IDs a User has marked read.                                                                                                                                                  |
-| **Bookmark**        | A `feedItem` a User has saved.                                                                                                                                                                     |
-| **Weekly Digest**   | An AI-generated summary of the top articles from the past 7 days, produced by Gemini 2.5 Flash. Authenticated users only.                                                                          |
-| **AI Summary**      | A per-article structured summary cached in `feedItem.aiSummary`. Authenticated users only.                                                                                                         |
+| Term                | Definition                                                                                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Feed**            | A URL pointing to an RSS or Atom document. Stored in the `feed` table.                                                                                                                                                                             |
+| **Feed Item**       | A single article parsed from a Feed. Stored in `feedItem`.                                                                                                                                                                                         |
+| **Category**        | A user-defined group of Feeds. Belongs to a User.                                                                                                                                                                                                  |
+| **Sidebar Data**    | The aggregated list of Categories + their Feeds, fetched once per session load.                                                                                                                                                                    |
+| **User**            | An authenticated Better Auth account with persistent prefs, history, and bookmarks.                                                                                                                                                                |
+| **Guest**           | An unauthenticated visitor identified by a guest cookie. All Guests view the same shared demo user and its 19 curated tech feeds, read-only: Guests cannot mutate anything (read state, bookmarks, feeds, preferences) and cannot use AI features. |
+| **Preference**      | Per-user layout (`list` \| `compact` \| `cards`) and theme (`light` \| `dark` \| `system`) stored in `userPreference`.                                                                                                                             |
+| **Reading History** | The set of `feedItem` IDs a User has marked read.                                                                                                                                                                                                  |
+| **Bookmark**        | A `feedItem` a User has saved.                                                                                                                                                                                                                     |
+| **Weekly Digest**   | An AI-generated summary of the top articles from the past 7 days, produced by Gemini 2.5 Flash. Authenticated users only.                                                                                                                          |
+| **AI Summary**      | A per-article structured summary cached in `feedItem.aiSummary`. Authenticated users only.                                                                                                                                                         |
 
 ---
 
