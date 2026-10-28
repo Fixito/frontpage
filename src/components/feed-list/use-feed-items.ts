@@ -33,7 +33,10 @@ export interface UseFeedItemsResult {
 	feedInfo: GetItemsResult['feedInfo'];
 	markingAllRead: boolean;
 	markingAllUnread: boolean;
+	/** Mark-read intent: unread → read, read stays read. */
 	handleMarkRead: (itemId: string) => void;
+	/** Explicit read/unread toggle. */
+	handleToggleRead: (itemId: string) => void;
 	handleBookmarkToggle: (itemId: string) => void;
 	handleMarkAllRead: () => Promise<void>;
 	handleMarkAllUnread: () => Promise<void>;
@@ -116,6 +119,22 @@ export function useFeedItems({
 	}, [fetchItems, refreshKey]);
 
 	const handleMarkRead = useCallback(
+		(itemId: string) => {
+			if (!userId) return;
+			if (items.find((i) => i.id === itemId)?.isRead ?? true) return;
+			setItems((prev) =>
+				prev.map((item) => (item.id === itemId ? { ...item, isRead: true } : item)),
+			);
+			void markReadFn({ data: { itemId } }).catch(() => {
+				setItems((prev) =>
+					prev.map((item) => (item.id === itemId ? { ...item, isRead: false } : item)),
+				);
+			});
+		},
+		[userId, items],
+	);
+
+	const handleToggleRead = useCallback(
 		(itemId: string) => {
 			if (!userId) return;
 			const isCurrentlyRead = items.find((i) => i.id === itemId)?.isRead ?? false;
@@ -224,6 +243,7 @@ export function useFeedItems({
 		markingAllRead,
 		markingAllUnread,
 		handleMarkRead,
+		handleToggleRead,
 		handleBookmarkToggle,
 		handleMarkAllRead,
 		handleMarkAllUnread,
