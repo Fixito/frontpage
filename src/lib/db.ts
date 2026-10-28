@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
+import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import * as schema from '@/db/schema';
 
 function createDb() {
@@ -9,6 +10,13 @@ function createDb() {
 }
 
 export type DB = ReturnType<typeof createDb>;
+
+/**
+ * Any Drizzle Postgres database (or transaction) over the app schema.
+ * Server modules take this as a parameter instead of importing `db`, so
+ * server fns pass the Neon instance and tests pass an in-memory PGLite one.
+ */
+export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 // Lazy singleton — process.env is only read on the first actual DB call,
 // not at module import time. This avoids a race with Nitro's .env loading.

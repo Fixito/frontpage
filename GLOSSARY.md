@@ -57,6 +57,10 @@ Both HOFs read the session server-side (via Better Auth `getSession` + `getReque
 | `src/lib/ai-service.ts`         | Article summary + weekly digest server fns       |
 | `src/lib/url-guard.ts`          | Blocks non-http(s) and private-network Feed URLs |
 
+### Database Seam
+
+The module functions in `category-service`, `items-service` and `feed-service` take a `Database` (`src/lib/db.ts`) as their first argument instead of importing `db`. Their server fns pass the production Neon instance; tests pass an in-memory PGLite database from `src/test/db.ts`.
+
 ---
 
 ## Tech Stack

@@ -2,7 +2,8 @@ import { createServerFn } from '@tanstack/react-start';
 import { and, count, desc, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { withAuth, withMutation } from './server-fn-helpers';
-import { db } from './db';
+import { db as productionDb } from './db';
+import type { Database } from './db';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export interface GetItemsResult {
 
 // ── getItems ─────────────────────────────────────────────────────────────────
 
-export async function getItems(params: GetItemsParams): Promise<GetItemsResult> {
+export async function getItems(db: Database, params: GetItemsParams): Promise<GetItemsResult> {
 	const { userId, feedId, categoryId, view = 'all', page = 1, pageSize = 50 } = params;
 	const offset = (page - 1) * pageSize;
 
@@ -132,19 +133,20 @@ export async function getItems(params: GetItemsParams): Promise<GetItemsResult> 
 
 // ── markRead ─────────────────────────────────────────────────────────────────
 
-export async function markRead(userId: string, itemId: string): Promise<void> {
+export async function markRead(db: Database, userId: string, itemId: string): Promise<void> {
 	await db.insert(readState).values({ userId, itemId }).onConflictDoNothing();
 }
 
 // ── unmarkRead ────────────────────────────────────────────────────────────────
 
-export async function unmarkRead(userId: string, itemId: string): Promise<void> {
+export async function unmarkRead(db: Database, userId: string, itemId: string): Promise<void> {
 	await db.delete(readState).where(and(eq(readState.userId, userId), eq(readState.itemId, itemId)));
 }
 
 // ── markAllRead ───────────────────────────────────────────────────────────────
 
 export async function markAllRead(
+	db: Database,
 	userId: string,
 	feedId?: string,
 	categoryId?: string,
@@ -235,6 +237,7 @@ export async function markAllRead(
 // ── markAllUnread ─────────────────────────────────────────────────────────────
 
 export async function markAllUnread(
+	db: Database,
 	userId: string,
 	feedId?: string,
 	categoryId?: string,
@@ -291,7 +294,11 @@ export async function markAllUnread(
 
 // ── toggleBookmark ────────────────────────────────────────────────────────────
 
-export async function toggleBookmark(userId: string, itemId: string): Promise<boolean> {
+export async function toggleBookmark(
+	db: Database,
+	userId: string,
+	itemId: string,
+): Promise<boolean> {
 	const existing = await db
 		.select({ itemId: bookmark.itemId })
 		.from(bookmark)
@@ -313,21 +320,23 @@ export const getItemsFn = createServerFn({ method: 'POST' })
 	.validator((data: Omit<GetItemsParams, 'userId'>) => data)
 	.handler(
 		withAuth(async (userId: string, data: Omit<GetItemsParams, 'userId'>) =>
-			getItems({ ...data, userId }),
+			getItems(productionDb, { ...data, userId }),
 		),
 	);
 
 export const markReadFn = createServerFn({ method: 'POST' })
 	.validator((data: { itemId: string }) => data)
 	.handler(
-		withMutation(async (userId: string, data: { itemId: string }) => markRead(userId, data.itemId)),
+		withMutation(async (userId: string, data: { itemId: string }) =>
+			markRead(productionDb, userId, data.itemId),
+		),
 	);
 
 export const unmarkReadFn = createServerFn({ method: 'POST' })
 	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { itemId: string }) =>
-			unmarkRead(userId, data.itemId),
+			unmarkRead(productionDb, userId, data.itemId),
 		),
 	);
 
@@ -335,7 +344,7 @@ export const markAllReadFn = createServerFn({ method: 'POST' })
 	.validator((data: { feedId?: string; categoryId?: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
-			markAllRead(userId, data.feedId, data.categoryId),
+			markAllRead(productionDb, userId, data.feedId, data.categoryId),
 		),
 	);
 
@@ -343,7 +352,7 @@ export const markAllUnreadFn = createServerFn({ method: 'POST' })
 	.validator((data: { feedId?: string; categoryId?: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId?: string; categoryId?: string }) =>
-			markAllUnread(userId, data.feedId, data.categoryId),
+			markAllUnread(productionDb, userId, data.feedId, data.categoryId),
 		),
 	);
 
@@ -351,6 +360,6 @@ export const toggleBookmarkFn = createServerFn({ method: 'POST' })
 	.validator((data: { itemId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { itemId: string }) =>
-			toggleBookmark(userId, data.itemId),
+			toggleBookmark(productionDb, userId, data.itemId),
 		),
 	);

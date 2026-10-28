@@ -1,10 +1,11 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, eq, sql } from 'drizzle-orm';
 import { withMutation } from './server-fn-helpers';
-import { db } from './db';
+import { db as productionDb } from './db';
 import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
+import type { Database } from './db';
 import type { NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
@@ -45,6 +46,7 @@ export async function validateAndPreviewFeed(url: string): Promise<FeedPreview> 
 // ── Add a feed for a user and perform initial fetch ────────────────────────────
 
 export async function addFeed(
+	db: Database,
 	userId: string,
 	url: string,
 	categoryId: string | null = null,
@@ -68,13 +70,13 @@ export async function addFeed(
 		})
 		.returning({ id: feed.id });
 
-	await _storeItems(inserted.id, result.finalUrl, parsed.items);
+	await _storeItems(db, inserted.id, result.finalUrl, parsed.items);
 	return inserted.id;
 }
 
 // ── Refresh a single feed owned by a user ──────────────────────────────────────
 
-export async function refreshFeed(userId: string, feedId: string): Promise<void> {
+export async function refreshFeed(db: Database, userId: string, feedId: string): Promise<void> {
 	const feedRows = await db
 		.select()
 		.from(feed)
@@ -135,11 +137,12 @@ export async function refreshFeed(userId: string, feedId: string): Promise<void>
 		})
 		.where(eq(feed.id, feedId));
 
-	await _storeItems(feedId, finalUrl, parsed.items);
+	await _storeItems(db, feedId, finalUrl, parsed.items);
 }
 
 // Fetch, parse, and store items for a URL (used by addFeed and refreshFeed)
 async function _storeItems(
+	db: Database,
 	feedId: string,
 	feedUrl: string,
 	items?: Awaited<ReturnType<typeof parseFeed>>['items'],
@@ -183,14 +186,14 @@ async function _storeItems(
 
 // ── Refresh all feeds for a user ──────────────────────────────────────────────
 
-export async function refreshAllFeeds(userId: string): Promise<void> {
+export async function refreshAllFeeds(db: Database, userId: string): Promise<void> {
 	const feeds = await db.select({ id: feed.id }).from(feed).where(eq(feed.userId, userId));
-	await Promise.allSettled(feeds.map((f) => refreshFeed(userId, f.id)));
+	await Promise.allSettled(feeds.map((f) => refreshFeed(db, userId, f.id)));
 }
 
 // ── Mark feeds as stale (last fetched > 30 days ago) ──────────────────────────
 
-export async function markStaleFeeds(): Promise<void> {
+export async function markStaleFeeds(db: Database): Promise<void> {
 	await db
 		.update(feed)
 		.set({ healthStatus: 'stale' })
@@ -214,7 +217,7 @@ export const addFeedFn = createServerFn({ method: 'POST' })
 	.validator((data: { url: string; categoryId: string | null }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { url: string; categoryId: string | null }) =>
-			addFeed(userId, data.url, data.categoryId),
+			addFeed(productionDb, userId, data.url, data.categoryId),
 		),
 	);
 
@@ -222,10 +225,10 @@ export const refreshFeedFn = createServerFn({ method: 'POST' })
 	.validator((data: { feedId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId: string }) =>
-			refreshFeed(userId, data.feedId),
+			refreshFeed(productionDb, userId, data.feedId),
 		),
 	);
 
 export const refreshAllFeedsFn = createServerFn({ method: 'POST' }).handler(
-	withMutation(async (userId) => refreshAllFeeds(userId)),
+	withMutation(async (userId) => refreshAllFeeds(productionDb, userId)),
 );
