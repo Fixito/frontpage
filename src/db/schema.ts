@@ -103,7 +103,12 @@ export const feed = pgTable(
 		errorMessage: text('error_message'),
 		createdAt: timestamp('created_at').notNull().defaultNow(),
 	},
-	(t) => [index('feed_user_idx').on(t.userId), index('feed_category_idx').on(t.categoryId)],
+	(t) => [
+		index('feed_user_idx').on(t.userId),
+		index('feed_category_idx').on(t.categoryId),
+		// A User follows a Feed URL once: adding a Feed relies on it under concurrent adds.
+		uniqueIndex('feed_user_url_idx').on(t.userId, t.url),
+	],
 );
 
 export const feedItem = pgTable(

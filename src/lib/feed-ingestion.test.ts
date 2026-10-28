@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { addFeed, ingestFeed, validateAndPreviewFeed } from './feed-ingestion.server';
+import {
+	FeedAlreadyFollowedError,
+	addFeed,
+	ingestFeed,
+	validateAndPreviewFeed,
+} from './feed-ingestion.server';
 import { getItems } from './items-service';
 import { getSidebarData } from './category-service';
 import type { SidebarData } from '@/components/sidebar/types';
@@ -223,6 +228,40 @@ describe('ingestFeed', () => {
 		expect((await techItems()).feedInfo?.healthStatus).toBe('error');
 	});
 
+	it('keeps its URL when it redirects to another Feed the User follows', async () => {
+		const { loose, tech } = seed.userA.feeds;
+		const { options } = network((url) =>
+			Promise.resolve(
+				url === loose.url
+					? new Response(null, { status: 301, headers: { location: tech.url } })
+					: new Response(rss2(), { status: 200 }),
+			),
+		);
+
+		const outcome = await ingestFeed(db, { id: loose.id, url: loose.url }, options);
+
+		expect(outcome.status).toBe('active');
+		const urls = sidebarFeeds(await getSidebarData(db, seed.userA.id)).map((f) => f.url);
+		expect(urls).toContain(loose.url);
+	});
+
+	it('moves to the URL it redirects to', async () => {
+		const { loose } = seed.userA.feeds;
+		const movedUrl = 'https://loose.example.com/new-atom.xml';
+		const { options } = network((url) =>
+			Promise.resolve(
+				url === loose.url
+					? new Response(null, { status: 301, headers: { location: movedUrl } })
+					: new Response(rss2(), { status: 200 }),
+			),
+		);
+
+		await ingestFeed(db, { id: loose.id, url: loose.url }, options);
+
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(feeds.find((f) => f.id === loose.id)?.url).toBe(movedUrl);
+	});
+
 	it('shows the Feed as stale in the sidebar when its newest item is over 30 days old', async () => {
 		const outcome = await ingestFeed(db, techFeed(), serving(rss2(daysAgo(31))).options);
 
@@ -316,6 +355,20 @@ describe('addFeed', () => {
 		await expect(
 			addFeed(db, seed.userA.id, { url: NEW_FEED_URL, categoryId: null }, options),
 		).rejects.toThrow('You already follow this feed');
+	});
+
+	it('adds a Feed once when the User adds it twice at the same time', async () => {
+		const { options } = serving(rss2());
+		const add = () => addFeed(db, seed.userA.id, { url: NEW_FEED_URL, categoryId: null }, options);
+
+		const results = await Promise.allSettled([add(), add()]);
+
+		expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+		expect(results.find((r) => r.status === 'rejected')?.reason).toBeInstanceOf(
+			FeedAlreadyFollowedError,
+		);
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(feeds.filter((f) => f.url === NEW_FEED_URL)).toHaveLength(1);
 	});
 
 	it('adds a Feed another User follows', async () => {

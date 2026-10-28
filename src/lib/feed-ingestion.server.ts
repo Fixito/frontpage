@@ -1,7 +1,8 @@
 // Server-only: fetching a Feed pulls in node:dns via the URL guard. The `.server`
 // suffix makes TanStack Start's import protection fail the build if client code
 // ever imports this module; feed-service.ts calls it only inside server fn handlers.
-import { and, eq, max } from 'drizzle-orm';
+import { and, eq, max, notExists } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { FeedFetchError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
@@ -155,7 +156,7 @@ export async function addFeed(
 ): Promise<string> {
 	const fetched = await fetchNewFeed(db, userId, url, fetchOptions);
 
-	const [inserted] = await db
+	const inserted = await db
 		.insert(feed)
 		.values({
 			userId,
@@ -167,16 +168,20 @@ export async function addFeed(
 			healthStatus: 'active',
 			lastFetchedAt: new Date(),
 		})
+		// A concurrent add of the same URL got there first.
+		.onConflictDoNothing({ target: [feed.userId, feed.url] })
 		.returning({ id: feed.id });
+	if (inserted.length === 0) throw new FeedAlreadyFollowedError();
+	const feedId = inserted[0].id;
 
 	try {
-		await storeItems(db, inserted.id, fetched.items);
+		await storeItems(db, feedId, fetched.items);
 	} catch (err) {
 		// No transaction on neon-http: undo the insert so a failed add leaves no Feed.
-		await db.delete(feed).where(eq(feed.id, inserted.id));
+		await db.delete(feed).where(eq(feed.id, feedId));
 		throw err;
 	}
-	return inserted.id;
+	return feedId;
 }
 
 // ── Ingest a Feed: fetch, parse, store, and record its health ──────────────────
@@ -227,14 +232,36 @@ export async function ingestFeed(
 			title: fetched.title,
 			description: fetched.description,
 			faviconUrl: fetched.faviconUrl,
-			...(fetched.finalUrl !== target.url ? { url: fetched.finalUrl } : {}),
 			healthStatus: status,
 			errorMessage: null,
 			lastFetchedAt: new Date(),
 		})
 		.where(eq(feed.id, target.id));
+	if (fetched.finalUrl !== target.url) await moveFeedUrl(db, target.id, fetched.finalUrl);
 
 	return { status, newItemCount, error: null };
+}
+
+/**
+ * Moves a Feed to the URL it now redirects to, unless its User already follows
+ * that URL as another Feed: a User follows a URL once (`feed_user_url_idx`).
+ */
+async function moveFeedUrl(db: Database, feedId: string, url: string): Promise<void> {
+	const other = alias(feed, 'other');
+	await db
+		.update(feed)
+		.set({ url })
+		.where(
+			and(
+				eq(feed.id, feedId),
+				notExists(
+					db
+						.select({ id: other.id })
+						.from(other)
+						.where(and(eq(other.userId, feed.userId), eq(other.url, url))),
+				),
+			),
+		);
 }
 
 // ── Refresh a single feed owned by a user ──────────────────────────────────────
