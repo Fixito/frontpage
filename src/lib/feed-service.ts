@@ -16,8 +16,8 @@ export type { FeedPreview } from './feed-ingestion.server';
 export const validateFeedUrlFn = createServerFn({ method: 'POST' })
 	.validator((data: { url: string }) => data)
 	.handler(
-		withMutation(async (_userId: string, data: { url: string }) =>
-			validateAndPreviewFeed(data.url),
+		withMutation(async (userId: string, data: { url: string }) =>
+			validateAndPreviewFeed(productionDb, userId, data.url),
 		),
 	);
 
@@ -25,7 +25,7 @@ export const addFeedFn = createServerFn({ method: 'POST' })
 	.validator((data: { url: string; categoryId: string | null }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { url: string; categoryId: string | null }) =>
-			addFeed(productionDb, userId, data.url, data.categoryId),
+			addFeed(productionDb, userId, data),
 		),
 	);
 

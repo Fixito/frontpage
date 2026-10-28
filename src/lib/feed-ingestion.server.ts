@@ -2,7 +2,7 @@
 // suffix makes TanStack Start's import protection fail the build if client code
 // ever imports this module; feed-service.ts calls it only inside server fn handlers.
 import { and, eq, max } from 'drizzle-orm';
-import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher';
+import { FeedFetchError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
 import type { ParsedFeed } from './feed-parser';
@@ -11,7 +11,29 @@ import type { FetchFeedOptions } from './feed-fetcher';
 import type { Feed, FeedHealth, NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Fetch & parse ──────────────────────────────────────────────────────────────
+
+/** A Feed document fetched and parsed, with the Feed metadata it declares. */
+interface FetchedFeed {
+	finalUrl: string;
+	title: string;
+	description: string | null;
+	faviconUrl: string | null;
+	items: ParsedFeed['items'];
+}
+
+/** Throws a FeedFetchError, BlockedUrlError or FeedParseError on failure. */
+async function fetchAndParse(url: string, fetchOptions: FetchFeedOptions): Promise<FetchedFeed> {
+	const { xml, finalUrl } = await fetchFeed(url, fetchOptions);
+	const parsed = parseFeed(xml);
+	return {
+		finalUrl,
+		title: parsed.title,
+		description: parsed.description,
+		faviconUrl: getFaviconUrl(parsed.siteUrl ?? finalUrl),
+		items: parsed.items,
+	};
+}
 
 function getFaviconUrl(siteUrl: string | null): string | null {
 	if (!siteUrl) return null;
@@ -20,6 +42,53 @@ function getFaviconUrl(siteUrl: string | null): string | null {
 		return `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
 	} catch {
 		return null;
+	}
+}
+
+// ── Fetch a Feed the User doesn't follow yet ───────────────────────────────────
+
+/** Thrown when a User adds a Feed URL they already follow. */
+export class FeedAlreadyFollowedError extends Error {
+	constructor() {
+		super('You already follow this feed');
+		this.name = 'FeedAlreadyFollowedError';
+	}
+}
+
+const NEW_FEED_FETCH_OPTIONS: FetchFeedOptions = { timeoutMs: 15_000 };
+
+/**
+ * Fetches and parses a Feed for a User, rejecting it with FeedAlreadyFollowedError
+ * when they already follow its URL, before fetching, or the URL it redirects to.
+ */
+async function fetchNewFeed(
+	db: Database,
+	userId: string,
+	url: string,
+	fetchOptions: FetchFeedOptions,
+): Promise<FetchedFeed> {
+	const rows = await db.select({ url: feed.url }).from(feed).where(eq(feed.userId, userId));
+	const followed = new Set(rows.map((row) => normalizeFeedUrl(row.url)));
+	const assertNotFollowed = (candidate: string) => {
+		if (followed.has(normalizeFeedUrl(candidate))) throw new FeedAlreadyFollowedError();
+	};
+
+	assertNotFollowed(url);
+	const fetched = await fetchAndParse(url, fetchOptions);
+	assertNotFollowed(fetched.finalUrl);
+	return fetched;
+}
+
+/**
+ * The form two Feed URLs are compared in: scheme and host lowercased (the URL
+ * parser does it), trailing slashes dropped from the path.
+ */
+function normalizeFeedUrl(rawUrl: string): string {
+	try {
+		const url = new URL(rawUrl.trim());
+		return `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, '')}${url.search}`;
+	} catch {
+		return rawUrl.trim();
 	}
 }
 
@@ -33,46 +102,51 @@ export interface FeedPreview {
 	itemCount: number;
 }
 
-export async function validateAndPreviewFeed(url: string): Promise<FeedPreview> {
-	const result = await fetchFeed(url, { timeoutMs: 15_000 });
-	const parsed = parseFeed(result.xml);
-	return {
-		title: parsed.title,
-		description: parsed.description,
-		faviconUrl: getFaviconUrl(parsed.siteUrl ?? result.finalUrl),
-		finalUrl: result.finalUrl,
-		itemCount: parsed.items.length,
-	};
+export async function validateAndPreviewFeed(
+	db: Database,
+	userId: string,
+	url: string,
+	fetchOptions: FetchFeedOptions = NEW_FEED_FETCH_OPTIONS,
+): Promise<FeedPreview> {
+	const { title, description, faviconUrl, finalUrl, items } = await fetchNewFeed(
+		db,
+		userId,
+		url,
+		fetchOptions,
+	);
+	return { title, description, faviconUrl, finalUrl, itemCount: items.length };
 }
 
 // ── Add a feed for a user and perform initial fetch ────────────────────────────
 
+/**
+ * Fetches a Feed the User doesn't follow yet and stores it with its Feed Items.
+ * Throws, storing nothing, when the fetch or parse fails or the User already
+ * follows it (FeedAlreadyFollowedError). Returns the new Feed's id.
+ */
 export async function addFeed(
 	db: Database,
 	userId: string,
-	url: string,
-	categoryId: string | null = null,
+	{ url, categoryId }: { url: string; categoryId: string | null },
+	fetchOptions: FetchFeedOptions = NEW_FEED_FETCH_OPTIONS,
 ): Promise<string> {
-	// Single fetch — parse once, store metadata + items without a second network call.
-	const result = await fetchFeed(url, { timeoutMs: 15_000 });
-	const parsed = parseFeed(result.xml);
-	const faviconUrl = getFaviconUrl(parsed.siteUrl ?? result.finalUrl);
+	const fetched = await fetchNewFeed(db, userId, url, fetchOptions);
 
 	const [inserted] = await db
 		.insert(feed)
 		.values({
 			userId,
-			url: result.finalUrl,
-			title: parsed.title,
-			description: parsed.description,
-			faviconUrl,
+			url: fetched.finalUrl,
+			title: fetched.title,
+			description: fetched.description,
+			faviconUrl: fetched.faviconUrl,
 			categoryId,
 			healthStatus: 'active',
 			lastFetchedAt: new Date(),
 		})
 		.returning({ id: feed.id });
 
-	await storeItems(db, inserted.id, parsed.items);
+	await storeItems(db, inserted.id, fetched.items);
 	return inserted.id;
 }
 
@@ -100,47 +174,31 @@ export async function ingestFeed(
 	target: Pick<Feed, 'id' | 'url'>,
 	fetchOptions: FetchFeedOptions = {},
 ): Promise<IngestOutcome> {
-	let xml: string;
-	let finalUrl = target.url;
-
+	let fetched: FetchedFeed;
 	try {
-		const result = await fetchFeed(target.url, fetchOptions);
-		xml = result.xml;
-		finalUrl = result.finalUrl;
+		fetched = await fetchAndParse(target.url, fetchOptions);
 	} catch (err) {
-		if (err instanceof FeedNotModifiedError) {
-			await db
-				.update(feed)
-				.set({ lastFetchedAt: new Date(), healthStatus: 'active', errorMessage: null })
-				.where(eq(feed.id, target.id));
-			return { status: 'active', newItemCount: 0, error: null };
-		}
 		return recordError(
 			db,
 			target.id,
-			err instanceof FeedFetchError || err instanceof BlockedUrlError
+			err instanceof FeedFetchError ||
+				err instanceof BlockedUrlError ||
+				err instanceof FeedParseError
 				? err.message
 				: 'Fetch failed',
 		);
 	}
 
-	let parsed;
-	try {
-		parsed = parseFeed(xml);
-	} catch (err) {
-		return recordError(db, target.id, err instanceof FeedParseError ? err.message : 'Parse failed');
-	}
-
-	const newItemCount = await storeItems(db, target.id, parsed.items);
+	const newItemCount = await storeItems(db, target.id, fetched.items);
 	const status = (await isStale(db, target.id)) ? 'stale' : 'active';
 
 	await db
 		.update(feed)
 		.set({
-			title: parsed.title,
-			description: parsed.description,
-			faviconUrl: getFaviconUrl(parsed.siteUrl ?? finalUrl),
-			...(finalUrl !== target.url ? { url: finalUrl } : {}),
+			title: fetched.title,
+			description: fetched.description,
+			faviconUrl: fetched.faviconUrl,
+			...(fetched.finalUrl !== target.url ? { url: fetched.finalUrl } : {}),
 			healthStatus: status,
 			errorMessage: null,
 			lastFetchedAt: new Date(),

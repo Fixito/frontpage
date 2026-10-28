@@ -7,8 +7,6 @@ export interface FetchFeedResult {
 	xml: string;
 	finalUrl: string;
 	wasRedirected: boolean;
-	etag: string | null;
-	lastModified: string | null;
 }
 
 export interface FetchFeedOptions {
@@ -36,13 +34,6 @@ export class FeedTimeoutError extends FeedFetchError {
 	constructor(timeoutMs: number) {
 		super(`Request timed out after ${timeoutMs / 1000}s`);
 		this.name = 'FeedTimeoutError';
-	}
-}
-
-export class FeedNotModifiedError extends Error {
-	constructor() {
-		super('Feed not modified');
-		this.name = 'FeedNotModifiedError';
 	}
 }
 
@@ -97,8 +88,6 @@ async function attemptFetch(
 		clearTimeout(timer);
 	}
 
-	if (response.status === 304) throw new FeedNotModifiedError();
-
 	if (!response.ok) {
 		throw new FeedFetchError(`HTTP ${response.status} ${response.statusText}`, response.status);
 	}
@@ -112,8 +101,6 @@ async function attemptFetch(
 		xml,
 		finalUrl: currentUrl,
 		wasRedirected: currentUrl !== url,
-		etag: response.headers.get('etag'),
-		lastModified: response.headers.get('last-modified'),
 	};
 }
 
@@ -135,8 +122,7 @@ export async function fetchFeed(
 		try {
 			return await attemptFetch(url, timeoutMs, resolveHost, fetchImpl);
 		} catch (err) {
-			// Never retry on 304 (not modified), blocked URLs or timeouts
-			if (err instanceof FeedNotModifiedError) throw err;
+			// Never retry on blocked URLs or timeouts
 			if (err instanceof BlockedUrlError) throw err;
 			if (err instanceof FeedTimeoutError) throw err;
 
