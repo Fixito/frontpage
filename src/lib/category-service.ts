@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, max, sql } from 'drizzle-orm';
 import { withAuth, withMutation } from './server-fn-helpers';
+import { feedDisplayTitle } from './feed-title';
 import { db as productionDb } from './db';
 import type { Database } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
@@ -12,7 +13,8 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 	const feedsRaw = await db
 		.select({
 			id: feed.id,
-			title: feed.title,
+			title: feedDisplayTitle,
+			url: feed.url,
 			faviconUrl: feed.faviconUrl,
 			categoryId: feed.categoryId,
 			healthStatus: feed.healthStatus,
@@ -38,6 +40,7 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 		const navItem: FeedNavItem = {
 			id: f.id,
 			title: f.title,
+			url: f.url,
 			faviconUrl: f.faviconUrl,
 			unreadCount: Math.max(0, f.unreadCount),
 			healthStatus: f.healthStatus as 'active' | 'stale' | 'error',
@@ -158,14 +161,19 @@ export async function updateFeed(
 	patch: { customTitle?: string; categoryId?: string | null },
 ): Promise<void> {
 	const rows = await db
-		.select({ id: feed.id })
+		.select({ title: feed.title })
 		.from(feed)
 		.where(and(eq(feed.id, feedId), eq(feed.userId, userId)))
 		.limit(1);
 	if (!rows.length) throw new Error('Feed not found');
 
-	const updates: { title?: string; categoryId?: string | null } = {};
-	if (patch.customTitle !== undefined) updates.title = patch.customTitle;
+	const updates: { customTitle?: string | null; categoryId?: string | null } = {};
+	if (patch.customTitle !== undefined) {
+		// An empty title, or the Feed's own title, clears the custom title: the
+		// Feed then shows its own title, including after the publisher renames it.
+		const customTitle = patch.customTitle.trim();
+		updates.customTitle = customTitle && customTitle !== rows[0].title ? customTitle : null;
+	}
 	if (patch.categoryId !== undefined) updates.categoryId = patch.categoryId;
 	if (Object.keys(updates).length === 0) return;
 

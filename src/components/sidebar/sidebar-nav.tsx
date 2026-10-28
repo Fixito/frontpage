@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss, Sparkles } from 'lucide-react';
 import {
 	DndContext,
@@ -11,8 +11,12 @@ import {
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 
+import { FeedActionDialogs } from './feed-action-dialogs';
+import { FeedActionsMenu } from './feed-actions-menu';
+import { useFeedActions } from './use-feed-actions';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { FeedRowActions } from './use-feed-actions';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +31,9 @@ interface SidebarNavProps {
 	onNavigate?: () => void;
 	onAddFeed?: () => void;
 	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
+	/** Omit (with onFeedRemoved) to hide the per-Feed Edit/Remove menu, e.g. for Guests. */
+	onFeedUpdated?: () => Promise<void>;
+	onFeedRemoved?: (feedId: string) => Promise<void>;
 }
 
 function UnreadBadge({ count }: { count: number }) {
@@ -142,16 +149,49 @@ function FeedItem({
 	);
 }
 
+interface FeedRowProps {
+	feed: FeedNavItem;
+	categoryId: string | null;
+	isActive: boolean;
+	draggable: boolean;
+	onNavigate?: () => void;
+	/** Omit to hide the Edit/Remove menu. */
+	actions?: FeedRowActions;
+}
+
+function FeedRow({ feed, categoryId, isActive, draggable, onNavigate, actions }: FeedRowProps) {
+	return (
+		<div className="group/feed flex items-center gap-0.5">
+			<div className="min-w-0 flex-1">
+				{draggable ? (
+					<DraggableFeedItem feed={feed} isActive={isActive} onNavigate={onNavigate} />
+				) : (
+					<FeedItem feed={feed} isActive={isActive} onNavigate={onNavigate} />
+				)}
+			</div>
+			{actions && (
+				<FeedActionsMenu
+					feedTitle={feed.title}
+					triggerRef={actions.registerTrigger(feed.id)}
+					onAction={(action) => actions.onAction({ action, feed, categoryId })}
+				/>
+			)}
+		</div>
+	);
+}
+
 function CategorySection({
 	category,
 	activeCategoryId,
 	activeFeedId,
 	onNavigate,
+	feedActions,
 }: {
 	category: CategoryNavItem;
 	activeCategoryId?: string;
 	activeFeedId?: string;
 	onNavigate?: () => void;
+	feedActions?: FeedRowActions;
 }) {
 	const isActive = activeCategoryId === category.id;
 	const [expanded, setExpanded] = useState(true);
@@ -197,11 +237,14 @@ function CategorySection({
 			{expanded && category.feeds.length > 0 && (
 				<div className="border-border/50 mt-0.5 ml-4 space-y-0.5 border-l pl-2">
 					{category.feeds.map((feed) => (
-						<DraggableFeedItem
+						<FeedRow
 							key={feed.id}
 							feed={feed}
+							categoryId={category.id}
 							isActive={activeFeedId === feed.id}
+							draggable
 							onNavigate={onNavigate}
+							actions={feedActions}
 						/>
 					))}
 				</div>
@@ -214,10 +257,12 @@ function UncategorizedSection({
 	feeds,
 	activeFeedId,
 	onNavigate,
+	feedActions,
 }: {
 	feeds: Array<FeedNavItem>;
 	activeFeedId?: string;
 	onNavigate?: () => void;
+	feedActions?: FeedRowActions;
 }) {
 	const { setNodeRef, isOver } = useDroppable({ id: '__uncategorized__' });
 
@@ -238,11 +283,14 @@ function UncategorizedSection({
 			)}
 			<div className="space-y-0.5">
 				{feeds.map((feed) => (
-					<DraggableFeedItem
+					<FeedRow
 						key={feed.id}
 						feed={feed}
+						categoryId={null}
 						isActive={activeFeedId === feed.id}
+						draggable
 						onNavigate={onNavigate}
+						actions={feedActions}
 					/>
 				))}
 			</div>
@@ -258,12 +306,19 @@ export function SidebarNav({
 	onNavigate,
 	onAddFeed,
 	onMoveFeed,
+	onFeedUpdated,
+	onFeedRemoved,
 }: SidebarNavProps) {
 	const isAllActive = activeView === 'all' && !activeCategoryId && !activeFeedId;
 	const isBookmarksActive = activeView === 'bookmarks';
 	const isDigestActive = activeView === 'digest';
 
 	const [activeDrag, setActiveDrag] = useState<FeedNavItem | null>(null);
+
+	const allItemsLink = useRef<HTMLAnchorElement>(null);
+	const feedActionsState = useFeedActions();
+	const canEditFeeds = onFeedUpdated !== undefined && onFeedRemoved !== undefined;
+	const feedActions = canEditFeeds ? feedActionsState.rowActions : undefined;
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -305,6 +360,7 @@ export function SidebarNav({
 			</div>
 
 			<Link
+				ref={allItemsLink}
 				to="/dashboard"
 				search={{ view: 'all' }}
 				onClick={onNavigate}
@@ -369,12 +425,14 @@ export function SidebarNav({
 										activeCategoryId={activeCategoryId}
 										activeFeedId={activeFeedId}
 										onNavigate={onNavigate}
+										feedActions={feedActions}
 									/>
 								))}
 								<UncategorizedSection
 									feeds={data.uncategorized}
 									activeFeedId={activeFeedId}
 									onNavigate={onNavigate}
+									feedActions={feedActions}
 								/>
 							</div>
 							<DragOverlay>{activeDrag && <FeedDragOverlay feed={activeDrag} />}</DragOverlay>
@@ -382,16 +440,29 @@ export function SidebarNav({
 					) : (
 						<div className="space-y-0.5">
 							{data.uncategorized.map((feed) => (
-								<FeedItem
+								<FeedRow
 									key={feed.id}
 									feed={feed}
+									categoryId={null}
 									isActive={activeFeedId === feed.id}
+									draggable={false}
 									onNavigate={onNavigate}
+									actions={feedActions}
 								/>
 							))}
 						</div>
 					)}
 				</div>
+			)}
+
+			{onFeedUpdated && onFeedRemoved && (
+				<FeedActionDialogs
+					actions={feedActionsState}
+					categories={data.categories}
+					fallbackFocusRef={allItemsLink}
+					onFeedUpdated={onFeedUpdated}
+					onFeedRemoved={onFeedRemoved}
+				/>
 			)}
 		</div>
 	);

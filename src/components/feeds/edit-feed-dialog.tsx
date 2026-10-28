@@ -19,16 +19,25 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { toErrors } from '@/lib/form-utils';
+
+interface EditableFeed {
+	id: string;
+	/** The display title: the Custom Title when set, otherwise the Feed's own title. */
+	title: string;
+	url: string;
+	categoryId: string | null;
+}
 
 interface EditFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	feed: { id: string; title: string; categoryId: string | null; url: string };
+	feed: EditableFeed;
 	categories: Array<{ id: string; name: string }>;
 	onSuccess: () => void;
+	onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function EditFeedDialog({
@@ -37,10 +46,12 @@ export function EditFeedDialog({
 	feed,
 	categories,
 	onSuccess,
+	onCloseAutoFocus,
 }: EditFeedDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+			<DialogContent className="sm:max-w-md" onCloseAutoFocus={onCloseAutoFocus}>
+				{/* Mounted only while open, so each opening starts from the Feed's current values. */}
 				{open && (
 					<EditFeedForm
 						key={feed.id}
@@ -56,14 +67,15 @@ export function EditFeedDialog({
 }
 
 interface EditFeedFormProps {
-	feed: { id: string; title: string; categoryId: string | null; url: string };
+	feed: EditableFeed;
 	categories: Array<{ id: string; name: string }>;
 	onOpenChange: (open: boolean) => void;
 	onSuccess: () => void;
 }
 
+// An empty display name is allowed: the server then clears the custom title.
 const schema = z.object({
-	title: z.string().min(1, 'Display name cannot be empty'),
+	title: z.string(),
 	categoryId: z.string(),
 });
 
@@ -130,7 +142,11 @@ function EditFeedForm({ feed, categories, onOpenChange, onSuccess }: EditFeedFor
 										}
 									}}
 									aria-invalid={isInvalid}
+									aria-describedby={`${field.name}-description`}
 								/>
+								<FieldDescription id={`${field.name}-description`}>
+									Leave empty to use the feed&rsquo;s own title.
+								</FieldDescription>
 								{isInvalid && <FieldError errors={toErrors(field.state.meta.errors)} />}
 							</Field>
 						);

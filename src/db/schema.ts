@@ -81,7 +81,10 @@ export const feed = pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
 		url: text('url').notNull(),
+		// The title the Feed document declares. Refreshes overwrite it.
 		title: text('title').notNull(),
+		// The title the User gave the Feed, or null to show `title`. Refreshes never touch it.
+		customTitle: text('custom_title'),
 		description: text('description'),
 		faviconUrl: text('favicon_url'),
 		categoryId: text('category_id').references(() => category.id, { onDelete: 'set null' }),

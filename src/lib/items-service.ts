@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNotNull, notExists, sql } from 'drizzl
 import { alias } from 'drizzle-orm/pg-core';
 import { withAuth, withMutation } from './server-fn-helpers';
 import { db as productionDb } from './db';
+import { feedDisplayTitle } from './feed-title';
 import type { Database } from './db';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
@@ -71,7 +72,7 @@ export async function getItems(db: Database, params: GetItemsParams): Promise<Ge
 		.select({
 			id: feedItem.id,
 			feedId: feedItem.feedId,
-			feedTitle: feed.title,
+			feedTitle: feedDisplayTitle,
 			feedFaviconUrl: feed.faviconUrl,
 			feedHealthStatus: feed.healthStatus,
 			feedErrorMessage: feed.errorMessage,
@@ -113,7 +114,7 @@ export async function getItems(db: Database, params: GetItemsParams): Promise<Ge
 		const feedRows = await db
 			.select({
 				id: feed.id,
-				title: feed.title,
+				title: feedDisplayTitle,
 				healthStatus: feed.healthStatus,
 				errorMessage: feed.errorMessage,
 			})

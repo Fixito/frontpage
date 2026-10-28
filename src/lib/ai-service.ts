@@ -4,6 +4,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { withMutation } from './server-fn-helpers';
 import { generateArticleSummary, generateWeeklyDigest, parseAiError, suggestCategory } from './ai';
 import { db } from './db';
+import { feedDisplayTitle } from './feed-title';
 import { feed, feedItem, readState } from '@/db/schema';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -99,7 +100,7 @@ export const getWeeklyDigestFn = createServerFn({ method: 'POST' }).handler(
 				id: feedItem.id,
 				title: feedItem.title,
 				url: feedItem.url,
-				feedTitle: feed.title,
+				feedTitle: feedDisplayTitle,
 				publishedAt: feedItem.publishedAt,
 				description: feedItem.description,
 				contentHtml: feedItem.contentHtml,

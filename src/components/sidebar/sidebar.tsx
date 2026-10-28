@@ -17,6 +17,8 @@ interface SidebarProps {
 	onAddFeed?: () => void;
 	onManageCategories?: () => void;
 	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
+	onFeedUpdated?: () => Promise<void>;
+	onFeedRemoved?: (feedId: string) => Promise<void>;
 }
 
 export function Sidebar({
@@ -27,6 +29,8 @@ export function Sidebar({
 	onAddFeed,
 	onManageCategories,
 	onMoveFeed,
+	onFeedUpdated,
+	onFeedRemoved,
 }: SidebarProps) {
 	return (
 		<aside
@@ -51,6 +55,8 @@ export function Sidebar({
 						activeFeedId={activeFeedId}
 						onAddFeed={onAddFeed}
 						onMoveFeed={onMoveFeed}
+						onFeedUpdated={onFeedUpdated}
+						onFeedRemoved={onFeedRemoved}
 					/>
 				</nav>
 			</ScrollArea>
