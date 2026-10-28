@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, desc, eq, gte, isNotNull, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { withAuth, withMutation } from './server-fn-helpers';
+import { withMutation } from './server-fn-helpers';
 import { generateArticleSummary, generateWeeklyDigest, parseAiError, suggestCategory } from './ai';
 import { db } from './db';
 import { feed, feedItem, readState } from '@/db/schema';
@@ -71,18 +71,25 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 		(data: { feedTitle: string; feedDescription: string | null; categoryNames: Array<string> }) =>
 			data,
 	)
-	.handler(async ({ data }): Promise<{ name: string; isNew: boolean } | null> => {
-		try {
-			return await suggestCategory(data.feedTitle, data.feedDescription, data.categoryNames);
-		} catch {
-			return null;
-		}
-	});
+	.handler(
+		withMutation(
+			async (
+				_userId: string,
+				data: { feedTitle: string; feedDescription: string | null; categoryNames: Array<string> },
+			): Promise<{ name: string; isNew: boolean } | null> => {
+				try {
+					return await suggestCategory(data.feedTitle, data.feedDescription, data.categoryNames);
+				} catch {
+					return null;
+				}
+			},
+		),
+	);
 
 // ── getWeeklyDigestFn ─────────────────────────────────────────────────────────
 
 export const getWeeklyDigestFn = createServerFn({ method: 'POST' }).handler(
-	withAuth(async (userId): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
+	withMutation(async (userId): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
 		const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
 		const rs = alias(readState, 'rs');
