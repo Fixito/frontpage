@@ -1,7 +1,7 @@
 // Server-only: fetching a Feed pulls in node:dns via the URL guard. The `.server`
 // suffix makes TanStack Start's import protection fail the build if client code
 // ever imports this module; feed-service.ts calls it only inside server fn handlers.
-import { and, eq, max, notExists } from 'drizzle-orm';
+import { DrizzleQueryError, and, eq, max, notExists } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { FeedFetchError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
@@ -160,7 +160,7 @@ export async function addFeed(
 		.insert(feed)
 		.values({
 			userId,
-			url: fetched.finalUrl,
+			url: normalizeFeedUrl(fetched.finalUrl),
 			title: fetched.title,
 			description: fetched.description,
 			faviconUrl: fetched.faviconUrl,
@@ -248,20 +248,36 @@ export async function ingestFeed(
  */
 async function moveFeedUrl(db: Database, feedId: string, url: string): Promise<void> {
 	const other = alias(feed, 'other');
-	await db
-		.update(feed)
-		.set({ url })
-		.where(
-			and(
-				eq(feed.id, feedId),
-				notExists(
-					db
-						.select({ id: other.id })
-						.from(other)
-						.where(and(eq(other.userId, feed.userId), eq(other.url, url))),
+	try {
+		await db
+			.update(feed)
+			.set({ url })
+			.where(
+				and(
+					eq(feed.id, feedId),
+					notExists(
+						db
+							.select({ id: other.id })
+							.from(other)
+							.where(and(eq(other.userId, feed.userId), eq(other.url, url))),
+					),
 				),
-			),
-		);
+			);
+	} catch (err) {
+		const cause = err instanceof DrizzleQueryError ? err.cause : err;
+		// Another Feed can claim the URL after the NOT EXISTS check.
+		if (
+			typeof cause === 'object' &&
+			cause !== null &&
+			'code' in cause &&
+			cause.code === '23505' &&
+			'constraint' in cause &&
+			cause.constraint === 'feed_user_url_idx'
+		) {
+			return;
+		}
+		throw err;
+	}
 }
 
 // ── Refresh a single feed owned by a user ──────────────────────────────────────

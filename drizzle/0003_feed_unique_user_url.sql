@@ -19,7 +19,8 @@ JOIN (
 	) f ON f."id" = fi."feed_id"
 ) d ON d."id" = rs."item_id" AND d."id" <> d."keep_id"
 GROUP BY rs."user_id", d."keep_id"
-ON CONFLICT ("user_id", "item_id") DO NOTHING;--> statement-breakpoint
+ON CONFLICT ("user_id", "item_id") DO UPDATE
+SET "read_at" = least("read_state"."read_at", excluded."read_at");--> statement-breakpoint
 INSERT INTO "bookmark" ("user_id", "item_id", "created_at")
 SELECT b."user_id", d."keep_id", min(b."created_at")
 FROM "bookmark" b
@@ -35,7 +36,8 @@ JOIN (
 	) f ON f."id" = fi."feed_id"
 ) d ON d."id" = b."item_id" AND d."id" <> d."keep_id"
 GROUP BY b."user_id", d."keep_id"
-ON CONFLICT ("user_id", "item_id") DO NOTHING;--> statement-breakpoint
+ON CONFLICT ("user_id", "item_id") DO UPDATE
+SET "created_at" = least("bookmark"."created_at", excluded."created_at");--> statement-breakpoint
 -- Read state and bookmarks on the deleted rows go with them (ON DELETE cascade).
 DELETE FROM "feed_item"
 WHERE "id" IN (

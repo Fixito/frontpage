@@ -262,6 +262,51 @@ describe('ingestFeed', () => {
 		expect(feeds.find((f) => f.id === loose.id)?.url).toBe(movedUrl);
 	});
 
+	it.each([
+		['23505', 'feed_user_url_idx', true],
+		['23505', 'another_unique_idx', false],
+		['23514', 'feed_user_url_idx', false],
+		['08006', null, false],
+	] as const)(
+		'handles a redirect update error %s on %s (collision: %s)',
+		async (code, constraint, collision) => {
+			// Raise the same Postgres error at the URL update boundary, wrapped by Drizzle.
+			await db.$client.exec(`
+				CREATE FUNCTION fail_url_update() RETURNS trigger AS $$
+				BEGIN
+					RAISE EXCEPTION 'URL update failed' USING ERRCODE = '${code}'
+						${constraint ? `, CONSTRAINT = '${constraint}'` : ''};
+				END;
+				$$ LANGUAGE plpgsql;
+				CREATE TRIGGER fail_url_update BEFORE UPDATE OF url ON feed
+				FOR EACH ROW EXECUTE FUNCTION fail_url_update();
+			`);
+			const target = techFeed();
+			const { options } = network((url) =>
+				Promise.resolve(
+					url === target.url
+						? new Response(null, {
+								status: 301,
+								headers: { location: 'https://tech.example.com/moved.xml' },
+							})
+						: new Response(rss2(), { status: 200 }),
+				),
+			);
+
+			const result = ingestFeed(db, target, options);
+			if (collision) {
+				await expect(result).resolves.toEqual({
+					status: 'active',
+					newItemCount: 2,
+					error: null,
+				});
+			} else {
+				await expect(result).rejects.toMatchObject({ cause: { code } });
+			}
+			expect(sidebarFeed(await getSidebarData(db, seed.userA.id))?.url).toBe(target.url);
+		},
+	);
+
 	it('shows the Feed as stale in the sidebar when its newest item is over 30 days old', async () => {
 		const outcome = await ingestFeed(db, techFeed(), serving(rss2(daysAgo(31))).options);
 
@@ -369,6 +414,38 @@ describe('addFeed', () => {
 		);
 		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
 		expect(feeds.filter((f) => f.url === NEW_FEED_URL)).toHaveLength(1);
+	});
+
+	it('adds equivalent redirected URLs once and stores the normalized URL', async () => {
+		const aliases = ['https://new.example.com/first', 'https://new.example.com/second'];
+		const destinations = ['HTTPS://NEW.EXAMPLE.COM:443/feed.xml/', NEW_FEED_URL];
+		let arrived = 0;
+		let release!: () => void;
+		const bothFetched = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const { options } = network(async (url) => {
+			const index = aliases.indexOf(url);
+			if (index !== -1) {
+				return new Response(null, { status: 301, headers: { location: destinations[index] } });
+			}
+			if (++arrived === 2) release();
+			await bothFetched;
+			return new Response(rss2(), { status: 200 });
+		});
+
+		const results = await Promise.allSettled(
+			aliases.map((url) => addFeed(db, seed.userA.id, { url, categoryId: null }, options)),
+		);
+
+		expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+		expect(results.find((r) => r.status === 'rejected')?.reason).toBeInstanceOf(
+			FeedAlreadyFollowedError,
+		);
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(
+			feeds.filter((f) => f.url.startsWith('https://new.example.com/')).map((f) => f.url),
+		).toEqual([NEW_FEED_URL]);
 	});
 
 	it('adds a Feed another User follows', async () => {

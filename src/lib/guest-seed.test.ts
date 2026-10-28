@@ -66,7 +66,7 @@ describe('seedGuest', () => {
 			{ name: 'General Tech', feedCount: 2 },
 			{ name: 'AI & ML', feedCount: 2 },
 		]);
-		expect(sidebar.urls).toContain('https://css-tricks.com/feed/');
+		expect(sidebar.urls).toContain('https://css-tricks.com/feed');
 		expect(sidebar.urls).toContain('https://huggingface.co/blog/feed.xml');
 		expect(sidebar.totalUnread).toBe(19 * 2);
 	});

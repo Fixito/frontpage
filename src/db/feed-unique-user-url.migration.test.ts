@@ -79,3 +79,40 @@ it('still lets two Users follow the same URL', async () => {
 	});
 	expect(totalCount).toBe(1);
 });
+
+it.each(['original', 'duplicate'] as const)(
+	'keeps the earliest read and bookmark timestamps when the %s item has them',
+	async (earlierItem) => {
+		await duplicateTechFeed();
+		const originalId = seed.userA.feeds.tech.itemIds[1];
+		const earlier = new Date('2026-01-01T09:00:00Z');
+		const later = new Date('2026-01-02T09:00:00Z');
+		const originalAt = earlierItem === 'original' ? earlier : later;
+		const duplicateAt = earlierItem === 'duplicate' ? earlier : later;
+		await db.insert(readState).values({
+			userId: seed.userA.id,
+			itemId: originalId,
+			readAt: originalAt,
+		});
+		await db.insert(bookmark).values({
+			userId: seed.userA.id,
+			itemId: originalId,
+			createdAt: originalAt,
+		});
+		await db
+			.update(readState)
+			.set({ readAt: duplicateAt })
+			.where(eq(readState.itemId, 'copy-shared'));
+		await db
+			.update(bookmark)
+			.set({ createdAt: duplicateAt })
+			.where(eq(bookmark.itemId, 'copy-shared'));
+
+		await migrateTestDb(db);
+
+		const [read] = await db.select().from(readState).where(eq(readState.itemId, originalId));
+		const [saved] = await db.select().from(bookmark).where(eq(bookmark.itemId, originalId));
+		expect(read.readAt).toEqual(earlier);
+		expect(saved.createdAt).toEqual(earlier);
+	},
+);
