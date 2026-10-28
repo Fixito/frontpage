@@ -29,8 +29,8 @@ interface ItemListFilter {
 	view: 'all' | 'bookmarks';
 }
 
-function feedItemsQueryOptions({ effectiveUserId, feedId, categoryId, view }: ItemListFilter) {
-	return infiniteQueryOptions({
+const feedItemsQueryOptions = ({ effectiveUserId, feedId, categoryId, view }: ItemListFilter) =>
+	infiniteQueryOptions({
 		queryKey: [...feedItemsQueryKey, effectiveUserId, { feedId, categoryId, view }],
 		queryFn: ({ pageParam }) =>
 			getItemsFn({ data: { feedId, categoryId, view, page: pageParam, pageSize: PAGE_SIZE } }),
@@ -41,7 +41,6 @@ function feedItemsQueryOptions({ effectiveUserId, feedId, categoryId, view }: It
 		retry: false,
 		refetchOnWindowFocus: false,
 	});
-}
 
 type ItemPages = InfiniteData<GetItemsResult, number>;
 
@@ -52,6 +51,15 @@ function withItemRead(
 	isRead: boolean,
 ): Array<FeedItemRow> {
 	return items.map((item) => (item.id === itemId ? { ...item, isRead } : item));
+}
+
+/** `items` with one item's bookmark state set (for optimistic updates and rollbacks). */
+function withItemBookmarked(
+	items: Array<FeedItemRow>,
+	itemId: string,
+	isBookmarked: boolean,
+): Array<FeedItemRow> {
+	return items.map((item) => (item.id === itemId ? { ...item, isBookmarked } : item));
 }
 
 /** Where an item sits in the loaded pages, to put it back after a failed removal. */
@@ -101,8 +109,7 @@ interface BookmarkChange {
 
 interface MarkAllChange {
 	queryKey: QueryKey;
-	feedId?: string;
-	categoryId?: string;
+	scope: { feedId?: string; categoryId?: string };
 	isRead: boolean;
 }
 
@@ -154,18 +161,8 @@ export function useFeedItems({
 	);
 	const { queryKey } = queryOptions;
 
-	const {
-		data,
-		isPending,
-		isError,
-		isFetching,
-		hasNextPage,
-		isFetchingNextPage,
-		fetchNextPage,
-		refetch,
-	} = useInfiniteQuery(queryOptions);
-	// A retry after an error keeps the error status until it settles: show loading meanwhile.
-	const retrying = isError && isFetching;
+	const { data, isPending, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
+		useInfiniteQuery(queryOptions);
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
@@ -180,12 +177,19 @@ export function useFeedItems({
 		[queryClient],
 	);
 
-	// No cancelQueries before the optimistic updates: it would also abort a
-	// "load more" in flight, and the only refetches here follow an explicit refresh.
+	// A fetch in flight (the background refetch of a revisited list, a "load more")
+	// read the server before this change and would overwrite the optimistic update.
+	// Cancelling a "load more" drops it: the button stays for the User to click again.
+	const cancelFetch = useCallback(
+		(key: QueryKey) => queryClient.cancelQueries({ queryKey: key }),
+		[queryClient],
+	);
+
 	const { mutateAsync: changeRead } = useMutation({
 		mutationFn: ({ itemId, isRead }: ReadChange) =>
 			isRead ? markReadFn({ data: { itemId } }) : unmarkReadFn({ data: { itemId } }),
-		onMutate: ({ queryKey: key, itemId, isRead }) => {
+		onMutate: async ({ queryKey: key, itemId, isRead }) => {
+			await cancelFetch(key);
 			updateItems(key, (prev) => withItemRead(prev, itemId, isRead));
 		},
 		onError: (_err, { queryKey: key, itemId, wasRead }) => {
@@ -195,12 +199,13 @@ export function useFeedItems({
 
 	const { mutateAsync: toggleBookmark } = useMutation({
 		mutationFn: ({ item }: BookmarkChange) => toggleBookmarkFn({ data: { itemId: item.id } }),
-		onMutate: ({ queryKey: key, item, removeFromList }) => {
+		onMutate: async ({ queryKey: key, item, removeFromList }) => {
+			await cancelFetch(key);
 			const position = findItemPosition(queryClient.getQueryData<ItemPages>(key), item.id);
 			updateItems(key, (prev) =>
 				removeFromList
 					? prev.filter((i) => i.id !== item.id)
-					: prev.map((i) => (i.id === item.id ? { ...i, isBookmarked: !item.isBookmarked } : i)),
+					: withItemBookmarked(prev, item.id, !item.isBookmarked),
 			);
 			onBookmarkCountChange?.(item.isBookmarked ? -1 : 1);
 			return { position };
@@ -217,19 +222,20 @@ export function useFeedItems({
 					);
 				}
 			} else {
-				updateItems(key, (prev) =>
-					prev.map((i) => (i.id === item.id ? { ...i, isBookmarked: item.isBookmarked } : i)),
-				);
+				updateItems(key, (prev) => withItemBookmarked(prev, item.id, item.isBookmarked));
 			}
 			onBookmarkCountChange?.(item.isBookmarked ? 1 : -1);
 		},
 	});
 
-	const markAllMutation = useMutation({
-		mutationFn: ({ feedId: fId, categoryId: cId, isRead }: MarkAllChange) =>
-			isRead
-				? markAllReadFn({ data: { feedId: fId, categoryId: cId } })
-				: markAllUnreadFn({ data: { feedId: fId, categoryId: cId } }),
+	// Not optimistic, as before: the list changes once the server has marked every item.
+	const {
+		mutateAsync: markAll,
+		isPending: markingAll,
+		variables: markAllChange,
+	} = useMutation({
+		mutationFn: ({ scope, isRead }: MarkAllChange) =>
+			isRead ? markAllReadFn({ data: scope }) : markAllUnreadFn({ data: scope }),
 		onSuccess: (_result, { queryKey: key, isRead }) => {
 			updateItems(key, (prev) => prev.map((item) => ({ ...item, isRead })));
 			onSidebarRefresh();
@@ -238,7 +244,6 @@ export function useFeedItems({
 			console.error(`Failed to mark all as ${isRead ? 'read' : 'unread'}`, err);
 		},
 	});
-	const { mutateAsync: markAll } = markAllMutation;
 
 	const handleMarkRead = useCallback(
 		async (itemId: string) => {
@@ -275,12 +280,12 @@ export function useFeedItems({
 
 	const handleMarkAllRead = useCallback(async () => {
 		if (!userId) return;
-		await markAll({ queryKey, feedId, categoryId, isRead: true }).catch(() => {});
+		await markAll({ queryKey, scope: { feedId, categoryId }, isRead: true }).catch(() => {});
 	}, [userId, queryKey, feedId, categoryId, markAll]);
 
 	const handleMarkAllUnread = useCallback(async () => {
 		if (!userId) return;
-		await markAll({ queryKey, feedId, categoryId, isRead: false }).catch(() => {});
+		await markAll({ queryKey, scope: { feedId, categoryId }, isRead: false }).catch(() => {});
 	}, [userId, queryKey, feedId, categoryId, markAll]);
 
 	const handleLoadMore = useCallback(async () => {
@@ -288,23 +293,23 @@ export function useFeedItems({
 		await fetchNextPage();
 	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+	// A reset rather than a refetch: the list shows its skeleton and reloads from page 1.
 	const handleRetry = useCallback(() => {
-		void refetch();
-	}, [refetch]);
+		void queryClient.resetQueries({ queryKey });
+	}, [queryClient, queryKey]);
 
-	const markingAll = markAllMutation.isPending ? markAllMutation.variables.isRead : null;
 	const lastPage = data?.pages.at(-1);
 
 	return {
 		items,
 		totalCount: lastPage?.totalCount ?? 0,
 		hasMore: hasNextPage,
-		loading: effectiveUserId !== null && (isPending || retrying),
+		loading: effectiveUserId !== null && isPending,
 		loadingMore: isFetchingNextPage,
-		error: isError && !retrying ? 'Failed to load articles. Please try again.' : null,
+		error: isError ? 'Failed to load articles. Please try again.' : null,
 		feedInfo: data?.pages[0]?.feedInfo ?? null,
-		markingAllRead: markingAll === true,
-		markingAllUnread: markingAll === false,
+		markingAllRead: markingAll && markAllChange.isRead === true,
+		markingAllUnread: markingAll && markAllChange.isRead === false,
 		handleMarkRead,
 		handleReadToggle,
 		handleBookmarkToggle,

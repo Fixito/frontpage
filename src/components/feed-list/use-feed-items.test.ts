@@ -200,14 +200,67 @@ describe('filter switching', () => {
 				}),
 			{ wrapper: createWrapper(), initialProps: { feedId: 'f1' } },
 		);
-		await waitFor(() => expect(result.current.items.map((i) => i.id)).toEqual(['f1-item']));
+		await waitFor(() => expect(ids(result.current.items)).toEqual(['f1-item']));
 
 		rerender({ feedId: 'f2' });
-		await waitFor(() => expect(result.current.items.map((i) => i.id)).toEqual(['f2-item']));
+		await waitFor(() => expect(ids(result.current.items)).toEqual(['f2-item']));
 
 		rerender({ feedId: 'f1' });
 		expect(result.current.loading).toBe(false);
-		expect(result.current.items.map((i) => i.id)).toEqual(['f1-item']);
+		expect(ids(result.current.items)).toEqual(['f1-item']);
+	});
+});
+
+describe('optimistic updates and background refetches', () => {
+	// Switching back to a visited Feed shows its cache and refetches it in the
+	// background; a response read before the mark read must not undo it.
+	it('keeps an item read when a refetch started before the mark read lands after it', async () => {
+		let refetchResponse: (result: unknown) => void = () => {};
+		getItemsFn.mockImplementation(({ data }: { data: { feedId?: string } }) =>
+			Promise.resolve({
+				items: [makeItem(`${data.feedId}-item`, false)],
+				totalCount: 1,
+				hasMore: false,
+				feedInfo: null,
+			}),
+		);
+		const { result, rerender } = renderHook(
+			({ feedId }: { feedId: string }) =>
+				useFeedItems({
+					userId: 'u1',
+					guest: null,
+					feedId,
+					view: 'all',
+					onSidebarRefresh: () => {},
+				}),
+			{ wrapper: createWrapper(), initialProps: { feedId: 'f1' } },
+		);
+		await waitFor(() => expect(ids(result.current.items)).toEqual(['f1-item']));
+		rerender({ feedId: 'f2' });
+		await waitFor(() => expect(ids(result.current.items)).toEqual(['f2-item']));
+
+		getItemsFn.mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					refetchResponse = resolve;
+				}),
+		);
+		rerender({ feedId: 'f1' });
+		await act(() => result.current.handleMarkRead('f1-item'));
+		await waitFor(() => expect(isRead(result.current.items, 'f1-item')).toBe(true));
+
+		await act(async () => {
+			refetchResponse({
+				items: [makeItem('f1-item', false)],
+				totalCount: 1,
+				hasMore: false,
+				feedInfo: null,
+			});
+			await Promise.resolve();
+		});
+
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(isRead(result.current.items, 'f1-item')).toBe(true);
 	});
 });
 

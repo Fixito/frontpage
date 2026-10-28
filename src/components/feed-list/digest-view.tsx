@@ -4,6 +4,8 @@ import { getWeeklyDigestFn } from '@/lib/ai-service';
 import { formatRelativeTime } from '@/lib/time';
 import { stripHtml } from '@/lib/utils';
 
+const DIGEST_REUSE_MS = 10 * 60 * 1000;
+
 const weeklyDigestQueryOptions = (userId: string | null) =>
 	queryOptions({
 		queryKey: ['weekly-digest', userId],
@@ -11,7 +13,8 @@ const weeklyDigestQueryOptions = (userId: string | null) =>
 		enabled: userId !== null,
 		// Each run is a Gemini call: reopening the digest reuses it for a while,
 		// and a failure is shown at once instead of being retried.
-		staleTime: 10 * 60 * 1000,
+		staleTime: DIGEST_REUSE_MS,
+		gcTime: DIGEST_REUSE_MS,
 		retry: false,
 		refetchOnWindowFocus: false,
 	});
