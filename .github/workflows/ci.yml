@@ -44,7 +44,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Test
-        run: pnpm test --passWithNoTests
+        run: pnpm test
 
       # Env vars are read lazily at runtime, so the build needs no secrets.
       - name: Build
