@@ -8,6 +8,7 @@ import {
 import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 import type { GuestSession } from '@/lib/session';
 import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
+import type { ItemScope } from '@/lib/item-scope';
 import {
 	getItemsFn,
 	markAllReadFn,
@@ -24,16 +25,27 @@ export const feedItemsQueryKey = ['feed-items'] as const;
 
 interface ItemListFilter {
 	effectiveUserId: string | null;
-	feedId?: string;
-	categoryId?: string;
-	view: 'all' | 'bookmarks';
+	scope: ItemScope;
+	unreadOnly: boolean;
 }
 
-const feedItemsQueryOptions = ({ effectiveUserId, feedId, categoryId, view }: ItemListFilter) =>
+/** The Item Scope a list shows: Bookmarks, else one Feed, else one Category, else all. */
+function toItemScope(
+	view: 'all' | 'bookmarks',
+	feedId: string | undefined,
+	categoryId: string | undefined,
+): ItemScope {
+	if (view === 'bookmarks') return { kind: 'bookmarks' };
+	if (feedId) return { kind: 'feed', feedId };
+	if (categoryId) return { kind: 'category', categoryId };
+	return { kind: 'all' };
+}
+
+const feedItemsQueryOptions = ({ effectiveUserId, scope, unreadOnly }: ItemListFilter) =>
 	infiniteQueryOptions({
-		queryKey: [...feedItemsQueryKey, effectiveUserId, { feedId, categoryId, view }],
+		queryKey: [...feedItemsQueryKey, effectiveUserId, { scope, unreadOnly }],
 		queryFn: ({ pageParam }) =>
-			getItemsFn({ data: { feedId, categoryId, view, page: pageParam, pageSize: PAGE_SIZE } }),
+			getItemsFn({ data: { scope, unreadOnly, page: pageParam, pageSize: PAGE_SIZE } }),
 		initialPageParam: 1,
 		getNextPageParam: (lastPage, _allPages, lastPageParam) =>
 			lastPage.hasMore ? lastPageParam + 1 : undefined,
@@ -119,6 +131,8 @@ interface UseFeedItemsParams {
 	feedId?: string;
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
+	/** Lists only unread Feed Items. */
+	unreadOnly?: boolean;
 	onSidebarRefresh: () => void;
 	onBookmarkCountChange?: (delta: number) => void;
 }
@@ -150,14 +164,20 @@ export function useFeedItems({
 	feedId,
 	categoryId,
 	view,
+	unreadOnly = false,
 	onSidebarRefresh,
 	onBookmarkCountChange,
 }: UseFeedItemsParams): UseFeedItemsResult {
 	const queryClient = useQueryClient();
 	const effectiveUserId = userId ?? guest?.demoUserId ?? null;
 	const queryOptions = useMemo(
-		() => feedItemsQueryOptions({ effectiveUserId, feedId, categoryId, view }),
-		[effectiveUserId, feedId, categoryId, view],
+		() =>
+			feedItemsQueryOptions({
+				effectiveUserId,
+				scope: toItemScope(view, feedId, categoryId),
+				unreadOnly,
+			}),
+		[effectiveUserId, feedId, categoryId, view, unreadOnly],
 	);
 	const { queryKey } = queryOptions;
 

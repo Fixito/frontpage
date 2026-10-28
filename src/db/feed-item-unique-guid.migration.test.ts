@@ -44,7 +44,10 @@ it('merges duplicate Feed Items and keeps their read state and bookmarks', async
 
 	await migrateTestDb(db);
 
-	const { items } = await getItems(db, { userId: userA.id, feedId: userA.feeds.tech.id });
+	const { items } = await getItems(db, {
+		userId: userA.id,
+		scope: { kind: 'feed', feedId: userA.feeds.tech.id },
+	});
 	expect(items.map((i) => ({ id: i.id, isRead: i.isRead, isBookmarked: i.isBookmarked }))).toEqual([
 		{ id: readAndBookmarked, isRead: true, isBookmarked: true },
 		{ id: unread, isRead: true, isBookmarked: true },
@@ -68,7 +71,7 @@ it('still lets two Feeds carry the same guid', async () => {
 
 	const { totalCount } = await getItems(db, {
 		userId: seed.userB.id,
-		feedId: seed.userB.feeds.tech.id,
+		scope: { kind: 'feed', feedId: seed.userB.feeds.tech.id },
 	});
 	expect(totalCount).toBe(2);
 });

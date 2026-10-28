@@ -3,6 +3,7 @@ import { FeedItemSkeleton } from './feed-item-skeleton';
 import { FeedItemList } from './feed-item-list';
 import { FeedErrorBanner } from './feed-error-banner';
 import { EmptyState } from './empty-state';
+import { ReadFilterToggle } from './read-filter-toggle';
 import { useFeedItems } from './use-feed-items';
 import type { FeedLayout } from '@/components/ui/layout-toggle';
 import type { GuestSession } from '@/lib/session';
@@ -14,6 +15,9 @@ interface FeedContentAreaProps {
 	feedId?: string;
 	categoryId?: string;
 	view: 'all' | 'bookmarks';
+	/** Lists only unread Feed Items (ignored in the Bookmarks view). */
+	unreadOnly: boolean;
+	onUnreadOnlyChange: (unreadOnly: boolean) => void;
 	layout: FeedLayout;
 	onSidebarRefresh: () => void;
 	onBookmarkCountChange?: (delta: number) => void;
@@ -25,10 +29,15 @@ export function FeedContentArea({
 	feedId,
 	categoryId,
 	view,
+	unreadOnly: unreadOnlyRequested,
+	onUnreadOnlyChange,
 	layout,
 	onSidebarRefresh,
 	onBookmarkCountChange,
 }: FeedContentAreaProps) {
+	const showReadFilter = view !== 'bookmarks';
+	const unreadOnly = showReadFilter && unreadOnlyRequested;
+
 	const {
 		items,
 		totalCount,
@@ -52,6 +61,7 @@ export function FeedContentArea({
 		feedId,
 		categoryId,
 		view,
+		unreadOnly,
 		onSidebarRefresh,
 		onBookmarkCountChange,
 	});
@@ -94,13 +104,18 @@ export function FeedContentArea({
 				</div>
 			)}
 
-			{/* Toolbar */}
-			{!showEmptyState && (
-				<div className="flex shrink-0 items-center justify-between px-4 py-2">
-					<p className="text-muted-foreground text-xs">
-						{totalCount === 1 ? '1 article' : `${totalCount} articles`}
-					</p>
-					{view !== 'bookmarks' && userId && (
+			{/* Toolbar: kept on an empty unread list, so the User can switch back to all */}
+			{(!showEmptyState || unreadOnly) && (
+				<div className="flex shrink-0 items-center justify-between gap-2 px-4 py-2">
+					<div className="flex items-center gap-3">
+						{showReadFilter && (
+							<ReadFilterToggle unreadOnly={unreadOnly} onChange={onUnreadOnlyChange} />
+						)}
+						<p className="text-muted-foreground text-xs">
+							{totalCount === 1 ? '1 article' : `${totalCount} articles`}
+						</p>
+					</div>
+					{view !== 'bookmarks' && userId && !showEmptyState && (
 						<Button
 							variant="ghost"
 							size="sm"
@@ -132,6 +147,8 @@ export function FeedContentArea({
 				{showEmptyState ? (
 					<EmptyState
 						view={view}
+						unreadOnly={unreadOnly}
+						onShowAll={() => onUnreadOnlyChange(false)}
 						isGuest={guest !== null}
 						feedId={feedId}
 						categoryId={categoryId}

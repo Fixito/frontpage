@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { BookmarkCheck, Globe, Rss } from 'lucide-react';
+import { BookmarkCheck, CheckCheck, Globe, Rss } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
 	view: string;
+	unreadOnly?: boolean;
+	onShowAll?: () => void;
 	isGuest?: boolean;
 	feedId?: string;
 	categoryId?: string;
@@ -39,7 +41,14 @@ function StarterPackRow({ name, url }: { name: string; url: string }) {
 	);
 }
 
-export function EmptyState({ view, isGuest, feedId, categoryId }: EmptyStateProps) {
+export function EmptyState({
+	view,
+	unreadOnly,
+	onShowAll,
+	isGuest,
+	feedId,
+	categoryId,
+}: EmptyStateProps) {
 	if (view === 'bookmarks') {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
@@ -48,6 +57,21 @@ export function EmptyState({ view, isGuest, feedId, categoryId }: EmptyStateProp
 				<p className="text-muted-foreground max-w-xs text-sm">
 					Bookmark articles to save them for later.
 				</p>
+			</div>
+		);
+	}
+
+	if (unreadOnly) {
+		return (
+			<div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+				<CheckCheck size={36} className="text-muted-foreground/40" aria-hidden />
+				<p className="font-medium">All caught up</p>
+				<p className="text-muted-foreground max-w-xs text-sm">No unread articles here.</p>
+				{onShowAll && (
+					<Button variant="outline" size="sm" onClick={onShowAll}>
+						Show all articles
+					</Button>
+				)}
 			</div>
 		);
 	}

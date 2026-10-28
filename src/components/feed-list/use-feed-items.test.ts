@@ -184,9 +184,9 @@ describe('handleReadToggle (explicit toggle)', () => {
 
 describe('filter switching', () => {
 	it('shows cached items instantly when switching back to a visited Feed', async () => {
-		getItemsFn.mockImplementation(({ data }: { data: { feedId?: string } }) =>
+		getItemsFn.mockImplementation(({ data }: { data: { scope: { feedId?: string } } }) =>
 			Promise.resolve({
-				items: [makeItem(`${data.feedId}-item`, false)],
+				items: [makeItem(`${data.scope.feedId}-item`, false)],
 				totalCount: 1,
 				hasMore: false,
 				feedInfo: null,
@@ -219,9 +219,9 @@ describe('optimistic updates and background refetches', () => {
 	// background; a response read before the mark read must not undo it.
 	it('keeps an item read when a refetch started before the mark read lands after it', async () => {
 		let refetchResponse: (result: unknown) => void = () => {};
-		getItemsFn.mockImplementation(({ data }: { data: { feedId?: string } }) =>
+		getItemsFn.mockImplementation(({ data }: { data: { scope: { feedId?: string } } }) =>
 			Promise.resolve({
-				items: [makeItem(`${data.feedId}-item`, false)],
+				items: [makeItem(`${data.scope.feedId}-item`, false)],
 				totalCount: 1,
 				hasMore: false,
 				feedInfo: null,
@@ -499,5 +499,55 @@ describe('handleMarkAllRead', () => {
 		expect(markAllReadFn).toHaveBeenCalledWith({ data: { feedId: 'f1', categoryId: undefined } });
 		expect(onSidebarRefresh).toHaveBeenCalled();
 		expect(result.current.markingAllRead).toBe(false);
+	});
+});
+
+describe('Item Scope', () => {
+	it.each([
+		[{ view: 'all' as const }, { kind: 'all' }],
+		[
+			{ view: 'all' as const, feedId: 'f1' },
+			{ kind: 'feed', feedId: 'f1' },
+		],
+		[
+			{ view: 'all' as const, categoryId: 'c1' },
+			{ kind: 'category', categoryId: 'c1' },
+		],
+		[{ view: 'bookmarks' as const, feedId: 'f1' }, { kind: 'bookmarks' }],
+	])('lists %o as scope %o', async (filter, scope) => {
+		getItemsFn.mockResolvedValue({ items: [], totalCount: 0, hasMore: false, feedInfo: null });
+
+		renderHook(
+			() => useFeedItems({ userId: 'u1', guest: null, onSidebarRefresh: () => {}, ...filter }),
+			{ wrapper: createWrapper() },
+		);
+
+		await waitFor(() =>
+			expect(getItemsFn).toHaveBeenCalledWith({
+				data: { scope, unreadOnly: false, page: 1, pageSize: 50 },
+			}),
+		);
+	});
+
+	it('asks for unread Feed Items only when filtered', async () => {
+		getItemsFn.mockResolvedValue({ items: [], totalCount: 0, hasMore: false, feedInfo: null });
+
+		renderHook(
+			() =>
+				useFeedItems({
+					userId: 'u1',
+					guest: null,
+					view: 'all',
+					unreadOnly: true,
+					onSidebarRefresh: () => {},
+				}),
+			{ wrapper: createWrapper() },
+		);
+
+		await waitFor(() =>
+			expect(getItemsFn).toHaveBeenCalledWith({
+				data: { scope: { kind: 'all' }, unreadOnly: true, page: 1, pageSize: 50 },
+			}),
+		);
 	});
 });

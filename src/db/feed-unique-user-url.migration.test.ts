@@ -60,7 +60,10 @@ it("merges a User's duplicate Feeds and keeps their items, read state and bookma
 	expect(feeds.filter((f) => f.url === userA.feeds.tech.url).map((f) => f.id)).toEqual([
 		userA.feeds.tech.id,
 	]);
-	const { items } = await getItems(db, { userId: userA.id, feedId: userA.feeds.tech.id });
+	const { items } = await getItems(db, {
+		userId: userA.id,
+		scope: { kind: 'feed', feedId: userA.feeds.tech.id },
+	});
 	expect(items.map((i) => ({ id: i.id, isRead: i.isRead, isBookmarked: i.isBookmarked }))).toEqual([
 		{ id: userA.feeds.tech.itemIds[0], isRead: true, isBookmarked: true },
 		{ id: userA.feeds.tech.itemIds[1], isRead: true, isBookmarked: true },
@@ -75,7 +78,7 @@ it('still lets two Users follow the same URL', async () => {
 
 	const { totalCount } = await getItems(db, {
 		userId: seed.userB.id,
-		feedId: seed.userB.feeds.tech.id,
+		scope: { kind: 'feed', feedId: seed.userB.feeds.tech.id },
 	});
 	expect(totalCount).toBe(1);
 });

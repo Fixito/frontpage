@@ -75,7 +75,10 @@ describe('a Feed title edited by the User', () => {
 		const feedId = userA.feeds.tech.id;
 
 		await updateFeed(db, userA.id, feedId, { customTitle: 'My tech reads' });
-		const { items, feedInfo } = await getItems(db, { userId: userA.id, feedId });
+		const { items, feedInfo } = await getItems(db, {
+			userId: userA.id,
+			scope: { kind: 'feed', feedId },
+		});
 
 		expect(items.map((item) => item.feedTitle)).toEqual([
 			'My tech reads',

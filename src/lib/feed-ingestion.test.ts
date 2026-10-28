@@ -107,7 +107,10 @@ function sidebarFeed(data: SidebarData) {
 }
 
 async function techItems() {
-	return getItems(db, { userId: seed.userA.id, feedId: seed.userA.feeds.tech.id });
+	return getItems(db, {
+		userId: seed.userA.id,
+		scope: { kind: 'feed', feedId: seed.userA.feeds.tech.id },
+	});
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -346,7 +349,7 @@ describe('addFeed', () => {
 			healthStatus: 'active',
 			faviconUrl: 'https://www.google.com/s2/favicons?domain=tech.example.com&sz=32',
 		});
-		const { items } = await getItems(db, { userId: userA.id, feedId });
+		const { items } = await getItems(db, { userId: userA.id, scope: { kind: 'feed', feedId } });
 		expect(items.map((i) => i.title).sort()).toEqual(['First post', 'Second post']);
 	});
 
