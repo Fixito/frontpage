@@ -1,13 +1,14 @@
 import { createServerFn } from '@tanstack/react-start';
 import { and, asc, eq, max, sql } from 'drizzle-orm';
 import { withAuth, withMutation } from './server-fn-helpers';
-import { db } from './db';
+import { db as productionDb } from './db';
+import type { Database } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
 // ── getSidebarData ─────────────────────────────────────────────────────────────
 
-export async function getSidebarData(userId: string): Promise<SidebarData> {
+export async function getSidebarData(db: Database, userId: string): Promise<SidebarData> {
 	const feedsRaw = await db
 		.select({
 			id: feed.id,
@@ -76,7 +77,7 @@ export async function getSidebarData(userId: string): Promise<SidebarData> {
 
 // ── Category CRUD ──────────────────────────────────────────────────────────────
 
-export async function createCategory(userId: string, name: string): Promise<string> {
+export async function createCategory(db: Database, userId: string, name: string): Promise<string> {
 	const result = await db
 		.select({ maxPos: max(category.position) })
 		.from(category)
@@ -91,6 +92,7 @@ export async function createCategory(userId: string, name: string): Promise<stri
 }
 
 export async function updateCategory(
+	db: Database,
 	userId: string,
 	id: string,
 	patch: { name?: string; position?: number },
@@ -110,7 +112,7 @@ export async function updateCategory(
 	await db.update(category).set(updates).where(eq(category.id, id));
 }
 
-export async function deleteCategory(userId: string, id: string): Promise<void> {
+export async function deleteCategory(db: Database, userId: string, id: string): Promise<void> {
 	const rows = await db
 		.select({ id: category.id })
 		.from(category)
@@ -121,7 +123,11 @@ export async function deleteCategory(userId: string, id: string): Promise<void> 
 	await db.delete(category).where(eq(category.id, id));
 }
 
-export async function reorderCategories(userId: string, orderedIds: Array<string>): Promise<void> {
+export async function reorderCategories(
+	db: Database,
+	userId: string,
+	orderedIds: Array<string>,
+): Promise<void> {
 	if (orderedIds.length === 0) return;
 
 	// Verify all categories belong to user
@@ -146,6 +152,7 @@ export async function reorderCategories(userId: string, orderedIds: Array<string
 // ── Feed CRUD additions ────────────────────────────────────────────────────────
 
 export async function updateFeed(
+	db: Database,
 	userId: string,
 	feedId: string,
 	patch: { customTitle?: string; categoryId?: string | null },
@@ -165,7 +172,7 @@ export async function updateFeed(
 	await db.update(feed).set(updates).where(eq(feed.id, feedId));
 }
 
-export async function deleteFeed(userId: string, feedId: string): Promise<void> {
+export async function deleteFeed(db: Database, userId: string, feedId: string): Promise<void> {
 	const rows = await db
 		.select({ id: feed.id })
 		.from(feed)
@@ -179,14 +186,14 @@ export async function deleteFeed(userId: string, feedId: string): Promise<void> 
 // ── Server function wrappers ───────────────────────────────────────────────────
 
 export const getSidebarDataFn = createServerFn({ method: 'POST' }).handler(
-	withAuth(async (userId) => getSidebarData(userId)),
+	withAuth(async (userId) => getSidebarData(productionDb, userId)),
 );
 
 export const createCategoryFn = createServerFn({ method: 'POST' })
 	.validator((data: { name: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { name: string }) =>
-			createCategory(userId, data.name),
+			createCategory(productionDb, userId, data.name),
 		),
 	);
 
@@ -194,21 +201,23 @@ export const updateCategoryFn = createServerFn({ method: 'POST' })
 	.validator((data: { id: string; name?: string; position?: number }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { id: string; name?: string; position?: number }) =>
-			updateCategory(userId, data.id, { name: data.name, position: data.position }),
+			updateCategory(productionDb, userId, data.id, { name: data.name, position: data.position }),
 		),
 	);
 
 export const deleteCategoryFn = createServerFn({ method: 'POST' })
 	.validator((data: { id: string }) => data)
 	.handler(
-		withMutation(async (userId: string, data: { id: string }) => deleteCategory(userId, data.id)),
+		withMutation(async (userId: string, data: { id: string }) =>
+			deleteCategory(productionDb, userId, data.id),
+		),
 	);
 
 export const reorderCategoriesFn = createServerFn({ method: 'POST' })
 	.validator((data: { orderedIds: Array<string> }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { orderedIds: Array<string> }) =>
-			reorderCategories(userId, data.orderedIds),
+			reorderCategories(productionDb, userId, data.orderedIds),
 		),
 	);
 
@@ -220,7 +229,7 @@ export const updateFeedFn = createServerFn({ method: 'POST' })
 				userId: string,
 				data: { feedId: string; customTitle?: string; categoryId?: string | null },
 			) =>
-				updateFeed(userId, data.feedId, {
+				updateFeed(productionDb, userId, data.feedId, {
 					customTitle: data.customTitle,
 					categoryId: data.categoryId,
 				}),
@@ -231,6 +240,6 @@ export const deleteFeedFn = createServerFn({ method: 'POST' })
 	.validator((data: { feedId: string }) => data)
 	.handler(
 		withMutation(async (userId: string, data: { feedId: string }) =>
-			deleteFeed(userId, data.feedId),
+			deleteFeed(productionDb, userId, data.feedId),
 		),
 	);
