@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ingestFeed } from './feed-ingestion.server';
+import {
+	FeedAlreadyFollowedError,
+	addFeed,
+	ingestFeed,
+	validateAndPreviewFeed,
+} from './feed-ingestion.server';
 import { getItems } from './items-service';
 import { getSidebarData } from './category-service';
-import type { FetchFeedOptions } from './feed-fetcher';
 import type { SidebarData } from '@/components/sidebar/types';
 import type { Seed, TestDb } from '@/test/db';
 import { createTestDb, seedTestDb } from '@/test/db';
+import { network, notFound, serving } from '@/test/network';
 
 let db: TestDb;
 let seed: Seed;
@@ -87,35 +92,18 @@ const RSS2_WITHOUT_IDS = `<?xml version="1.0"?>
 	</channel>
 </rss>`;
 
-// ── Fake network ───────────────────────────────────────────────────────────────
-
-/** Fetch options whose network answers every request with `respond`. */
-function network(respond: (url: string, init?: RequestInit) => Promise<Response>) {
-	const calls: Array<string> = [];
-	const options: FetchFeedOptions = {
-		fetch: (input, init) => {
-			const url = input instanceof Request ? input.url : String(input);
-			calls.push(url);
-			return respond(url, init);
-		},
-		resolveHost: () => Promise.resolve(['93.184.215.14']),
-		retryDelaysMs: [0, 0, 0],
-	};
-	return { options, calls };
-}
-
-function serving(xml: string) {
-	return network(() => Promise.resolve(new Response(xml, { status: 200 })));
-}
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function techFeed() {
 	return { id: seed.userA.feeds.tech.id, url: seed.userA.feeds.tech.url };
 }
 
+function sidebarFeeds(data: SidebarData) {
+	return [...data.categories.flatMap((c) => c.feeds), ...data.uncategorized];
+}
+
 function sidebarFeed(data: SidebarData) {
-	return [...data.categories.flatMap((c) => c.feeds), ...data.uncategorized].find(
-		(f) => f.id === seed.userA.feeds.tech.id,
-	);
+	return sidebarFeeds(data).find((f) => f.id === seed.userA.feeds.tech.id);
 }
 
 async function techItems() {
@@ -224,9 +212,7 @@ describe('ingestFeed', () => {
 	});
 
 	it('does not retry a client error', async () => {
-		const { options, calls } = network(() =>
-			Promise.resolve(new Response('gone', { status: 404, statusText: 'Not Found' })),
-		);
+		const { options, calls } = network(() => Promise.resolve(notFound()));
 
 		const outcome = await ingestFeed(db, techFeed(), options);
 
@@ -241,6 +227,85 @@ describe('ingestFeed', () => {
 		expect(outcome.error).toMatch(/feed format|parse error/i);
 		expect((await techItems()).feedInfo?.healthStatus).toBe('error');
 	});
+
+	it('keeps its URL when it redirects to another Feed the User follows', async () => {
+		const { loose, tech } = seed.userA.feeds;
+		const { options } = network((url) =>
+			Promise.resolve(
+				url === loose.url
+					? new Response(null, { status: 301, headers: { location: tech.url } })
+					: new Response(rss2(), { status: 200 }),
+			),
+		);
+
+		const outcome = await ingestFeed(db, { id: loose.id, url: loose.url }, options);
+
+		expect(outcome.status).toBe('active');
+		const urls = sidebarFeeds(await getSidebarData(db, seed.userA.id)).map((f) => f.url);
+		expect(urls).toContain(loose.url);
+	});
+
+	it('moves to the URL it redirects to', async () => {
+		const { loose } = seed.userA.feeds;
+		const movedUrl = 'https://loose.example.com/new-atom.xml';
+		const { options } = network((url) =>
+			Promise.resolve(
+				url === loose.url
+					? new Response(null, { status: 301, headers: { location: movedUrl } })
+					: new Response(rss2(), { status: 200 }),
+			),
+		);
+
+		await ingestFeed(db, { id: loose.id, url: loose.url }, options);
+
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(feeds.find((f) => f.id === loose.id)?.url).toBe(movedUrl);
+	});
+
+	it.each([
+		['23505', 'feed_user_url_idx', true],
+		['23505', 'another_unique_idx', false],
+		['23514', 'feed_user_url_idx', false],
+		['08006', null, false],
+	] as const)(
+		'handles a redirect update error %s on %s (collision: %s)',
+		async (code, constraint, collision) => {
+			// Raise the same Postgres error at the URL update boundary, wrapped by Drizzle.
+			await db.$client.exec(`
+				CREATE FUNCTION fail_url_update() RETURNS trigger AS $$
+				BEGIN
+					RAISE EXCEPTION 'URL update failed' USING ERRCODE = '${code}'
+						${constraint ? `, CONSTRAINT = '${constraint}'` : ''};
+				END;
+				$$ LANGUAGE plpgsql;
+				CREATE TRIGGER fail_url_update BEFORE UPDATE OF url ON feed
+				FOR EACH ROW EXECUTE FUNCTION fail_url_update();
+			`);
+			const target = techFeed();
+			const { options } = network((url) =>
+				Promise.resolve(
+					url === target.url
+						? new Response(null, {
+								status: 301,
+								headers: { location: 'https://tech.example.com/moved.xml' },
+							})
+						: new Response(rss2(), { status: 200 }),
+				),
+			);
+
+			const result = ingestFeed(db, target, options);
+			if (collision) {
+				await expect(result).resolves.toEqual({
+					status: 'active',
+					newItemCount: 2,
+					error: null,
+				});
+			} else {
+				await expect(result).rejects.toMatchObject({ cause: { code } });
+			}
+			expect(sidebarFeed(await getSidebarData(db, seed.userA.id))?.url).toBe(target.url);
+		},
+	);
 
 	it('shows the Feed as stale in the sidebar when its newest item is over 30 days old', async () => {
 		const outcome = await ingestFeed(db, techFeed(), serving(rss2(daysAgo(31))).options);
@@ -257,5 +322,174 @@ describe('ingestFeed', () => {
 
 		expect(outcome.status).toBe('active');
 		expect(sidebarFeed(await getSidebarData(db, seed.userA.id))?.healthStatus).toBe('active');
+	});
+});
+
+describe('addFeed', () => {
+	const NEW_FEED_URL = 'https://new.example.com/feed.xml';
+
+	it('creates the Feed and its items, healthy, in the chosen category', async () => {
+		const { userA } = seed;
+
+		const feedId = await addFeed(
+			db,
+			userA.id,
+			{ url: NEW_FEED_URL, categoryId: userA.categories.design.id },
+			serving(rss2()).options,
+		);
+
+		const sidebar = await getSidebarData(db, userA.id);
+		const design = sidebar.categories.find((c) => c.id === userA.categories.design.id);
+		expect(design?.feeds.find((f) => f.id === feedId)).toMatchObject({
+			title: 'Tech Feed',
+			url: NEW_FEED_URL,
+			healthStatus: 'active',
+			faviconUrl: 'https://www.google.com/s2/favicons?domain=tech.example.com&sz=32',
+		});
+		const { items } = await getItems(db, { userId: userA.id, feedId });
+		expect(items.map((i) => i.title).sort()).toEqual(['First post', 'Second post']);
+	});
+
+	it.each([
+		[
+			'unreachable',
+			network(() => Promise.resolve(notFound())),
+			'Couldn’t load this feed (HTTP 404 Not Found).',
+		],
+		[
+			'not a feed',
+			serving('<html><body><p>Oops</html>'),
+			'This URL doesn’t point to an RSS or Atom feed.',
+		],
+	])('creates no Feed when the URL is %s', async (_case, { options }, message) => {
+		const before = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+
+		await expect(
+			addFeed(db, seed.userA.id, { url: NEW_FEED_URL, categoryId: null }, options),
+		).rejects.toThrow(message);
+
+		expect(sidebarFeeds(await getSidebarData(db, seed.userA.id))).toEqual(before);
+	});
+
+	it.each([
+		['the same URL', 'https://tech.example.com/feed.xml'],
+		['a host in another case', 'https://Tech.Example.com/feed.xml'],
+		['a scheme in another case', 'HTTPS://tech.example.com/feed.xml'],
+		['a trailing slash', 'https://tech.example.com/feed.xml/'],
+	])('rejects a Feed the User already follows, given %s', async (_case, url) => {
+		const { options, calls } = serving(rss2());
+		const before = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+
+		await expect(addFeed(db, seed.userA.id, { url, categoryId: null }, options)).rejects.toThrow(
+			'You already follow this feed',
+		);
+
+		expect(calls).toHaveLength(0);
+		expect(sidebarFeeds(await getSidebarData(db, seed.userA.id))).toEqual(before);
+	});
+
+	it('rejects a URL that redirects to a Feed the User already follows', async () => {
+		const { options } = network((url) =>
+			Promise.resolve(
+				url === NEW_FEED_URL
+					? new Response(null, { status: 301, headers: { location: seed.userA.feeds.tech.url } })
+					: new Response(rss2(), { status: 200 }),
+			),
+		);
+
+		await expect(
+			addFeed(db, seed.userA.id, { url: NEW_FEED_URL, categoryId: null }, options),
+		).rejects.toThrow('You already follow this feed');
+	});
+
+	it('adds a Feed once when the User adds it twice at the same time', async () => {
+		const { options } = serving(rss2());
+		const add = () => addFeed(db, seed.userA.id, { url: NEW_FEED_URL, categoryId: null }, options);
+
+		const results = await Promise.allSettled([add(), add()]);
+
+		expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+		expect(results.find((r) => r.status === 'rejected')?.reason).toBeInstanceOf(
+			FeedAlreadyFollowedError,
+		);
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(feeds.filter((f) => f.url === NEW_FEED_URL)).toHaveLength(1);
+	});
+
+	it('adds equivalent redirected URLs once and stores the normalized URL', async () => {
+		const aliases = ['https://new.example.com/first', 'https://new.example.com/second'];
+		const destinations = ['HTTPS://NEW.EXAMPLE.COM:443/feed.xml/', NEW_FEED_URL];
+		let arrived = 0;
+		let release!: () => void;
+		const bothFetched = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const { options } = network(async (url) => {
+			const index = aliases.indexOf(url);
+			if (index !== -1) {
+				return new Response(null, { status: 301, headers: { location: destinations[index] } });
+			}
+			if (++arrived === 2) release();
+			await bothFetched;
+			return new Response(rss2(), { status: 200 });
+		});
+
+		const results = await Promise.allSettled(
+			aliases.map((url) => addFeed(db, seed.userA.id, { url, categoryId: null }, options)),
+		);
+
+		expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+		expect(results.find((r) => r.status === 'rejected')?.reason).toBeInstanceOf(
+			FeedAlreadyFollowedError,
+		);
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(
+			feeds.filter((f) => f.url.startsWith('https://new.example.com/')).map((f) => f.url),
+		).toEqual([NEW_FEED_URL]);
+	});
+
+	it('adds a Feed another User follows', async () => {
+		const feedId = await addFeed(
+			db,
+			seed.userA.id,
+			{ url: seed.userB.feeds.news.url, categoryId: null },
+			serving(rss2()).options,
+		);
+
+		const feeds = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+		expect(feeds.find((f) => f.id === feedId)?.url).toBe(seed.userB.feeds.news.url);
+	});
+});
+
+describe('validateAndPreviewFeed', () => {
+	it('previews a Feed without storing it', async () => {
+		const before = sidebarFeeds(await getSidebarData(db, seed.userA.id));
+
+		const preview = await validateAndPreviewFeed(
+			db,
+			seed.userA.id,
+			'https://new.example.com/feed.xml',
+			serving(rss2()).options,
+		);
+
+		expect(preview).toEqual({
+			title: 'Tech Feed',
+			description: null,
+			faviconUrl: 'https://www.google.com/s2/favicons?domain=tech.example.com&sz=32',
+			finalUrl: 'https://new.example.com/feed.xml',
+			itemCount: 2,
+		});
+		expect(sidebarFeeds(await getSidebarData(db, seed.userA.id))).toEqual(before);
+	});
+
+	it('rejects a Feed the User already follows', async () => {
+		await expect(
+			validateAndPreviewFeed(
+				db,
+				seed.userA.id,
+				'https://TECH.example.com/feed.xml/',
+				serving(rss2()).options,
+			),
+		).rejects.toThrow('You already follow this feed');
 	});
 });

@@ -1,8 +1,9 @@
 // Server-only: fetching a Feed pulls in node:dns via the URL guard. The `.server`
 // suffix makes TanStack Start's import protection fail the build if client code
 // ever imports this module; feed-service.ts calls it only inside server fn handlers.
-import { and, eq, max } from 'drizzle-orm';
-import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher';
+import { DrizzleQueryError, and, eq, max, notExists } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+import { FeedFetchError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
 import type { ParsedFeed } from './feed-parser';
@@ -11,7 +12,38 @@ import type { FetchFeedOptions } from './feed-fetcher';
 import type { Feed, FeedHealth, NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Fetch & parse ──────────────────────────────────────────────────────────────
+
+/** The Feed metadata a fetched document declares, and the URL it was fetched from. */
+interface FeedMetadata {
+	finalUrl: string;
+	title: string;
+	description: string | null;
+	faviconUrl: string | null;
+}
+
+/** A Feed document fetched and parsed. */
+interface FetchedFeed extends FeedMetadata {
+	items: ParsedFeed['items'];
+}
+
+/** Throws a FeedFetchError, BlockedUrlError or FeedParseError on failure. */
+async function fetchAndParse(url: string, fetchOptions: FetchFeedOptions): Promise<FetchedFeed> {
+	const { xml, finalUrl } = await fetchFeed(url, fetchOptions);
+	let parsed: ParsedFeed;
+	try {
+		parsed = parseFeed(xml);
+	} catch (err) {
+		throw err instanceof FeedParseError ? err : new FeedParseError('Parse failed');
+	}
+	return {
+		finalUrl,
+		title: parsed.title,
+		description: parsed.description,
+		faviconUrl: getFaviconUrl(parsed.siteUrl ?? finalUrl),
+		items: parsed.items,
+	};
+}
 
 function getFaviconUrl(siteUrl: string | null): string | null {
 	if (!siteUrl) return null;
@@ -23,57 +55,133 @@ function getFaviconUrl(siteUrl: string | null): string | null {
 	}
 }
 
+// ── Fetch a Feed the User doesn't follow yet ───────────────────────────────────
+
+/** Thrown when a User adds a Feed URL they already follow. */
+export class FeedAlreadyFollowedError extends Error {
+	constructor() {
+		super('You already follow this feed');
+		this.name = 'FeedAlreadyFollowedError';
+	}
+}
+
+const NEW_FEED_FETCH_OPTIONS: FetchFeedOptions = { timeoutMs: 15_000 };
+
+/**
+ * Fetches and parses a Feed for a User, rejecting it with FeedAlreadyFollowedError
+ * when they already follow its URL, before fetching, or the URL it redirects to.
+ * Fetch and parse failures are rethrown with a message meant for the User.
+ */
+async function fetchNewFeed(
+	db: Database,
+	userId: string,
+	url: string,
+	fetchOptions: FetchFeedOptions,
+): Promise<FetchedFeed> {
+	const rows = await db.select({ url: feed.url }).from(feed).where(eq(feed.userId, userId));
+	const followed = new Set(rows.map((row) => normalizeFeedUrl(row.url)));
+	const assertNotFollowed = (candidate: string) => {
+		if (followed.has(normalizeFeedUrl(candidate))) throw new FeedAlreadyFollowedError();
+	};
+
+	assertNotFollowed(url);
+	let fetched: FetchedFeed;
+	try {
+		fetched = await fetchAndParse(url, fetchOptions);
+	} catch (err) {
+		if (err instanceof FeedParseError) {
+			throw new Error('This URL doesn’t point to an RSS or Atom feed.', { cause: err });
+		}
+		if (err instanceof FeedFetchError) {
+			throw new Error(`Couldn’t load this feed (${err.message}).`, { cause: err });
+		}
+		throw err; // BlockedUrlError messages are already written for the User.
+	}
+	assertNotFollowed(fetched.finalUrl);
+	return fetched;
+}
+
+/**
+ * The form two Feed URLs are compared in: scheme and host lowercased (the URL
+ * parser does it), trailing slashes dropped from the path.
+ */
+function normalizeFeedUrl(rawUrl: string): string {
+	try {
+		const url = new URL(rawUrl.trim());
+		return `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, '')}${url.search}`;
+	} catch {
+		return rawUrl.trim();
+	}
+}
+
 // ── Validate & preview a feed URL (no DB writes) ───────────────────────────────
 
-export interface FeedPreview {
-	title: string;
-	description: string | null;
-	faviconUrl: string | null;
-	finalUrl: string;
+export interface FeedPreview extends FeedMetadata {
 	itemCount: number;
 }
 
-export async function validateAndPreviewFeed(url: string): Promise<FeedPreview> {
-	const result = await fetchFeed(url, { timeoutMs: 15_000 });
-	const parsed = parseFeed(result.xml);
-	return {
-		title: parsed.title,
-		description: parsed.description,
-		faviconUrl: getFaviconUrl(parsed.siteUrl ?? result.finalUrl),
-		finalUrl: result.finalUrl,
-		itemCount: parsed.items.length,
-	};
+export async function validateAndPreviewFeed(
+	db: Database,
+	userId: string,
+	url: string,
+	fetchOptions: FetchFeedOptions = NEW_FEED_FETCH_OPTIONS,
+): Promise<FeedPreview> {
+	const { title, description, faviconUrl, finalUrl, items } = await fetchNewFeed(
+		db,
+		userId,
+		url,
+		fetchOptions,
+	);
+	return { title, description, faviconUrl, finalUrl, itemCount: items.length };
 }
 
 // ── Add a feed for a user and perform initial fetch ────────────────────────────
 
+/** A Feed a User asks to add: its URL, and the category to file it in, if any. */
+export interface NewFeed {
+	url: string;
+	categoryId: string | null;
+}
+
+/**
+ * Fetches a Feed the User doesn't follow yet and stores it with its Feed Items.
+ * Throws, storing nothing, when the fetch or parse fails or the User already
+ * follows it (FeedAlreadyFollowedError). Returns the new Feed's id.
+ */
 export async function addFeed(
 	db: Database,
 	userId: string,
-	url: string,
-	categoryId: string | null = null,
+	{ url, categoryId }: NewFeed,
+	fetchOptions: FetchFeedOptions = NEW_FEED_FETCH_OPTIONS,
 ): Promise<string> {
-	// Single fetch — parse once, store metadata + items without a second network call.
-	const result = await fetchFeed(url, { timeoutMs: 15_000 });
-	const parsed = parseFeed(result.xml);
-	const faviconUrl = getFaviconUrl(parsed.siteUrl ?? result.finalUrl);
+	const fetched = await fetchNewFeed(db, userId, url, fetchOptions);
 
-	const [inserted] = await db
+	const inserted = await db
 		.insert(feed)
 		.values({
 			userId,
-			url: result.finalUrl,
-			title: parsed.title,
-			description: parsed.description,
-			faviconUrl,
+			url: normalizeFeedUrl(fetched.finalUrl),
+			title: fetched.title,
+			description: fetched.description,
+			faviconUrl: fetched.faviconUrl,
 			categoryId,
 			healthStatus: 'active',
 			lastFetchedAt: new Date(),
 		})
+		// A concurrent add of the same URL got there first.
+		.onConflictDoNothing({ target: [feed.userId, feed.url] })
 		.returning({ id: feed.id });
+	if (inserted.length === 0) throw new FeedAlreadyFollowedError();
+	const feedId = inserted[0].id;
 
-	await storeItems(db, inserted.id, parsed.items);
-	return inserted.id;
+	try {
+		await storeItems(db, feedId, fetched.items);
+	} catch (err) {
+		// No transaction on neon-http: undo the insert so a failed add leaves no Feed.
+		await db.delete(feed).where(eq(feed.id, feedId));
+		throw err;
+	}
+	return feedId;
 }
 
 // ── Ingest a Feed: fetch, parse, store, and record its health ──────────────────
@@ -100,54 +208,76 @@ export async function ingestFeed(
 	target: Pick<Feed, 'id' | 'url'>,
 	fetchOptions: FetchFeedOptions = {},
 ): Promise<IngestOutcome> {
-	let xml: string;
-	let finalUrl = target.url;
-
+	let fetched: FetchedFeed;
 	try {
-		const result = await fetchFeed(target.url, fetchOptions);
-		xml = result.xml;
-		finalUrl = result.finalUrl;
+		fetched = await fetchAndParse(target.url, fetchOptions);
 	} catch (err) {
-		if (err instanceof FeedNotModifiedError) {
-			await db
-				.update(feed)
-				.set({ lastFetchedAt: new Date(), healthStatus: 'active', errorMessage: null })
-				.where(eq(feed.id, target.id));
-			return { status: 'active', newItemCount: 0, error: null };
-		}
 		return recordError(
 			db,
 			target.id,
-			err instanceof FeedFetchError || err instanceof BlockedUrlError
+			err instanceof FeedFetchError ||
+				err instanceof BlockedUrlError ||
+				err instanceof FeedParseError
 				? err.message
 				: 'Fetch failed',
 		);
 	}
 
-	let parsed;
-	try {
-		parsed = parseFeed(xml);
-	} catch (err) {
-		return recordError(db, target.id, err instanceof FeedParseError ? err.message : 'Parse failed');
-	}
-
-	const newItemCount = await storeItems(db, target.id, parsed.items);
+	const newItemCount = await storeItems(db, target.id, fetched.items);
 	const status = (await isStale(db, target.id)) ? 'stale' : 'active';
 
 	await db
 		.update(feed)
 		.set({
-			title: parsed.title,
-			description: parsed.description,
-			faviconUrl: getFaviconUrl(parsed.siteUrl ?? finalUrl),
-			...(finalUrl !== target.url ? { url: finalUrl } : {}),
+			title: fetched.title,
+			description: fetched.description,
+			faviconUrl: fetched.faviconUrl,
 			healthStatus: status,
 			errorMessage: null,
 			lastFetchedAt: new Date(),
 		})
 		.where(eq(feed.id, target.id));
+	if (fetched.finalUrl !== target.url) await moveFeedUrl(db, target.id, fetched.finalUrl);
 
 	return { status, newItemCount, error: null };
+}
+
+/**
+ * Moves a Feed to the URL it now redirects to, unless its User already follows
+ * that URL as another Feed: a User follows a URL once (`feed_user_url_idx`).
+ */
+async function moveFeedUrl(db: Database, feedId: string, url: string): Promise<void> {
+	const other = alias(feed, 'other');
+	try {
+		await db
+			.update(feed)
+			.set({ url })
+			.where(
+				and(
+					eq(feed.id, feedId),
+					notExists(
+						db
+							.select({ id: other.id })
+							.from(other)
+							.where(and(eq(other.userId, feed.userId), eq(other.url, url))),
+					),
+				),
+			);
+	} catch (err) {
+		const cause = err instanceof DrizzleQueryError ? err.cause : err;
+		// Another Feed can claim the URL after the NOT EXISTS check.
+		if (
+			typeof cause === 'object' &&
+			cause !== null &&
+			'code' in cause &&
+			cause.code === '23505' &&
+			'constraint' in cause &&
+			cause.constraint === 'feed_user_url_idx'
+		) {
+			return;
+		}
+		throw err;
+	}
 }
 
 // ── Refresh a single feed owned by a user ──────────────────────────────────────

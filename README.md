@@ -250,13 +250,15 @@ Rate your implementation honestly. This self-awareness is part of the portfolio 
 
 ## Guest Demo Setup
 
-Run the seed script once to create the demo account used for the "Try as guest" experience:
+Run the seed script to create the demo account used for the "Try as guest" experience:
 
 ```bash
 pnpm seed
 ```
 
 Copy the output `GUEST_DEMO_USER_ID=xxx` and add it to your `.env` file.
+
+The seed adds the feeds listed in `data/sample-feeds.json` through the same `addFeed` path as the Add Feed dialog. It is safe to re-run: feeds the demo user already follows are skipped, and a feed whose fetch failed (it is logged and left out) is tried again.
 
 ---
 
