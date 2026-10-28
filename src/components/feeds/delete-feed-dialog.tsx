@@ -16,30 +16,54 @@ interface DeleteFeedDialogProps {
 	onOpenChange: (open: boolean) => void;
 	feed: { id: string; title: string };
 	onSuccess: () => void;
+	onCloseAutoFocus?: (event: Event) => void;
 }
 
-export function DeleteFeedDialog({ open, onOpenChange, feed, onSuccess }: DeleteFeedDialogProps) {
+export function DeleteFeedDialog({
+	open,
+	onOpenChange,
+	feed,
+	onSuccess,
+	onCloseAutoFocus,
+}: DeleteFeedDialogProps) {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	// Reset dialog state during render when it opens
+	const [prevOpen, setPrevOpen] = useState(open);
+	if (prevOpen !== open) {
+		setPrevOpen(open);
+		if (open) {
+			setLoading(false);
+			setError(null);
+		}
+	}
 
 	async function handleDelete() {
 		setLoading(true);
 		setError(null);
 		try {
 			await deleteFeedFn({ data: { feedId: feed.id } });
+			// onSuccess runs before close so callers know the Feed is gone when focus is restored.
+			onSuccess();
 			onOpenChange(false);
-			setTimeout(() => onSuccess(), 0);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : 'Failed to delete feed. Please try again.');
+			setError(err instanceof Error ? err.message : 'Failed to remove feed. Please try again.');
 			setLoading(false);
 		}
 	}
 
 	return (
-		<AlertDialog open={open} onOpenChange={onOpenChange}>
-			<AlertDialogContent size="sm">
+		<AlertDialog
+			open={open}
+			onOpenChange={(next) => {
+				// Don't dismiss mid-request: a failure would otherwise go unseen.
+				if (!loading) onOpenChange(next);
+			}}
+		>
+			<AlertDialogContent size="sm" onCloseAutoFocus={onCloseAutoFocus}>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Delete feed?</AlertDialogTitle>
+					<AlertDialogTitle>Remove feed?</AlertDialogTitle>
 					<AlertDialogDescription>
 						<span>
 							<strong className="text-foreground">{feed.title}</strong> and all its articles will be
@@ -54,8 +78,16 @@ export function DeleteFeedDialog({ open, onOpenChange, feed, onSuccess }: Delete
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-					<AlertDialogAction variant="destructive" onClick={handleDelete} disabled={loading}>
-						{loading ? 'Deleting…' : 'Delete'}
+					<AlertDialogAction
+						variant="destructive"
+						onClick={(event) => {
+							// Radix closes on click by default; stay open until the request settles.
+							event.preventDefault();
+							void handleDelete();
+						}}
+						disabled={loading}
+					>
+						{loading ? 'Removing…' : 'Remove'}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

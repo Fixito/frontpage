@@ -264,6 +264,21 @@ function DashboardPage() {
 		});
 	}
 
+	async function handleFeedUpdated() {
+		await handleRefreshSidebar();
+		setFeedRefreshKey((k) => k + 1);
+	}
+
+	async function handleFeedRemoved(removedFeedId: string) {
+		if (feedId === removedFeedId) {
+			// Leaving the removed Feed's view refetches the item list on its own.
+			await router.navigate({ to: '/dashboard', search: { view: 'all' } });
+		} else {
+			setFeedRefreshKey((k) => k + 1);
+		}
+		await handleRefreshSidebar();
+	}
+
 	function getPageTitle() {
 		if (view === 'bookmarks') return 'Bookmarks';
 		if (view === 'digest') return 'Weekly Digest';
@@ -289,6 +304,8 @@ function DashboardPage() {
 					onAddFeed={() => setAddFeedOpen(true)}
 					onManageCategories={() => setManageCategoriesOpen(true)}
 					onMoveFeed={user ? handleMoveFeed : undefined}
+					onFeedUpdated={user ? handleFeedUpdated : undefined}
+					onFeedRemoved={user ? handleFeedRemoved : undefined}
 				/>
 			</div>
 
@@ -314,6 +331,8 @@ function DashboardPage() {
 								setAddFeedOpen(true);
 							}}
 							onMoveFeed={user ? handleMoveFeed : undefined}
+							onFeedUpdated={user ? handleFeedUpdated : undefined}
+							onFeedRemoved={user ? handleFeedRemoved : undefined}
 						/>
 					</nav>
 				</SheetContent>

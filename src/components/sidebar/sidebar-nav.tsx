@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { Suspense, lazy, useRef, useState } from 'react';
 import { BookmarkIcon, ChevronDown, ChevronRight, Folder, Plus, Rss, Sparkles } from 'lucide-react';
 import {
 	DndContext,
@@ -11,13 +11,23 @@ import {
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 
+import { FeedActionsMenu } from './feed-actions-menu';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { RefCallback } from 'react';
+import type { FeedAction } from './feed-actions-menu';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
+
+const EditFeedDialog = lazy(() =>
+	import('@/components/feeds/edit-feed-dialog').then((m) => ({ default: m.EditFeedDialog })),
+);
+const DeleteFeedDialog = lazy(() =>
+	import('@/components/feeds/delete-feed-dialog').then((m) => ({ default: m.DeleteFeedDialog })),
+);
 
 interface SidebarNavProps {
 	data: SidebarData;
@@ -27,6 +37,20 @@ interface SidebarNavProps {
 	onNavigate?: () => void;
 	onAddFeed?: () => void;
 	onMoveFeed?: (feedId: string, categoryId: string | null) => void;
+	/** Omit (with onFeedRemoved) to hide the per-Feed Edit/Remove menu, e.g. for Guests. */
+	onFeedUpdated?: () => Promise<void>;
+	onFeedRemoved?: (feedId: string) => Promise<void>;
+}
+
+interface FeedRowActions {
+	onAction: (action: FeedAction, feed: FeedNavItem, categoryId: string | null) => void;
+	registerTrigger: (feedId: string) => RefCallback<HTMLButtonElement>;
+}
+
+interface PendingFeedAction {
+	action: FeedAction;
+	feed: FeedNavItem;
+	categoryId: string | null;
 }
 
 function UnreadBadge({ count }: { count: number }) {
@@ -142,16 +166,53 @@ function FeedItem({
 	);
 }
 
+function FeedRow({
+	feed,
+	categoryId,
+	isActive,
+	draggable,
+	onNavigate,
+	actions,
+}: {
+	feed: FeedNavItem;
+	categoryId: string | null;
+	isActive: boolean;
+	draggable: boolean;
+	onNavigate?: () => void;
+	actions?: FeedRowActions;
+}) {
+	return (
+		<div className="group/feed flex items-center gap-0.5">
+			<div className="min-w-0 flex-1">
+				{draggable ? (
+					<DraggableFeedItem feed={feed} isActive={isActive} onNavigate={onNavigate} />
+				) : (
+					<FeedItem feed={feed} isActive={isActive} onNavigate={onNavigate} />
+				)}
+			</div>
+			{actions && (
+				<FeedActionsMenu
+					feedTitle={feed.title}
+					triggerRef={actions.registerTrigger(feed.id)}
+					onAction={(action) => actions.onAction(action, feed, categoryId)}
+				/>
+			)}
+		</div>
+	);
+}
+
 function CategorySection({
 	category,
 	activeCategoryId,
 	activeFeedId,
 	onNavigate,
+	feedActions,
 }: {
 	category: CategoryNavItem;
 	activeCategoryId?: string;
 	activeFeedId?: string;
 	onNavigate?: () => void;
+	feedActions?: FeedRowActions;
 }) {
 	const isActive = activeCategoryId === category.id;
 	const [expanded, setExpanded] = useState(true);
@@ -197,11 +258,14 @@ function CategorySection({
 			{expanded && category.feeds.length > 0 && (
 				<div className="border-border/50 mt-0.5 ml-4 space-y-0.5 border-l pl-2">
 					{category.feeds.map((feed) => (
-						<DraggableFeedItem
+						<FeedRow
 							key={feed.id}
 							feed={feed}
+							categoryId={category.id}
 							isActive={activeFeedId === feed.id}
+							draggable
 							onNavigate={onNavigate}
+							actions={feedActions}
 						/>
 					))}
 				</div>
@@ -214,10 +278,12 @@ function UncategorizedSection({
 	feeds,
 	activeFeedId,
 	onNavigate,
+	feedActions,
 }: {
 	feeds: Array<FeedNavItem>;
 	activeFeedId?: string;
 	onNavigate?: () => void;
+	feedActions?: FeedRowActions;
 }) {
 	const { setNodeRef, isOver } = useDroppable({ id: '__uncategorized__' });
 
@@ -238,11 +304,14 @@ function UncategorizedSection({
 			)}
 			<div className="space-y-0.5">
 				{feeds.map((feed) => (
-					<DraggableFeedItem
+					<FeedRow
 						key={feed.id}
 						feed={feed}
+						categoryId={null}
 						isActive={activeFeedId === feed.id}
+						draggable
 						onNavigate={onNavigate}
+						actions={feedActions}
 					/>
 				))}
 			</div>
@@ -258,12 +327,63 @@ export function SidebarNav({
 	onNavigate,
 	onAddFeed,
 	onMoveFeed,
+	onFeedUpdated,
+	onFeedRemoved,
 }: SidebarNavProps) {
 	const isAllActive = activeView === 'all' && !activeCategoryId && !activeFeedId;
 	const isBookmarksActive = activeView === 'bookmarks';
 	const isDigestActive = activeView === 'digest';
 
 	const [activeDrag, setActiveDrag] = useState<FeedNavItem | null>(null);
+
+	const [pendingFeedAction, setPendingFeedAction] = useState<PendingFeedAction | null>(null);
+	const [feedDialogOpen, setFeedDialogOpen] = useState(false);
+	const actionTriggers = useRef(new Map<string, HTMLButtonElement>());
+	const allItemsLink = useRef<HTMLAnchorElement>(null);
+	const removedFeedId = useRef<string | null>(null);
+
+	const feedActions: FeedRowActions | undefined =
+		onFeedUpdated && onFeedRemoved
+			? {
+					onAction: (action, feed, categoryId) => {
+						setPendingFeedAction({ action, feed, categoryId });
+						setFeedDialogOpen(true);
+					},
+					registerTrigger: (feedId) => (el) => {
+						if (!el) return;
+						actionTriggers.current.set(feedId, el);
+						return () => {
+							if (actionTriggers.current.get(feedId) === el) actionTriggers.current.delete(feedId);
+						};
+					},
+				}
+			: undefined;
+
+	// Radix only restores focus to a <DialogTrigger>, so return it to the Feed's menu
+	// trigger by hand. A removed Feed has no trigger left; fall back to All Items.
+	function restoreFocus(event: Event) {
+		event.preventDefault();
+		const feedId = pendingFeedAction?.feed.id;
+		if (!feedId) return;
+		if (removedFeedId.current === feedId) {
+			allItemsLink.current?.focus();
+		} else {
+			actionTriggers.current.get(feedId)?.focus();
+		}
+	}
+
+	async function handleFeedUpdated(feedId: string) {
+		await onFeedUpdated?.();
+		// Moving a Feed to another Category remounts its row, dropping focus to <body>.
+		if (document.activeElement === document.body) {
+			actionTriggers.current.get(feedId)?.focus();
+		}
+	}
+
+	function handleFeedRemoved(feedId: string) {
+		removedFeedId.current = feedId;
+		void onFeedRemoved?.(feedId);
+	}
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -305,6 +425,7 @@ export function SidebarNav({
 			</div>
 
 			<Link
+				ref={allItemsLink}
 				to="/dashboard"
 				search={{ view: 'all' }}
 				onClick={onNavigate}
@@ -369,12 +490,14 @@ export function SidebarNav({
 										activeCategoryId={activeCategoryId}
 										activeFeedId={activeFeedId}
 										onNavigate={onNavigate}
+										feedActions={feedActions}
 									/>
 								))}
 								<UncategorizedSection
 									feeds={data.uncategorized}
 									activeFeedId={activeFeedId}
 									onNavigate={onNavigate}
+									feedActions={feedActions}
 								/>
 							</div>
 							<DragOverlay>{activeDrag && <FeedDragOverlay feed={activeDrag} />}</DragOverlay>
@@ -382,16 +505,46 @@ export function SidebarNav({
 					) : (
 						<div className="space-y-0.5">
 							{data.uncategorized.map((feed) => (
-								<FeedItem
+								<FeedRow
 									key={feed.id}
 									feed={feed}
+									categoryId={null}
 									isActive={activeFeedId === feed.id}
+									draggable={false}
 									onNavigate={onNavigate}
+									actions={feedActions}
 								/>
 							))}
 						</div>
 					)}
 				</div>
+			)}
+
+			{feedActions && pendingFeedAction && (
+				<Suspense fallback={null}>
+					{pendingFeedAction.action === 'edit' ? (
+						<EditFeedDialog
+							open={feedDialogOpen}
+							onOpenChange={setFeedDialogOpen}
+							feed={{
+								id: pendingFeedAction.feed.id,
+								title: pendingFeedAction.feed.title,
+								categoryId: pendingFeedAction.categoryId,
+							}}
+							categories={data.categories.map((c) => ({ id: c.id, name: c.name }))}
+							onSuccess={() => void handleFeedUpdated(pendingFeedAction.feed.id)}
+							onCloseAutoFocus={restoreFocus}
+						/>
+					) : (
+						<DeleteFeedDialog
+							open={feedDialogOpen}
+							onOpenChange={setFeedDialogOpen}
+							feed={pendingFeedAction.feed}
+							onSuccess={() => handleFeedRemoved(pendingFeedAction.feed.id)}
+							onCloseAutoFocus={restoreFocus}
+						/>
+					)}
+				</Suspense>
 			)}
 		</div>
 	);
