@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getSidebarData, updateFeed } from './category-service';
-import { refreshFeed } from './feed-service';
+import { refreshFeed } from './feed-ingestion.server';
 import { getItems } from './items-service';
-import type { FeedFetcher } from './feed-service';
+import type { FeedFetcher } from './feed-ingestion.server';
 import type { SidebarData } from '@/components/sidebar/types';
 import type { Seed, TestDb } from '@/test/db';
 import { createTestDb, seedTestDb } from '@/test/db';
