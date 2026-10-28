@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import {
+	infiniteQueryOptions,
+	useInfiniteQuery,
+	useMutation,
+	useQueryClient,
+} from '@tanstack/react-query';
+import type { InfiniteData, QueryKey } from '@tanstack/react-query';
 import type { GuestSession } from '@/lib/session';
 import type { FeedItemRow, GetItemsResult } from '@/lib/items-service';
 import {
@@ -12,6 +19,31 @@ import {
 
 const PAGE_SIZE = 50;
 
+/** Prefix of every Feed Item list query, for invalidating them all at once. */
+export const feedItemsQueryKey = ['feed-items'] as const;
+
+interface ItemListFilter {
+	effectiveUserId: string | null;
+	feedId?: string;
+	categoryId?: string;
+	view: 'all' | 'bookmarks';
+}
+
+const feedItemsQueryOptions = ({ effectiveUserId, feedId, categoryId, view }: ItemListFilter) =>
+	infiniteQueryOptions({
+		queryKey: [...feedItemsQueryKey, effectiveUserId, { feedId, categoryId, view }],
+		queryFn: ({ pageParam }) =>
+			getItemsFn({ data: { feedId, categoryId, view, page: pageParam, pageSize: PAGE_SIZE } }),
+		initialPageParam: 1,
+		getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+			lastPage.hasMore ? lastPageParam + 1 : undefined,
+		enabled: effectiveUserId !== null,
+		retry: false,
+		refetchOnWindowFocus: false,
+	});
+
+type ItemPages = InfiniteData<GetItemsResult, number>;
+
 /** `items` with one item's read state set (for optimistic updates and rollbacks). */
 function withItemRead(
 	items: Array<FeedItemRow>,
@@ -19,6 +51,66 @@ function withItemRead(
 	isRead: boolean,
 ): Array<FeedItemRow> {
 	return items.map((item) => (item.id === itemId ? { ...item, isRead } : item));
+}
+
+/** `items` with one item's bookmark state set (for optimistic updates and rollbacks). */
+function withItemBookmarked(
+	items: Array<FeedItemRow>,
+	itemId: string,
+	isBookmarked: boolean,
+): Array<FeedItemRow> {
+	return items.map((item) => (item.id === itemId ? { ...item, isBookmarked } : item));
+}
+
+/** Where an item sits in the loaded pages, to put it back after a failed removal. */
+interface ItemPosition {
+	pageIndex: number;
+	index: number;
+}
+
+function findItemPosition(data: ItemPages | undefined, itemId: string): ItemPosition | null {
+	for (const [pageIndex, page] of (data?.pages ?? []).entries()) {
+		const index = page.items.findIndex((item) => item.id === itemId);
+		if (index !== -1) return { pageIndex, index };
+	}
+	return null;
+}
+
+function withItemAt(
+	data: ItemPages,
+	item: FeedItemRow,
+	{ pageIndex, index }: ItemPosition,
+): ItemPages {
+	if (findItemPosition(data, item.id)) return data;
+	return {
+		...data,
+		pages: data.pages.map((page, i) =>
+			i === pageIndex
+				? { ...page, items: [...page.items.slice(0, index), item, ...page.items.slice(index)] }
+				: page,
+		),
+	};
+}
+
+// Mutation variables carry the query key of the list they started from, so a
+// rollback lands on that list even if the User switched filters meanwhile.
+interface ReadChange {
+	queryKey: QueryKey;
+	itemId: string;
+	isRead: boolean;
+	wasRead: boolean;
+}
+
+interface BookmarkChange {
+	queryKey: QueryKey;
+	item: FeedItemRow;
+	removeFromList: boolean;
+}
+
+interface MarkAllChange {
+	queryKey: QueryKey;
+	scope: { feedId?: string; categoryId?: string };
+	isRead: boolean;
 }
 
 interface UseFeedItemsParams {
@@ -29,7 +121,6 @@ interface UseFeedItemsParams {
 	view: 'all' | 'bookmarks';
 	onSidebarRefresh: () => void;
 	onBookmarkCountChange?: (delta: number) => void;
-	refreshKey?: number;
 }
 
 export interface UseFeedItemsResult {
@@ -61,71 +152,113 @@ export function useFeedItems({
 	view,
 	onSidebarRefresh,
 	onBookmarkCountChange,
-	refreshKey,
 }: UseFeedItemsParams): UseFeedItemsResult {
-	const [items, setItems] = useState<Array<FeedItemRow>>([]);
-	const [totalCount, setTotalCount] = useState(0);
-	const [hasMore, setHasMore] = useState(false);
-	const [page, setPage] = useState(1);
-	const [loading, setLoading] = useState(true);
-	const [loadingMore, setLoadingMore] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [feedInfo, setFeedInfo] = useState<GetItemsResult['feedInfo']>(null);
-	const [markingAllRead, setMarkingAllRead] = useState(false);
-	const [markingAllUnread, setMarkingAllUnread] = useState(false);
+	const queryClient = useQueryClient();
+	const effectiveUserId = userId ?? guest?.demoUserId ?? null;
+	const queryOptions = useMemo(
+		() => feedItemsQueryOptions({ effectiveUserId, feedId, categoryId, view }),
+		[effectiveUserId, feedId, categoryId, view],
+	);
+	const { queryKey } = queryOptions;
 
-	const guestDemoUserId = guest?.demoUserId ?? null;
+	const { data, isPending, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
+		useInfiniteQuery(queryOptions);
 
-	// Reset sync state during render when filter props change
-	const filterKey = `${userId}|${guestDemoUserId}|${feedId}|${categoryId}|${view}`;
-	const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
-	if (prevFilterKey !== filterKey) {
-		setPrevFilterKey(filterKey);
-		setLoading(true);
-		setError(null);
-		setPage(1);
-	}
+	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 
-	const fetchItems = useCallback(
-		async (pageNum: number, append = false) => {
-			const effectiveUserId = userId ?? guestDemoUserId ?? null;
-			if (!effectiveUserId) {
-				setItems([]);
-				setLoading(false);
-				return;
-			}
-			try {
-				const result = await getItemsFn({
-					data: {
-						feedId,
-						categoryId,
-						view,
-						page: pageNum,
-						pageSize: PAGE_SIZE,
-					},
-				});
-				if (append) {
-					setItems((prev) => [...prev, ...result.items]);
-				} else {
-					setItems(result.items);
-				}
-				setTotalCount(result.totalCount);
-				setHasMore(result.hasMore);
-				setFeedInfo(result.feedInfo ?? null);
-			} catch {
-				setError('Failed to load articles. Please try again.');
-			}
+	const updateItems = useCallback(
+		(key: QueryKey, update: (items: Array<FeedItemRow>) => Array<FeedItemRow>) => {
+			queryClient.setQueryData<ItemPages>(key, (prev) =>
+				prev
+					? { ...prev, pages: prev.pages.map((page) => ({ ...page, items: update(page.items) })) }
+					: prev,
+			);
 		},
-		[userId, guestDemoUserId, feedId, categoryId, view],
+		[queryClient],
 	);
 
-	// Refetch when filters change (items are async data, cannot be computed during render)
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching; candidate for useQuery
-		fetchItems(1).finally(() => {
-			setLoading(false);
-		});
-	}, [fetchItems, refreshKey]);
+	// A fetch in flight (the background refetch of a revisited list, a "load more")
+	// read the server before this change and would overwrite the optimistic update.
+	// Cancelling a "load more" drops it: the button stays for the User to click again.
+	const cancelFetch = useCallback(
+		async (key: QueryKey) => {
+			const wasInvalidated = queryClient.getQueryState(key)?.isInvalidated ?? false;
+			await queryClient.cancelQueries({ queryKey: key });
+			return { wasInvalidated };
+		},
+		[queryClient],
+	);
+
+	const { mutateAsync: changeRead } = useMutation({
+		mutationFn: ({ itemId, isRead }: ReadChange) =>
+			isRead ? markReadFn({ data: { itemId } }) : unmarkReadFn({ data: { itemId } }),
+		onMutate: async ({ queryKey: key, itemId, isRead }) => {
+			const context = await cancelFetch(key);
+			updateItems(key, (prev) => withItemRead(prev, itemId, isRead));
+			return context;
+		},
+		onError: (_err, { queryKey: key, itemId, wasRead }) => {
+			updateItems(key, (prev) => withItemRead(prev, itemId, wasRead));
+		},
+		onSettled: async (_data, _err, { queryKey: key }, context) => {
+			if (context?.wasInvalidated) {
+				await queryClient.invalidateQueries({ queryKey: key });
+			}
+		},
+	});
+
+	const { mutateAsync: toggleBookmark } = useMutation({
+		mutationFn: ({ item }: BookmarkChange) => toggleBookmarkFn({ data: { itemId: item.id } }),
+		onMutate: async ({ queryKey: key, item, removeFromList }) => {
+			const context = await cancelFetch(key);
+			const position = findItemPosition(queryClient.getQueryData<ItemPages>(key), item.id);
+			updateItems(key, (prev) =>
+				removeFromList
+					? prev.filter((i) => i.id !== item.id)
+					: withItemBookmarked(prev, item.id, !item.isBookmarked),
+			);
+			onBookmarkCountChange?.(item.isBookmarked ? -1 : 1);
+			return { ...context, position };
+		},
+		onSuccess: () => {
+			onSidebarRefresh();
+		},
+		onError: (_err, { queryKey: key, item, removeFromList }, context) => {
+			if (removeFromList) {
+				const position = context?.position;
+				if (position) {
+					queryClient.setQueryData<ItemPages>(key, (prev) =>
+						prev ? withItemAt(prev, item, position) : prev,
+					);
+				}
+			} else {
+				updateItems(key, (prev) => withItemBookmarked(prev, item.id, item.isBookmarked));
+			}
+			onBookmarkCountChange?.(item.isBookmarked ? 1 : -1);
+		},
+		onSettled: async (_data, _err, { queryKey: key }, context) => {
+			if (context?.wasInvalidated) {
+				await queryClient.invalidateQueries({ queryKey: key });
+			}
+		},
+	});
+
+	// Not optimistic, as before: the list changes once the server has marked every item.
+	const {
+		mutateAsync: markAll,
+		isPending: markingAll,
+		variables: markAllChange,
+	} = useMutation({
+		mutationFn: ({ scope, isRead }: MarkAllChange) =>
+			isRead ? markAllReadFn({ data: scope }) : markAllUnreadFn({ data: scope }),
+		onSuccess: (_result, { queryKey: key, isRead }) => {
+			updateItems(key, (prev) => prev.map((item) => ({ ...item, isRead })));
+			onSidebarRefresh();
+		},
+		onError: (err, { isRead }) => {
+			console.error(`Failed to mark all as ${isRead ? 'read' : 'unread'}`, err);
+		},
+	});
 
 	const handleMarkRead = useCallback(
 		async (itemId: string) => {
@@ -134,123 +267,64 @@ export function useFeedItems({
 			if (!item) return;
 			// Sent even when the item already looks read: this tab can be stale (another
 			// tab marked it unread), and the server's mark read is idempotent.
-			const wasRead = item.isRead;
-			setItems((prev) => withItemRead(prev, itemId, true));
-			try {
-				await markReadFn({ data: { itemId } });
-			} catch {
-				setItems((prev) => withItemRead(prev, itemId, wasRead));
-			}
+			await changeRead({ queryKey, itemId, isRead: true, wasRead: item.isRead }).catch(() => {});
 		},
-		[userId, items],
+		[userId, items, queryKey, changeRead],
 	);
 
 	const handleReadToggle = useCallback(
 		async (itemId: string) => {
 			if (!userId) return;
 			const wasRead = items.find((i) => i.id === itemId)?.isRead ?? false;
-			setItems((prev) => withItemRead(prev, itemId, !wasRead));
-			try {
-				if (wasRead) {
-					await unmarkReadFn({ data: { itemId } });
-				} else {
-					await markReadFn({ data: { itemId } });
-				}
-			} catch {
-				setItems((prev) => withItemRead(prev, itemId, wasRead));
-			}
+			await changeRead({ queryKey, itemId, isRead: !wasRead, wasRead }).catch(() => {});
 		},
-		[userId, items],
+		[userId, items, queryKey, changeRead],
 	);
 
 	const handleBookmarkToggle = useCallback(
 		async (itemId: string) => {
 			if (!userId) return;
-			const originalItem = items.find((i) => i.id === itemId);
-			if (!originalItem) return;
-			const delta = originalItem.isBookmarked ? -1 : 1;
-			setItems((prev) =>
-				view === 'bookmarks'
-					? prev.filter((item) => item.id !== itemId)
-					: prev.map((item) =>
-							item.id === itemId ? { ...item, isBookmarked: !originalItem.isBookmarked } : item,
-						),
+			const item = items.find((i) => i.id === itemId);
+			if (!item) return;
+			await toggleBookmark({ queryKey, item, removeFromList: view === 'bookmarks' }).catch(
+				() => {},
 			);
-			onBookmarkCountChange?.(delta);
-			try {
-				await toggleBookmarkFn({ data: { itemId } });
-				onSidebarRefresh();
-			} catch {
-				setItems((prev) =>
-					view === 'bookmarks'
-						? prev.some((i) => i.id === itemId)
-							? prev
-							: [...prev, originalItem]
-						: prev.map((item) => (item.id === itemId ? originalItem : item)),
-				);
-				onBookmarkCountChange?.(-delta);
-			}
 		},
-		[userId, view, items, onSidebarRefresh, onBookmarkCountChange],
+		[userId, items, queryKey, view, toggleBookmark],
 	);
 
 	const handleMarkAllRead = useCallback(async () => {
 		if (!userId) return;
-		setMarkingAllRead(true);
-		try {
-			await markAllReadFn({ data: { feedId, categoryId } });
-			setItems((prev) => prev.map((item) => ({ ...item, isRead: true })));
-			onSidebarRefresh();
-		} catch (err) {
-			console.error('Failed to mark all as read', err);
-		} finally {
-			setMarkingAllRead(false);
-		}
-	}, [userId, feedId, categoryId, onSidebarRefresh]);
+		await markAll({ queryKey, scope: { feedId, categoryId }, isRead: true }).catch(() => {});
+	}, [userId, queryKey, feedId, categoryId, markAll]);
 
 	const handleMarkAllUnread = useCallback(async () => {
 		if (!userId) return;
-		setMarkingAllUnread(true);
-		try {
-			await markAllUnreadFn({ data: { feedId, categoryId } });
-			setItems((prev) => prev.map((item) => ({ ...item, isRead: false })));
-			onSidebarRefresh();
-		} catch (err) {
-			console.error('Failed to mark all as unread', err);
-		} finally {
-			setMarkingAllUnread(false);
-		}
-	}, [userId, feedId, categoryId, onSidebarRefresh]);
+		await markAll({ queryKey, scope: { feedId, categoryId }, isRead: false }).catch(() => {});
+	}, [userId, queryKey, feedId, categoryId, markAll]);
 
 	const handleLoadMore = useCallback(async () => {
-		const effectiveUserId = userId ?? guestDemoUserId ?? null;
-		if (loadingMore || !hasMore || !effectiveUserId) return;
-		setLoadingMore(true);
-		const nextPage = page + 1;
-		await fetchItems(nextPage, true);
-		setPage(nextPage);
-		setLoadingMore(false);
-	}, [loadingMore, hasMore, userId, guestDemoUserId, page, fetchItems]);
+		if (!hasNextPage || isFetchingNextPage) return;
+		await fetchNextPage();
+	}, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+	// A reset rather than a refetch: the list shows its skeleton and reloads from page 1.
 	const handleRetry = useCallback(() => {
-		setLoading(true);
-		setError(null);
-		setPage(1);
-		fetchItems(1).finally(() => {
-			setLoading(false);
-		});
-	}, [fetchItems]);
+		void queryClient.resetQueries({ queryKey });
+	}, [queryClient, queryKey]);
+
+	const lastPage = data?.pages.at(-1);
 
 	return {
 		items,
-		totalCount,
-		hasMore,
-		loading,
-		loadingMore,
-		error,
-		feedInfo,
-		markingAllRead,
-		markingAllUnread,
+		totalCount: lastPage?.totalCount ?? 0,
+		hasMore: hasNextPage,
+		loading: effectiveUserId !== null && isPending,
+		loadingMore: isFetchingNextPage,
+		error: isError ? 'Failed to load articles. Please try again.' : null,
+		feedInfo: data?.pages[0]?.feedInfo ?? null,
+		markingAllRead: markingAll && markAllChange.isRead === true,
+		markingAllUnread: markingAll && markAllChange.isRead === false,
 		handleMarkRead,
 		handleReadToggle,
 		handleBookmarkToggle,

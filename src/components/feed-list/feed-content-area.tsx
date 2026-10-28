@@ -17,7 +17,6 @@ interface FeedContentAreaProps {
 	layout: FeedLayout;
 	onSidebarRefresh: () => void;
 	onBookmarkCountChange?: (delta: number) => void;
-	refreshKey?: number;
 }
 
 export function FeedContentArea({
@@ -29,7 +28,6 @@ export function FeedContentArea({
 	layout,
 	onSidebarRefresh,
 	onBookmarkCountChange,
-	refreshKey,
 }: FeedContentAreaProps) {
 	const {
 		items,
@@ -56,7 +54,6 @@ export function FeedContentArea({
 		view,
 		onSidebarRefresh,
 		onBookmarkCountChange,
-		refreshKey,
 	});
 
 	if (loading) {

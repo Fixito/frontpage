@@ -89,61 +89,69 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 
 // ── getWeeklyDigestFn ─────────────────────────────────────────────────────────
 
-export const getWeeklyDigestFn = createServerFn({ method: 'POST' }).handler(
-	withMutation(async (userId): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
-		const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
+	.validator((data: { expectedUserId: string }) => data)
+	.handler(
+		withMutation(
+			async (
+				userId: string,
+				data: { expectedUserId: string },
+			): Promise<{ briefing: string | null; items: Array<DigestItem> }> => {
+				if (data.expectedUserId !== userId) throw new Error('Unauthorized');
+				const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-		const rs = alias(readState, 'rs');
+				const rs = alias(readState, 'rs');
 
-		const rows = await db
-			.select({
-				id: feedItem.id,
-				title: feedItem.title,
-				url: feedItem.url,
-				feedTitle: feedDisplayTitle,
-				publishedAt: feedItem.publishedAt,
-				description: feedItem.description,
-				contentHtml: feedItem.contentHtml,
-				aiSummary: feedItem.aiSummary,
-			})
-			.from(feedItem)
-			.innerJoin(feed, eq(feed.id, feedItem.feedId))
-			.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
-			.where(
-				and(
-					eq(feed.userId, userId),
-					gte(feedItem.publishedAt, sevenDaysAgo),
-					isNull(rs.itemId),
-					or(isNotNull(feedItem.description), isNotNull(feedItem.contentHtml)),
-				),
-			)
-			.orderBy(desc(feedItem.publishedAt))
-			.limit(10);
+				const rows = await db
+					.select({
+						id: feedItem.id,
+						title: feedItem.title,
+						url: feedItem.url,
+						feedTitle: feedDisplayTitle,
+						publishedAt: feedItem.publishedAt,
+						description: feedItem.description,
+						contentHtml: feedItem.contentHtml,
+						aiSummary: feedItem.aiSummary,
+					})
+					.from(feedItem)
+					.innerJoin(feed, eq(feed.id, feedItem.feedId))
+					.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
+					.where(
+						and(
+							eq(feed.userId, userId),
+							gte(feedItem.publishedAt, sevenDaysAgo),
+							isNull(rs.itemId),
+							or(isNotNull(feedItem.description), isNotNull(feedItem.contentHtml)),
+						),
+					)
+					.orderBy(desc(feedItem.publishedAt))
+					.limit(10);
 
-		const digestItems: Array<DigestItem> = rows.map((row) => ({
-			id: row.id,
-			title: row.title,
-			url: row.url,
-			feedTitle: row.feedTitle,
-			publishedAt: row.publishedAt,
-			description: row.description,
-			aiSummary: row.aiSummary,
-		}));
+				const digestItems: Array<DigestItem> = rows.map((row) => ({
+					id: row.id,
+					title: row.title,
+					url: row.url,
+					feedTitle: row.feedTitle,
+					publishedAt: row.publishedAt,
+					description: row.description,
+					aiSummary: row.aiSummary,
+				}));
 
-		const briefingInput = rows.map((row) => ({
-			title: row.title,
-			description: row.description,
-			url: row.url,
-			feedTitle: row.feedTitle,
-		}));
+				const briefingInput = rows.map((row) => ({
+					title: row.title,
+					description: row.description,
+					url: row.url,
+					feedTitle: row.feedTitle,
+				}));
 
-		let briefing: string | null = null;
-		try {
-			briefing = await generateWeeklyDigest(briefingInput);
-		} catch (err) {
-			console.error('[AI] getWeeklyDigestFn briefing error:', err);
-		}
+				let briefing: string | null = null;
+				try {
+					briefing = await generateWeeklyDigest(briefingInput);
+				} catch (err) {
+					console.error('[AI] getWeeklyDigestFn briefing error:', err);
+				}
 
-		return { briefing, items: digestItems };
-	}),
-);
+				return { briefing, items: digestItems };
+			},
+		),
+	);

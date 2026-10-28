@@ -12,6 +12,7 @@ import { ThemeToggle, applyTheme, readStoredTheme } from '@/components/ui/theme-
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sidebar, SidebarNav } from '@/components/sidebar';
 import { FeedContentArea } from '@/components/feed-list/feed-content-area';
+import { feedItemsQueryKey } from '@/components/feed-list/use-feed-items';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
 import { authClient } from '@/lib/auth-client';
@@ -129,7 +130,6 @@ function DashboardPage() {
 	const [addFeedOpen, setAddFeedOpen] = useState(false);
 	const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
 	const [refreshing, setRefreshing] = useState(false);
-	const [feedRefreshKey, setFeedRefreshKey] = useState(0);
 
 	const hasAutoRefreshed = useRef(false);
 
@@ -149,7 +149,7 @@ function DashboardPage() {
 				}),
 			)
 			.finally(() => {
-				setFeedRefreshKey((k) => k + 1);
+				void queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
 				setRefreshing(false);
 			});
 	}, [user?.id, queryClient]);
@@ -210,7 +210,7 @@ function DashboardPage() {
 				queryKey: sidebarQueryOptions(effectiveUserId).queryKey,
 			});
 		} finally {
-			setFeedRefreshKey((k) => k + 1);
+			void queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
 			setRefreshing(false);
 		}
 	}
@@ -266,16 +266,15 @@ function DashboardPage() {
 
 	async function handleFeedUpdated() {
 		await handleRefreshSidebar();
-		setFeedRefreshKey((k) => k + 1);
+		await queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
 	}
 
 	async function handleFeedRemoved(removedFeedId: string) {
 		if (feedId === removedFeedId) {
-			// Leaving the removed Feed's view refetches the item list on its own.
 			await router.navigate({ to: '/dashboard', search: { view: 'all' } });
-		} else {
-			setFeedRefreshKey((k) => k + 1);
 		}
+		// Every cached list may hold the removed Feed's items.
+		await queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
 		await handleRefreshSidebar();
 	}
 
@@ -429,7 +428,6 @@ function DashboardPage() {
 							layout={layout}
 							onSidebarRefresh={handleRefreshSidebar}
 							onBookmarkCountChange={handleBookmarkCountChange}
-							refreshKey={feedRefreshKey}
 						/>
 					)}
 				</main>
