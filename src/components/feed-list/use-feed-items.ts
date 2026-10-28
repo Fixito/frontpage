@@ -12,6 +12,15 @@ import {
 
 const PAGE_SIZE = 50;
 
+/** `items` with one item's read state set (for optimistic updates and rollbacks). */
+function withItemRead(
+	items: Array<FeedItemRow>,
+	itemId: string,
+	isRead: boolean,
+): Array<FeedItemRow> {
+	return items.map((item) => (item.id === itemId ? { ...item, isRead } : item));
+}
+
 interface UseFeedItemsParams {
 	userId: string | null;
 	guest: GuestSession | null;
@@ -34,10 +43,10 @@ export interface UseFeedItemsResult {
 	markingAllRead: boolean;
 	markingAllUnread: boolean;
 	/** Mark-read intent: unread → read, read stays read. */
-	handleMarkRead: (itemId: string) => void;
+	handleMarkRead: (itemId: string) => Promise<void>;
 	/** Explicit read/unread toggle. */
-	handleToggleRead: (itemId: string) => void;
-	handleBookmarkToggle: (itemId: string) => void;
+	handleReadToggle: (itemId: string) => Promise<void>;
+	handleBookmarkToggle: (itemId: string) => Promise<void>;
 	handleMarkAllRead: () => Promise<void>;
 	handleMarkAllUnread: () => Promise<void>;
 	handleLoadMore: () => Promise<void>;
@@ -119,42 +128,43 @@ export function useFeedItems({
 	}, [fetchItems, refreshKey]);
 
 	const handleMarkRead = useCallback(
-		(itemId: string) => {
+		async (itemId: string) => {
 			if (!userId) return;
-			if (items.find((i) => i.id === itemId)?.isRead ?? true) return;
-			setItems((prev) =>
-				prev.map((item) => (item.id === itemId ? { ...item, isRead: true } : item)),
-			);
-			void markReadFn({ data: { itemId } }).catch(() => {
-				setItems((prev) =>
-					prev.map((item) => (item.id === itemId ? { ...item, isRead: false } : item)),
-				);
-			});
+			const item = items.find((i) => i.id === itemId);
+			if (!item) return;
+			// Sent even when the item already looks read: this tab can be stale (another
+			// tab marked it unread), and the server's mark read is idempotent.
+			const wasRead = item.isRead;
+			setItems((prev) => withItemRead(prev, itemId, true));
+			try {
+				await markReadFn({ data: { itemId } });
+			} catch {
+				setItems((prev) => withItemRead(prev, itemId, wasRead));
+			}
 		},
 		[userId, items],
 	);
 
-	const handleToggleRead = useCallback(
-		(itemId: string) => {
+	const handleReadToggle = useCallback(
+		async (itemId: string) => {
 			if (!userId) return;
-			const isCurrentlyRead = items.find((i) => i.id === itemId)?.isRead ?? false;
-			setItems((prev) =>
-				prev.map((item) => (item.id === itemId ? { ...item, isRead: !item.isRead } : item)),
-			);
-			const fn = isCurrentlyRead
-				? unmarkReadFn({ data: { itemId } })
-				: markReadFn({ data: { itemId } });
-			void fn.catch(() => {
-				setItems((prev) =>
-					prev.map((item) => (item.id === itemId ? { ...item, isRead: isCurrentlyRead } : item)),
-				);
-			});
+			const wasRead = items.find((i) => i.id === itemId)?.isRead ?? false;
+			setItems((prev) => withItemRead(prev, itemId, !wasRead));
+			try {
+				if (wasRead) {
+					await unmarkReadFn({ data: { itemId } });
+				} else {
+					await markReadFn({ data: { itemId } });
+				}
+			} catch {
+				setItems((prev) => withItemRead(prev, itemId, wasRead));
+			}
 		},
 		[userId, items],
 	);
 
 	const handleBookmarkToggle = useCallback(
-		(itemId: string) => {
+		async (itemId: string) => {
 			if (!userId) return;
 			const originalItem = items.find((i) => i.id === itemId);
 			if (!originalItem) return;
@@ -167,20 +177,19 @@ export function useFeedItems({
 						),
 			);
 			onBookmarkCountChange?.(delta);
-			void toggleBookmarkFn({ data: { itemId } })
-				.then(() => {
-					onSidebarRefresh();
-				})
-				.catch(() => {
-					setItems((prev) =>
-						view === 'bookmarks'
-							? prev.some((i) => i.id === itemId)
-								? prev
-								: [...prev, originalItem]
-							: prev.map((item) => (item.id === itemId ? originalItem : item)),
-					);
-					onBookmarkCountChange?.(-delta);
-				});
+			try {
+				await toggleBookmarkFn({ data: { itemId } });
+				onSidebarRefresh();
+			} catch {
+				setItems((prev) =>
+					view === 'bookmarks'
+						? prev.some((i) => i.id === itemId)
+							? prev
+							: [...prev, originalItem]
+						: prev.map((item) => (item.id === itemId ? originalItem : item)),
+				);
+				onBookmarkCountChange?.(-delta);
+			}
 		},
 		[userId, view, items, onSidebarRefresh, onBookmarkCountChange],
 	);
@@ -243,7 +252,7 @@ export function useFeedItems({
 		markingAllRead,
 		markingAllUnread,
 		handleMarkRead,
-		handleToggleRead,
+		handleReadToggle,
 		handleBookmarkToggle,
 		handleMarkAllRead,
 		handleMarkAllUnread,

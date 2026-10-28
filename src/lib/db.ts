@@ -9,25 +9,24 @@ function createDb() {
 	return drizzle(neon(url), { schema });
 }
 
-export type DB = ReturnType<typeof createDb>;
+type NeonDb = ReturnType<typeof createDb>;
 
 /**
- * Any Drizzle Postgres database (or transaction) over the app schema.
- * Server modules take this as a parameter instead of importing `db`, so
- * server fns pass the Neon instance and tests pass an in-memory PGLite one.
+ * Any Drizzle Postgres database over the app schema: the Neon instance in
+ * production, PGLite in tests. See "Database Seam" in GLOSSARY.md.
  */
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>;
 
 // Lazy singleton — process.env is only read on the first actual DB call,
 // not at module import time. This avoids a race with Nitro's .env loading.
-let _db: DB | undefined;
+let _db: NeonDb | undefined;
 
-function getInstance(): DB {
+function getInstance(): NeonDb {
 	if (!_db) _db = createDb();
 	return _db;
 }
 
-export const db = new Proxy({} as DB, {
+export const db = new Proxy({} as NeonDb, {
 	get(_, prop: string | symbol) {
 		const instance = getInstance();
 		const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
