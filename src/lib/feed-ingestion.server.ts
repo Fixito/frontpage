@@ -8,7 +8,7 @@ import { BlockedUrlError } from './url-guard';
 import type { ParsedFeed } from './feed-parser';
 import type { Database } from './db';
 import type { FetchFeedOptions } from './feed-fetcher';
-import type { Feed, NewFeedItem } from '@/db/schema';
+import type { Feed, FeedHealth, NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ export async function addFeed(
 
 /** What one ingest did: the Feed's health after it, and how many Feed Items it added. */
 export interface IngestOutcome {
-	status: 'active' | 'stale' | 'error';
+	status: FeedHealth;
 	newItemCount: number;
 	error: string | null;
 }
@@ -166,6 +166,8 @@ export async function refreshFeed(
 	if (!rows.length) throw new Error(`Feed ${feedId} not found`);
 	return ingestFeed(db, rows[0], fetchOptions);
 }
+
+// ── Storage & Feed Health ─────────────────────────────────────────────────────
 
 async function recordError(db: Database, feedId: string, message: string): Promise<IngestOutcome> {
 	await db

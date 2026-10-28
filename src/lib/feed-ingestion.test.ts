@@ -25,7 +25,8 @@ function daysAgo(days: number): Date {
 	return new Date(Date.now() - days * 86_400_000);
 }
 
-const RSS2 = (published = daysAgo(1)) => `<?xml version="1.0"?>
+/** An RSS 2.0 document whose newest item was published at `published`. */
+const rss2 = (published = daysAgo(1)) => `<?xml version="1.0"?>
 <rss version="2.0">
 	<channel>
 		<title>Tech Feed</title>
@@ -125,7 +126,7 @@ async function techItems() {
 
 describe('ingestFeed', () => {
 	it("stores a Feed's new items and reports it healthy", async () => {
-		const outcome = await ingestFeed(db, techFeed(), serving(RSS2()).options);
+		const outcome = await ingestFeed(db, techFeed(), serving(rss2()).options);
 
 		expect(outcome).toEqual({ status: 'active', newItemCount: 2, error: null });
 		const { items } = await techItems();
@@ -144,7 +145,7 @@ describe('ingestFeed', () => {
 	});
 
 	it('adds no items when the same document is ingested again', async () => {
-		const { options } = serving(RSS2());
+		const { options } = serving(rss2());
 		await ingestFeed(db, techFeed(), options);
 		const before = await techItems();
 
@@ -155,7 +156,7 @@ describe('ingestFeed', () => {
 	});
 
 	it('stores each item once when two ingests of a Feed run concurrently', async () => {
-		const { options } = serving(RSS2());
+		const { options } = serving(rss2());
 		const { totalCount: seeded } = await techItems();
 
 		const outcomes = await Promise.all([
@@ -242,14 +243,14 @@ describe('ingestFeed', () => {
 	});
 
 	it('shows the Feed as stale in the sidebar when its newest item is over 30 days old', async () => {
-		const outcome = await ingestFeed(db, techFeed(), serving(RSS2(daysAgo(31))).options);
+		const outcome = await ingestFeed(db, techFeed(), serving(rss2(daysAgo(31))).options);
 
 		expect(outcome).toEqual({ status: 'stale', newItemCount: 2, error: null });
 		expect(sidebarFeed(await getSidebarData(db, seed.userA.id))?.healthStatus).toBe('stale');
 	});
 
 	it('shows a stale Feed as active again once it publishes', async () => {
-		await ingestFeed(db, techFeed(), serving(RSS2(daysAgo(31))).options);
+		await ingestFeed(db, techFeed(), serving(rss2(daysAgo(31))).options);
 
 		// ATOM carries a new entry, published yesterday.
 		const outcome = await ingestFeed(db, techFeed(), serving(ATOM).options);

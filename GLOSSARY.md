@@ -64,7 +64,7 @@ Both HOFs read the session server-side (via Better Auth `getSession` + `getReque
 
 ### Database Seam
 
-The module functions in `category-service`, `items-service` and `feed-service` take a `Database` (`src/lib/db.ts`) as their first argument instead of importing `db`. Their server fns pass the production Neon instance; tests pass an in-memory PGLite database. How to write such a test: the doc comment in `src/test/db.ts`.
+The module functions in `category-service`, `items-service`, `feed-service` and `feed-ingestion.server` take a `Database` (`src/lib/db.ts`) as their first argument instead of importing `db`. Their server fns pass the production Neon instance; tests pass an in-memory PGLite database. How to write such a test: the doc comment in `src/test/db.ts`.
 
 ---
 
