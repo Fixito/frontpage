@@ -274,8 +274,8 @@ pnpm install
 cp .env.example .env
 # Fill in your database URL and auth secret
 
-# Push the database schema
-pnpm drizzle-kit push
+# Create the database schema
+pnpm db:migrate
 
 # Run the development server
 pnpm dev
@@ -289,6 +289,14 @@ pnpm dev
 | `BETTER_AUTH_SECRET` | Random secret for session signing (min 32 chars, e.g. `openssl rand -base64 32`)                                    |
 | `GEMINI_API_KEY`     | Google AI Studio API key — get one at [aistudio.google.com](https://aistudio.google.com) (not Google Cloud Console) |
 | `GUEST_DEMO_USER_ID` | UUID of the seeded demo user — output by `pnpm seed`                                                                |
+
+### Database Migrations
+
+The schema lives in `src/db/schema.ts`; migrations in `drizzle/` are generated from it with `pnpm drizzle-kit generate --name <what_changed>`. Review the generated SQL: a migration that needs data fixes (merging duplicates before a unique index, for example) gets them written by hand above the generated statements.
+
+`pnpm db:migrate` applies pending migrations, all in one transaction. Production deploys on Vercel run it before building (`src/scripts/vercel-build.sh`), so a merged migration reaches Neon before the code that needs it. Preview deploys skip it. Keep each migration compatible with the code currently live: it is applied before the new code deploys, and stays if the build then fails.
+
+Don't use `drizzle-kit push` on a shared database: it skips hand-written SQL and doesn't record migrations, so later `db:migrate` runs replay them from the start.
 
 ### Tests
 

@@ -13,7 +13,8 @@
 		"format:check": "prettier . --check --cache",
 		"format:write": "prettier . --write --cache",
 		"prepare": "husky",
-		"seed": "tsx --env-file=.env src/scripts/seed-guest.ts"
+		"seed": "tsx --env-file=.env src/scripts/seed-guest.ts",
+		"db:migrate": "node --env-file-if-exists=.env src/scripts/migrate.ts"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",
