@@ -1,5 +1,5 @@
 {
-	"buildCommand": "pnpm build",
+	"buildCommand": "sh src/scripts/vercel-build.sh",
 	"installCommand": "pnpm install",
 	"framework": null,
 	"env": {
