@@ -6,9 +6,16 @@ interface ItemActionsProps {
 	item: FeedItemRow;
 	onReadToggle: () => void;
 	onBookmarkToggle: () => void;
+	/** Clicking through to the original article: mark-read intent, not a toggle. */
+	onMarkRead: () => void;
 }
 
-export function ItemActions({ item, onReadToggle, onBookmarkToggle }: ItemActionsProps) {
+export function ItemActions({
+	item,
+	onReadToggle,
+	onBookmarkToggle,
+	onMarkRead,
+}: ItemActionsProps) {
 	return (
 		<div className="flex items-center gap-0.5">
 			<Button
@@ -48,7 +55,10 @@ export function ItemActions({ item, onReadToggle, onBookmarkToggle }: ItemAction
 				target="_blank"
 				rel="noopener noreferrer"
 				aria-label="Open in new tab"
-				onClick={(e) => e.stopPropagation()}
+				onClick={(e) => {
+					e.stopPropagation();
+					onMarkRead();
+				}}
 			>
 				<Button variant="ghost" size="icon" className="h-7 w-7" tabIndex={-1}>
 					<ExternalLink size={14} aria-hidden />
