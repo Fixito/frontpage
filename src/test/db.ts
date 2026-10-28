@@ -29,6 +29,9 @@
  * boot and migrate), so tests that mutate data should create one per test.
  * Read-only suites can share one via `beforeAll` / `afterAll`.
  */
+import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
@@ -40,11 +43,38 @@ const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.meta.url
 
 export type TestDb = Awaited<ReturnType<typeof createTestDb>>;
 
-/** A fresh in-memory database with every Drizzle migration applied. */
-export async function createTestDb() {
+/**
+ * A fresh in-memory database with every Drizzle migration applied, or only
+ * those up to and including the `migrateUpTo` tag (e.g. `0001_feed_custom_title`).
+ * A migration test stops before the migration under test, inserts the data it
+ * must handle, then applies the rest with `migrateTestDb`.
+ */
+export async function createTestDb({ migrateUpTo }: { migrateUpTo?: string } = {}) {
 	const db = drizzle(new PGlite(), { schema });
-	await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+	await migrate(db, {
+		migrationsFolder: migrateUpTo ? await migrationsUpTo(migrateUpTo) : MIGRATIONS_FOLDER,
+	});
 	return db;
+}
+
+/** Applies every migration not applied yet. */
+export async function migrateTestDb(db: TestDb) {
+	await migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
+}
+
+/** A copy of the migrations folder whose journal stops at `tag`. */
+async function migrationsUpTo(tag: string): Promise<string> {
+	const folder = await mkdtemp(join(tmpdir(), 'frontpage-migrations-'));
+	await cp(MIGRATIONS_FOLDER, folder, { recursive: true });
+	const journalPath = join(folder, 'meta', '_journal.json');
+	const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
+		entries: Array<{ tag: string }>;
+	};
+	const last = journal.entries.findIndex((entry) => entry.tag === tag);
+	if (last === -1) throw new Error(`No migration tagged ${tag}`);
+	journal.entries = journal.entries.slice(0, last + 1);
+	await writeFile(journalPath, JSON.stringify(journal));
+	return folder;
 }
 
 // ── Seed ───────────────────────────────────────────────────────────────────────

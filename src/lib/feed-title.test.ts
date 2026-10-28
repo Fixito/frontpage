@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getSidebarData, updateFeed } from './category-service';
 import { refreshFeed } from './feed-ingestion.server';
 import { getItems } from './items-service';
-import type { FeedFetcher } from './feed-ingestion.server';
+import type { FetchFeedOptions } from './feed-fetcher';
 import type { SidebarData } from '@/components/sidebar/types';
 import type { Seed, TestDb } from '@/test/db';
 import { createTestDb, seedTestDb } from '@/test/db';
@@ -19,16 +19,17 @@ afterEach(async () => {
 	await db.$client.close();
 });
 
-/** A fetcher that serves an RSS document titled `title`, at the requested URL. */
-function serveFeedTitled(title: string): FeedFetcher {
-	return (url) =>
-		Promise.resolve({
-			xml: `<?xml version="1.0"?><rss version="2.0"><channel><title>${title}</title><link>${url}</link></channel></rss>`,
-			finalUrl: url,
-			wasRedirected: false,
-			etag: null,
-			lastModified: null,
-		});
+/** Fetch options whose network serves an RSS document titled `title`. */
+function serveFeedTitled(title: string): FetchFeedOptions {
+	return {
+		fetch: () =>
+			Promise.resolve(
+				new Response(
+					`<?xml version="1.0"?><rss version="2.0"><channel><title>${title}</title></channel></rss>`,
+				),
+			),
+		resolveHost: () => Promise.resolve(['93.184.215.14']),
+	};
 }
 
 function sidebarTitle(data: SidebarData, feedId: string): string | undefined {

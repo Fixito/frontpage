@@ -18,6 +18,7 @@ import { useFeedActions } from './use-feed-actions';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import type { FeedRowActions } from './use-feed-actions';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from './types';
+import type { FeedHealth } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -49,7 +50,7 @@ function UnreadBadge({ count }: { count: number }) {
 	);
 }
 
-function HealthDot({ status }: { status: 'active' | 'stale' | 'error' }) {
+function HealthDot({ status }: { status: FeedHealth }) {
 	if (status === 'active') return null;
 
 	return (

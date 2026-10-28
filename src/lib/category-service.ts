@@ -5,6 +5,7 @@ import { feedDisplayTitle } from './feed-title';
 import { db as productionDb } from './db';
 import type { Database } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
+import type { FeedHealth } from '@/db/schema';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
 // ── getSidebarData ─────────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 			url: f.url,
 			faviconUrl: f.faviconUrl,
 			unreadCount: Math.max(0, f.unreadCount),
-			healthStatus: f.healthStatus as 'active' | 'stale' | 'error',
+			healthStatus: f.healthStatus as FeedHealth,
 		};
 		if (f.categoryId) {
 			const existing = feedsByCategory.get(f.categoryId);

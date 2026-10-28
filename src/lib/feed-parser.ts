@@ -82,14 +82,44 @@ function toArray<T>(value: T | Array<T> | undefined | null): Array<T> {
 	return Array.isArray(value) ? value : [value];
 }
 
-function extractGuid(item: XmlNode, fallbackUrl: string): string {
+function extractRssGuid(item: XmlNode): string | null {
 	const guid = item['guid'];
-	if (typeof guid === 'string') return guid;
+	if (typeof guid === 'string') return guid.trim() || null;
 	if (typeof guid === 'object' && guid !== null) {
 		const g = guid as XmlNode;
-		if (typeof g['#text'] === 'string') return g['#text'];
+		if (typeof g['#text'] === 'string') return g['#text'].trim() || null;
 	}
-	return fallbackUrl || String(Date.now());
+	return null;
+}
+
+/** cyrb53: a fast, well-distributed 53-bit string hash. Not cryptographic. */
+function hash53(str: string): string {
+	let h1 = 0xdeadbeef;
+	let h2 = 0x41c6ce57;
+	for (let i = 0; i < str.length; i++) {
+		const ch = str.charCodeAt(i);
+		h1 = Math.imul(h1 ^ ch, 2654435761);
+		h2 = Math.imul(h2 ^ ch, 1597334677);
+	}
+	h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+/**
+ * A Feed Item's identity within its Feed: the guid the Feed declares, else its
+ * link, else a hash of its title and published date. Never time-dependent, so
+ * re-ingesting the same document yields the same identities.
+ */
+function itemIdentity(
+	declaredGuid: string | null,
+	url: string,
+	title: string,
+	publishedAt: Date | null,
+): string {
+	if (declaredGuid) return declaredGuid;
+	if (url) return url;
+	return `content:${hash53(`${title}\n${publishedAt?.toISOString() ?? ''}`)}`;
 }
 
 function extractRssAuthor(item: XmlNode): string | null {
@@ -106,7 +136,8 @@ function parseRss2(channel: XmlNode): ParsedFeed {
 	const items: Array<ParsedFeedItem> = toArray(channel['item']).map((raw) => {
 		const item = raw as XmlNode;
 		const url = getText(item['link']) ?? '';
-		const guid = extractGuid(item, url);
+		const itemTitle = getText(item['title']) ?? 'Untitled';
+		const publishedAt = parseDate(item['pubDate']) ?? parseDate(item['dc:date']);
 		const itemDescription = getText(item['description']);
 		const contentHtml =
 			getText(item['content:encoded']) ??
@@ -114,13 +145,13 @@ function parseRss2(channel: XmlNode): ParsedFeed {
 			(itemDescription?.includes('<') ? itemDescription : null);
 
 		return {
-			guid,
+			guid: itemIdentity(extractRssGuid(item), url, itemTitle, publishedAt),
 			url,
-			title: getText(item['title']) ?? 'Untitled',
+			title: itemTitle,
 			description: itemDescription,
 			contentHtml,
 			author: extractRssAuthor(item),
-			publishedAt: parseDate(item['pubDate']) ?? parseDate(item['dc:date']),
+			publishedAt,
 		};
 	});
 
@@ -137,7 +168,8 @@ function parseAtom(feedNode: XmlNode): ParsedFeed {
 	const items: Array<ParsedFeedItem> = toArray(feedNode['entry']).map((raw) => {
 		const entry = raw as XmlNode;
 		const url = getAtomLink(entry['link']) ?? '';
-		const guid = getText(entry['id']) ?? url;
+		const itemTitle = getText(entry['title']) ?? 'Untitled';
+		const publishedAt = parseDate(entry['published']) ?? parseDate(entry['updated']);
 
 		// Fall back to <summary> when <content> is absent (e.g. xkcd)
 		const contentNode = entry['content'] ?? entry['summary'];
@@ -160,13 +192,13 @@ function parseAtom(feedNode: XmlNode): ParsedFeed {
 		);
 
 		return {
-			guid,
+			guid: itemIdentity(getText(entry['id']), url, itemTitle, publishedAt),
 			url,
-			title: getText(entry['title']) ?? 'Untitled',
+			title: itemTitle,
 			description: getText(entry['summary']),
 			contentHtml: isHtml ? contentText : null,
 			author,
-			publishedAt: parseDate(entry['published']) ?? parseDate(entry['updated']),
+			publishedAt,
 		};
 	});
 
@@ -186,15 +218,17 @@ function parseRss1(rdf: XmlNode): ParsedFeed {
 	const items: Array<ParsedFeedItem> = toArray(rawItems).map((raw) => {
 		const item = raw as XmlNode;
 		const url = getText(item['link']) ?? getText(item['rss:link']) ?? '';
+		const itemTitle = getText(item['title']) ?? getText(item['rss:title']) ?? 'Untitled';
+		const publishedAt = parseDate(item['dc:date']) ?? parseDate(item['pubDate']);
 
 		return {
-			guid: getText(item['dc:identifier']) ?? url,
+			guid: itemIdentity(getText(item['dc:identifier']), url, itemTitle, publishedAt),
 			url,
-			title: getText(item['title']) ?? getText(item['rss:title']) ?? 'Untitled',
+			title: itemTitle,
 			description: getText(item['description']) ?? getText(item['rss:description']),
 			contentHtml: getText(item['content:encoded']),
 			author: getText(item['dc:creator']),
-			publishedAt: parseDate(item['dc:date']) ?? parseDate(item['pubDate']),
+			publishedAt,
 		};
 	});
 

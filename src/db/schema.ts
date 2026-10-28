@@ -1,4 +1,13 @@
-import { boolean, index, integer, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+	boolean,
+	index,
+	integer,
+	pgTable,
+	primaryKey,
+	text,
+	timestamp,
+	uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 // ── Better Auth required tables ──────────────────────────────────────────────
 
@@ -88,7 +97,7 @@ export const feed = pgTable(
 		description: text('description'),
 		faviconUrl: text('favicon_url'),
 		categoryId: text('category_id').references(() => category.id, { onDelete: 'set null' }),
-		// 'active' | 'stale' | 'error'
+		// A FeedHealth, set only by Feed Ingestion
 		healthStatus: text('health_status').notNull().default('active'),
 		lastFetchedAt: timestamp('last_fetched_at'),
 		errorMessage: text('error_message'),
@@ -119,6 +128,8 @@ export const feedItem = pgTable(
 	(t) => [
 		index('feed_item_feed_idx').on(t.feedId),
 		index('feed_item_published_idx').on(t.feedId, t.publishedAt),
+		// A Feed Item's identity within its Feed: ingestion relies on it to never double-insert.
+		uniqueIndex('feed_item_feed_guid_idx').on(t.feedId, t.guid),
 	],
 );
 
@@ -164,6 +175,9 @@ export const userPreference = pgTable('user_preference', {
 });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+/** Feed Health, see GLOSSARY.md. Stored in `feed.healthStatus`. */
+export type FeedHealth = 'active' | 'stale' | 'error';
 
 export type User = typeof user.$inferSelect;
 export type Session = typeof session.$inferSelect;
