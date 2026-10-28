@@ -130,6 +130,7 @@ interface FeedItemListProps {
 	items: Array<FeedItemRow>;
 	layout: 'list' | 'compact' | 'cards';
 	onMarkRead: (itemId: string) => void;
+	onToggleRead: (itemId: string) => void;
 	onMarkBookmark: (itemId: string) => void;
 	userId: string | null;
 }
@@ -140,6 +141,7 @@ interface FeedItemCardProps {
 	index: number;
 	isFocused?: boolean;
 	onMarkRead: (itemId: string) => void;
+	onToggleRead: (itemId: string) => void;
 	onMarkBookmark: (itemId: string) => void;
 	onOpenReader: (item: FeedItemRow) => void;
 }
@@ -150,6 +152,7 @@ function FeedItemCard({
 	index,
 	isFocused,
 	onMarkRead,
+	onToggleRead,
 	onMarkBookmark,
 	onOpenReader,
 }: FeedItemCardProps) {
@@ -214,7 +217,7 @@ function FeedItemCard({
 					<div className="ml-auto flex opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
 						<ItemActions
 							item={item}
-							onReadToggle={() => onMarkRead(item.id)}
+							onReadToggle={() => onToggleRead(item.id)}
 							onBookmarkToggle={() => onMarkBookmark(item.id)}
 						/>
 					</div>
@@ -273,7 +276,7 @@ function FeedItemCard({
 				<div className="flex shrink-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
 					<ItemActions
 						item={item}
-						onReadToggle={() => onMarkRead(item.id)}
+						onReadToggle={() => onToggleRead(item.id)}
 						onBookmarkToggle={() => onMarkBookmark(item.id)}
 					/>
 				</div>
@@ -319,7 +322,7 @@ function FeedItemCard({
 			<div className="flex shrink-0 items-start pt-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
 				<ItemActions
 					item={item}
-					onReadToggle={() => onMarkRead(item.id)}
+					onReadToggle={() => onToggleRead(item.id)}
 					onBookmarkToggle={() => onMarkBookmark(item.id)}
 				/>
 			</div>
@@ -333,6 +336,7 @@ export function FeedItemList({
 	items,
 	layout,
 	onMarkRead,
+	onToggleRead,
 	onMarkBookmark,
 	userId,
 }: FeedItemListProps) {
@@ -412,7 +416,7 @@ export function FeedItemList({
 			}
 			if (e.key === 'm') {
 				e.preventDefault();
-				onMarkRead(item.id);
+				onToggleRead(item.id);
 				return;
 			}
 			if (e.key === 's') {
@@ -423,7 +427,7 @@ export function FeedItemList({
 		}
 		document.addEventListener('keydown', handleKey);
 		return () => document.removeEventListener('keydown', handleKey);
-	}, [items, focusedIndex, readerOpen, handleOpenReader, onMarkRead, onMarkBookmark]);
+	}, [items, focusedIndex, readerOpen, handleOpenReader, onToggleRead, onMarkBookmark]);
 
 	if (layout === 'cards') {
 		return (
@@ -437,6 +441,7 @@ export function FeedItemList({
 							index={index}
 							isFocused={focusedIndex === index}
 							onMarkRead={onMarkRead}
+							onToggleRead={onToggleRead}
 							onMarkBookmark={onMarkBookmark}
 							onOpenReader={handleOpenReader}
 						/>
@@ -470,6 +475,7 @@ export function FeedItemList({
 						index={index}
 						isFocused={focusedIndex === index}
 						onMarkRead={onMarkRead}
+						onToggleRead={onToggleRead}
 						onMarkBookmark={onMarkBookmark}
 						onOpenReader={handleOpenReader}
 					/>
