@@ -26,7 +26,7 @@ import { toErrors } from '@/lib/form-utils';
 interface EditFeedDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	feed: { id: string; title: string; categoryId: string | null; url?: string };
+	feed: { id: string; title: string; categoryId: string | null; url: string };
 	categories: Array<{ id: string; name: string }>;
 	onSuccess: () => void;
 	onCloseAutoFocus?: (event: Event) => void;
@@ -58,7 +58,7 @@ export function EditFeedDialog({
 }
 
 interface EditFeedFormProps {
-	feed: { id: string; title: string; categoryId: string | null; url?: string };
+	feed: { id: string; title: string; categoryId: string | null; url: string };
 	categories: Array<{ id: string; name: string }>;
 	onOpenChange: (open: boolean) => void;
 	onSuccess: () => void;
@@ -170,14 +170,12 @@ function EditFeedForm({ feed, categories, onOpenChange, onSuccess }: EditFeedFor
 				</form.Field>
 			</FieldGroup>
 
-			{feed.url && (
-				<div className="flex flex-col gap-1">
-					<p className="text-muted-foreground text-xs font-medium">Feed URL</p>
-					<p className="text-muted-foreground truncate text-xs" title={feed.url}>
-						{feed.url}
-					</p>
-				</div>
-			)}
+			<div className="flex flex-col gap-1">
+				<p className="text-muted-foreground text-xs font-medium">Feed URL</p>
+				<p className="text-muted-foreground truncate text-xs" title={feed.url}>
+					{feed.url}
+				</p>
+			</div>
 
 			<DialogFooter>
 				<form.Subscribe selector={(s) => s.isSubmitting}>

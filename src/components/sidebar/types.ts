@@ -1,6 +1,7 @@
 export interface FeedNavItem {
 	id: string;
 	title: string;
+	url: string;
 	faviconUrl: string | null;
 	unreadCount: number;
 	healthStatus: 'active' | 'stale' | 'error';

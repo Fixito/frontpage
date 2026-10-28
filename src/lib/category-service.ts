@@ -14,6 +14,7 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 		.select({
 			id: feed.id,
 			title: feedDisplayTitle,
+			url: feed.url,
 			faviconUrl: feed.faviconUrl,
 			categoryId: feed.categoryId,
 			healthStatus: feed.healthStatus,
@@ -39,6 +40,7 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 		const navItem: FeedNavItem = {
 			id: f.id,
 			title: f.title,
+			url: f.url,
 			faviconUrl: f.faviconUrl,
 			unreadCount: Math.max(0, f.unreadCount),
 			healthStatus: f.healthStatus as 'active' | 'stale' | 'error',

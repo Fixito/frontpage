@@ -529,6 +529,7 @@ export function SidebarNav({
 							feed={{
 								id: pendingFeedAction.feed.id,
 								title: pendingFeedAction.feed.title,
+								url: pendingFeedAction.feed.url,
 								categoryId: pendingFeedAction.categoryId,
 							}}
 							categories={data.categories.map((c) => ({ id: c.id, name: c.name }))}
