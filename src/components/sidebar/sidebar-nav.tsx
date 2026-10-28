@@ -25,8 +25,8 @@ import { cn } from '@/lib/utils';
 const EditFeedDialog = lazy(() =>
 	import('@/components/feeds/edit-feed-dialog').then((m) => ({ default: m.EditFeedDialog })),
 );
-const DeleteFeedDialog = lazy(() =>
-	import('@/components/feeds/delete-feed-dialog').then((m) => ({ default: m.DeleteFeedDialog })),
+const RemoveFeedDialog = lazy(() =>
+	import('@/components/feeds/remove-feed-dialog').then((m) => ({ default: m.RemoveFeedDialog })),
 );
 
 interface SidebarNavProps {
@@ -537,7 +537,7 @@ export function SidebarNav({
 							onCloseAutoFocus={restoreFocus}
 						/>
 					) : (
-						<DeleteFeedDialog
+						<RemoveFeedDialog
 							open={feedDialogOpen}
 							onOpenChange={setFeedDialogOpen}
 							feed={pendingFeedAction.feed}
