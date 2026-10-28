@@ -46,6 +46,7 @@ describe('DigestView', () => {
 
 		expect(await screen.findByText('This week…')).toBeTruthy();
 		expect(screen.getByRole('link', { name: 'An unread article' })).toBeTruthy();
+		expect(getWeeklyDigestFn).toHaveBeenCalledWith({ data: { expectedUserId: 'u1' } });
 	});
 
 	it('shows an error, then the digest after Try again', async () => {
@@ -67,5 +68,18 @@ describe('DigestView', () => {
 
 		expect(screen.getByText('This week…')).toBeTruthy();
 		expect(getWeeklyDigestFn).toHaveBeenCalledTimes(1);
+	});
+
+	it('requests a separate digest for another account', async () => {
+		const queryClient = new QueryClient();
+		const first = renderDigest('u1', queryClient);
+		await screen.findByText('This week…');
+		first.unmount();
+		getWeeklyDigestFn.mockResolvedValueOnce({ briefing: 'Another account', items: [item] });
+
+		renderDigest('u2', queryClient);
+
+		expect(await screen.findByText('Another account')).toBeTruthy();
+		expect(getWeeklyDigestFn).toHaveBeenLastCalledWith({ data: { expectedUserId: 'u2' } });
 	});
 });

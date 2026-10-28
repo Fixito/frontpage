@@ -9,7 +9,10 @@ const DIGEST_REUSE_MS = 10 * 60 * 1000;
 const weeklyDigestQueryOptions = (userId: string | null) =>
 	queryOptions({
 		queryKey: ['weekly-digest', userId],
-		queryFn: () => getWeeklyDigestFn(),
+		queryFn: () => {
+			if (!userId) throw new Error('Unauthorized');
+			return getWeeklyDigestFn({ data: { expectedUserId: userId } });
+		},
 		enabled: userId !== null,
 		// Each run is a Gemini call: reopening the digest reuses it for a while,
 		// and a failure is shown at once instead of being retried.

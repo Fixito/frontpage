@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useFeedItems } from './use-feed-items';
+import { feedItemsQueryKey, useFeedItems } from './use-feed-items';
 import type { ReactNode } from 'react';
 import type { FeedItemRow } from '@/lib/items-service';
 
@@ -50,8 +50,9 @@ function makeItem(id: string, isRead: boolean, isBookmarked = false): FeedItemRo
 	};
 }
 
-function createWrapper() {
-	const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function createWrapper(
+	queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
 	return ({ children }: { children: ReactNode }) =>
 		createElement(QueryClientProvider, { client: queryClient }, children);
 }
@@ -74,11 +75,13 @@ async function renderWithItems(userId: string | null, items: Array<FeedItemRow>)
 
 /** A promise the test settles by hand, to observe the optimistic state before the server answers. */
 function deferred() {
+	let resolve: () => void = () => {};
 	let reject: (error: Error) => void = () => {};
-	const promise = new Promise<void>((_resolve, rej) => {
+	const promise = new Promise<void>((res, rej) => {
+		resolve = res;
 		reject = rej;
 	});
-	return { promise, reject };
+	return { promise, resolve, reject };
 }
 
 const ids = (items: Array<FeedItemRow>) => items.map((i) => i.id);
@@ -262,6 +265,90 @@ describe('optimistic updates and background refetches', () => {
 		await new Promise((resolve) => setTimeout(resolve, 20));
 		expect(isRead(result.current.items, 'f1-item')).toBe(true);
 	});
+});
+
+describe.each(['read', 'bookmark'] as const)('%s mutations and invalidation', (mutation) => {
+	it.each([
+		{ wasInvalidated: true, fails: false },
+		{ wasInvalidated: true, fails: true },
+		{ wasInvalidated: false, fails: false },
+		{ wasInvalidated: false, fails: true },
+	])(
+		'settles with invalidated=$wasInvalidated, fails=$fails',
+		async ({ wasInvalidated, fails }) => {
+			const queryClient = new QueryClient({
+				defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+			});
+			const server = deferred();
+			const serverFn = mutation === 'read' ? markReadFn : toggleBookmarkFn;
+			serverFn.mockReturnValue(server.promise);
+			const initialItems = [makeItem('a', false, true), makeItem('b', false, true)];
+			getItemsFn.mockResolvedValue({
+				items: initialItems,
+				totalCount: 2,
+				hasMore: false,
+				feedInfo: null,
+			});
+			const { result } = renderHook(
+				() =>
+					useFeedItems({
+						userId: 'u1',
+						guest: null,
+						view: mutation === 'read' ? 'all' : 'bookmarks',
+						onSidebarRefresh: () => {},
+					}),
+				{ wrapper: createWrapper(queryClient) },
+			);
+			await waitFor(() => expect(ids(result.current.items)).toEqual(['a', 'b']));
+
+			if (wasInvalidated) {
+				// Hold the refresh that brings in a newly added Feed Item until the mutation cancels it.
+				getItemsFn.mockImplementationOnce(() => new Promise(() => {}));
+				act(() => {
+					void queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
+				});
+				await waitFor(() => expect(getItemsFn).toHaveBeenCalledTimes(2));
+			}
+
+			let change: Promise<void> = Promise.resolve();
+			act(() => {
+				change =
+					mutation === 'read'
+						? result.current.handleMarkRead('a')
+						: result.current.handleBookmarkToggle('a');
+			});
+			await waitFor(() => {
+				if (mutation === 'read') expect(isRead(result.current.items, 'a')).toBe(true);
+				else expect(ids(result.current.items)).toEqual(['b']);
+			});
+			expect(getItemsFn).toHaveBeenCalledTimes(wasInvalidated ? 2 : 1);
+
+			const settledItems =
+				mutation === 'read'
+					? [makeItem('a', !fails, true), initialItems[1]]
+					: fails
+						? initialItems
+						: [initialItems[1]];
+			getItemsFn.mockResolvedValue({
+				items: [...settledItems, makeItem('new', false, true)],
+				totalCount: settledItems.length + 1,
+				hasMore: false,
+				feedInfo: null,
+			});
+			if (fails) server.reject(new Error('boom'));
+			else server.resolve();
+			await act(() => change);
+
+			await waitFor(() =>
+				expect(ids(result.current.items)).toEqual([
+					...ids(settledItems),
+					...(wasInvalidated ? ['new'] : []),
+				]),
+			);
+			if (mutation === 'read') expect(isRead(result.current.items, 'a')).toBe(!fails);
+			expect(getItemsFn).toHaveBeenCalledTimes(wasInvalidated ? 3 : 1);
+		},
+	);
 });
 
 describe('pagination', () => {

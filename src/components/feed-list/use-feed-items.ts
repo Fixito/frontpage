@@ -181,7 +181,11 @@ export function useFeedItems({
 	// read the server before this change and would overwrite the optimistic update.
 	// Cancelling a "load more" drops it: the button stays for the User to click again.
 	const cancelFetch = useCallback(
-		(key: QueryKey) => queryClient.cancelQueries({ queryKey: key }),
+		async (key: QueryKey) => {
+			const wasInvalidated = queryClient.getQueryState(key)?.isInvalidated ?? false;
+			await queryClient.cancelQueries({ queryKey: key });
+			return { wasInvalidated };
+		},
 		[queryClient],
 	);
 
@@ -189,18 +193,24 @@ export function useFeedItems({
 		mutationFn: ({ itemId, isRead }: ReadChange) =>
 			isRead ? markReadFn({ data: { itemId } }) : unmarkReadFn({ data: { itemId } }),
 		onMutate: async ({ queryKey: key, itemId, isRead }) => {
-			await cancelFetch(key);
+			const context = await cancelFetch(key);
 			updateItems(key, (prev) => withItemRead(prev, itemId, isRead));
+			return context;
 		},
 		onError: (_err, { queryKey: key, itemId, wasRead }) => {
 			updateItems(key, (prev) => withItemRead(prev, itemId, wasRead));
+		},
+		onSettled: async (_data, _err, { queryKey: key }, context) => {
+			if (context?.wasInvalidated) {
+				await queryClient.invalidateQueries({ queryKey: key });
+			}
 		},
 	});
 
 	const { mutateAsync: toggleBookmark } = useMutation({
 		mutationFn: ({ item }: BookmarkChange) => toggleBookmarkFn({ data: { itemId: item.id } }),
 		onMutate: async ({ queryKey: key, item, removeFromList }) => {
-			await cancelFetch(key);
+			const context = await cancelFetch(key);
 			const position = findItemPosition(queryClient.getQueryData<ItemPages>(key), item.id);
 			updateItems(key, (prev) =>
 				removeFromList
@@ -208,7 +218,7 @@ export function useFeedItems({
 					: withItemBookmarked(prev, item.id, !item.isBookmarked),
 			);
 			onBookmarkCountChange?.(item.isBookmarked ? -1 : 1);
-			return { position };
+			return { ...context, position };
 		},
 		onSuccess: () => {
 			onSidebarRefresh();
@@ -225,6 +235,11 @@ export function useFeedItems({
 				updateItems(key, (prev) => withItemBookmarked(prev, item.id, item.isBookmarked));
 			}
 			onBookmarkCountChange?.(item.isBookmarked ? 1 : -1);
+		},
+		onSettled: async (_data, _err, { queryKey: key }, context) => {
+			if (context?.wasInvalidated) {
+				await queryClient.invalidateQueries({ queryKey: key });
+			}
 		},
 	});
 
