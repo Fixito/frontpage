@@ -1,4 +1,13 @@
-import { boolean, index, integer, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+	boolean,
+	index,
+	integer,
+	pgTable,
+	primaryKey,
+	text,
+	timestamp,
+	uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 // ── Better Auth required tables ──────────────────────────────────────────────
 
@@ -119,6 +128,8 @@ export const feedItem = pgTable(
 	(t) => [
 		index('feed_item_feed_idx').on(t.feedId),
 		index('feed_item_published_idx').on(t.feedId, t.publishedAt),
+		// A Feed Item's identity within its Feed: ingestion relies on it to never double-insert.
+		uniqueIndex('feed_item_feed_guid_idx').on(t.feedId, t.guid),
 	],
 );
 

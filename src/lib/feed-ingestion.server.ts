@@ -1,13 +1,14 @@
 // Server-only: fetching a Feed pulls in node:dns via the URL guard. The `.server`
 // suffix makes TanStack Start's import protection fail the build if client code
 // ever imports this module; feed-service.ts calls it only inside server fn handlers.
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, max } from 'drizzle-orm';
 import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher';
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
+import type { ParsedFeed } from './feed-parser';
 import type { Database } from './db';
-import type { FetchFeedResult } from './feed-fetcher';
-import type { NewFeedItem } from '@/db/schema';
+import type { FetchFeedOptions } from './feed-fetcher';
+import type { Feed, NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -71,34 +72,39 @@ export async function addFeed(
 		})
 		.returning({ id: feed.id });
 
-	await _storeItems(db, inserted.id, result.finalUrl, parsed.items);
+	await storeItems(db, inserted.id, parsed.items);
 	return inserted.id;
 }
 
-// ── Refresh a single feed owned by a user ──────────────────────────────────────
+// ── Ingest a Feed: fetch, parse, store, and record its health ──────────────────
 
-/** Fetches a Feed's document. Defaults to the network; tests pass a stub. */
-export type FeedFetcher = (url: string) => Promise<FetchFeedResult>;
+/** What one ingest did: the Feed's health after it, and how many Feed Items it added. */
+export interface IngestOutcome {
+	status: 'active' | 'stale' | 'error';
+	newItemCount: number;
+	error: string | null;
+}
 
-export async function refreshFeed(
+/**
+ * Fetches a Feed (retrying network errors and 5xx, never timeouts or 4xx),
+ * stores the Feed Items it doesn't have yet, and records its health:
+ * - `error`: the fetch or parse failed; existing Feed Items are left untouched.
+ * - `stale`: fetched fine, but the newest Feed Item is over 30 days old.
+ * - `active`: fetched fine otherwise.
+ *
+ * Health transitions happen only here. Every refresh path (one Feed,
+ * refresh-all, auto-refresh on login, the error-banner retry) goes through it.
+ */
+export async function ingestFeed(
 	db: Database,
-	userId: string,
-	feedId: string,
-	fetcher: FeedFetcher = fetchFeed,
-): Promise<void> {
-	const feedRows = await db
-		.select()
-		.from(feed)
-		.where(and(eq(feed.id, feedId), eq(feed.userId, userId)))
-		.limit(1);
-	if (!feedRows.length) throw new Error(`Feed ${feedId} not found`);
-	const feedRow = feedRows[0];
-
+	target: Pick<Feed, 'id' | 'url'>,
+	fetchOptions: FetchFeedOptions = {},
+): Promise<IngestOutcome> {
 	let xml: string;
-	let finalUrl = feedRow.url;
+	let finalUrl = target.url;
 
 	try {
-		const result = await fetcher(feedRow.url);
+		const result = await fetchFeed(target.url, fetchOptions);
 		xml = result.xml;
 		finalUrl = result.finalUrl;
 	} catch (err) {
@@ -106,107 +112,121 @@ export async function refreshFeed(
 			await db
 				.update(feed)
 				.set({ lastFetchedAt: new Date(), healthStatus: 'active', errorMessage: null })
-				.where(eq(feed.id, feedId));
-			return;
+				.where(eq(feed.id, target.id));
+			return { status: 'active', newItemCount: 0, error: null };
 		}
-		const msg =
+		return recordError(
+			db,
+			target.id,
 			err instanceof FeedFetchError || err instanceof BlockedUrlError
 				? err.message
-				: 'Fetch failed';
-		await db
-			.update(feed)
-			.set({ healthStatus: 'error', errorMessage: msg })
-			.where(eq(feed.id, feedId));
-		throw err;
+				: 'Fetch failed',
+		);
 	}
 
 	let parsed;
 	try {
 		parsed = parseFeed(xml);
 	} catch (err) {
-		const msg = err instanceof FeedParseError ? err.message : 'Parse failed';
-		await db
-			.update(feed)
-			.set({ healthStatus: 'error', errorMessage: msg })
-			.where(eq(feed.id, feedId));
-		throw err;
+		return recordError(db, target.id, err instanceof FeedParseError ? err.message : 'Parse failed');
 	}
 
-	// Update feed metadata
+	const newItemCount = await storeItems(db, target.id, parsed.items);
+	const status = (await isStale(db, target.id)) ? 'stale' : 'active';
+
 	await db
 		.update(feed)
 		.set({
 			title: parsed.title,
 			description: parsed.description,
 			faviconUrl: getFaviconUrl(parsed.siteUrl ?? finalUrl),
-			...(finalUrl !== feedRow.url ? { url: finalUrl } : {}),
-			healthStatus: 'active',
+			...(finalUrl !== target.url ? { url: finalUrl } : {}),
+			healthStatus: status,
 			errorMessage: null,
 			lastFetchedAt: new Date(),
 		})
-		.where(eq(feed.id, feedId));
+		.where(eq(feed.id, target.id));
 
-	await _storeItems(db, feedId, finalUrl, parsed.items);
+	return { status, newItemCount, error: null };
 }
 
-// Fetch, parse, and store items for a URL (used by addFeed and refreshFeed)
-async function _storeItems(
-	db: Database,
-	feedId: string,
-	feedUrl: string,
-	items?: Awaited<ReturnType<typeof parseFeed>>['items'],
-) {
-	let feedItems = items;
-	if (!feedItems) {
-		const result = await fetchFeed(feedUrl);
-		const parsed = parseFeed(result.xml);
-		feedItems = parsed.items;
-	}
-	if (feedItems.length === 0) return;
+// ── Refresh a single feed owned by a user ──────────────────────────────────────
 
-	// Fetch existing GUIDs for this feed to deduplicate
-	const existing = await db
-		.select({ guid: feedItem.guid })
+export async function refreshFeed(
+	db: Database,
+	userId: string,
+	feedId: string,
+	fetchOptions: FetchFeedOptions = {},
+): Promise<IngestOutcome> {
+	const rows = await db
+		.select({ id: feed.id, url: feed.url })
+		.from(feed)
+		.where(and(eq(feed.id, feedId), eq(feed.userId, userId)))
+		.limit(1);
+	if (!rows.length) throw new Error(`Feed ${feedId} not found`);
+	return ingestFeed(db, rows[0], fetchOptions);
+}
+
+async function recordError(db: Database, feedId: string, message: string): Promise<IngestOutcome> {
+	await db
+		.update(feed)
+		.set({ healthStatus: 'error', errorMessage: message })
+		.where(eq(feed.id, feedId));
+	return { status: 'error', newItemCount: 0, error: message };
+}
+
+const STALE_AFTER_MS = 30 * 86_400_000;
+
+/** A Feed is stale when its newest Feed Item was published more than 30 days ago. */
+async function isStale(db: Database, feedId: string): Promise<boolean> {
+	const [{ newest }] = await db
+		.select({ newest: max(feedItem.publishedAt) })
 		.from(feedItem)
 		.where(eq(feedItem.feedId, feedId));
-	const existingGuids = new Set(existing.map((r) => r.guid));
+	return newest !== null && Date.now() - newest.getTime() > STALE_AFTER_MS;
+}
 
-	const newItems: Array<NewFeedItem> = feedItems
-		.filter((item) => !existingGuids.has(item.guid))
-		.map((item) => ({
-			feedId,
-			guid: item.guid,
-			url: item.url,
-			title: item.title,
-			description: item.description,
-			contentHtml: item.contentHtml,
-			author: item.author,
-			publishedAt: item.publishedAt,
-		}));
+/**
+ * Stores the items a Feed doesn't have yet and returns how many it added.
+ * Idempotent: the (Feed, guid) unique index drops items already stored, even
+ * by a concurrent ingest of the same Feed.
+ */
+async function storeItems(
+	db: Database,
+	feedId: string,
+	items: ParsedFeed['items'],
+): Promise<number> {
+	const rows: Array<NewFeedItem> = items.map((item) => ({
+		feedId,
+		guid: item.guid,
+		url: item.url,
+		title: item.title,
+		description: item.description,
+		contentHtml: item.contentHtml,
+		author: item.author,
+		publishedAt: item.publishedAt,
+	}));
 
-	if (newItems.length > 0) {
-		// Insert in chunks to avoid large query payloads
-		const CHUNK = 100;
-		for (let i = 0; i < newItems.length; i += CHUNK) {
-			await db.insert(feedItem).values(newItems.slice(i, i + CHUNK));
-		}
+	let added = 0;
+	// Insert in chunks to avoid large query payloads
+	const CHUNK = 100;
+	for (let i = 0; i < rows.length; i += CHUNK) {
+		const inserted = await db
+			.insert(feedItem)
+			.values(rows.slice(i, i + CHUNK))
+			.onConflictDoNothing({ target: [feedItem.feedId, feedItem.guid] })
+			.returning({ id: feedItem.id });
+		added += inserted.length;
 	}
+	return added;
 }
 
 // ── Refresh all feeds for a user ──────────────────────────────────────────────
 
 export async function refreshAllFeeds(db: Database, userId: string): Promise<void> {
-	const feeds = await db.select({ id: feed.id }).from(feed).where(eq(feed.userId, userId));
-	await Promise.allSettled(feeds.map((f) => refreshFeed(db, userId, f.id)));
-}
-
-// ── Mark feeds as stale (last fetched > 30 days ago) ──────────────────────────
-
-export async function markStaleFeeds(db: Database): Promise<void> {
-	await db
-		.update(feed)
-		.set({ healthStatus: 'stale' })
-		.where(
-			sql`${feed.healthStatus} = 'active' AND ${feed.lastFetchedAt} < NOW() - INTERVAL '30 days'`,
-		);
+	const feeds = await db
+		.select({ id: feed.id, url: feed.url })
+		.from(feed)
+		.where(eq(feed.userId, userId));
+	await Promise.allSettled(feeds.map((f) => ingestFeed(db, f)));
 }

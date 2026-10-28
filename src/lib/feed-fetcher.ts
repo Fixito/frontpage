@@ -15,6 +15,10 @@ export interface FetchFeedOptions {
 	timeoutMs?: number;
 	/** DNS resolver used by the private-network guard. Injectable for tests. */
 	resolveHost?: ResolveHost;
+	/** Defaults to the global `fetch`. Injectable for tests. */
+	fetch?: typeof fetch;
+	/** Wait before each attempt; one attempt per entry. Injectable for tests. */
+	retryDelaysMs?: ReadonlyArray<number>;
 }
 
 export class FeedFetchError extends Error {
@@ -24,6 +28,14 @@ export class FeedFetchError extends Error {
 	) {
 		super(message);
 		this.name = 'FeedFetchError';
+	}
+}
+
+/** The server didn't answer in time. Never retried: a slow server stays slow. */
+export class FeedTimeoutError extends FeedFetchError {
+	constructor(timeoutMs: number) {
+		super(`Request timed out after ${timeoutMs / 1000}s`);
+		this.name = 'FeedTimeoutError';
 	}
 }
 
@@ -47,6 +59,7 @@ async function attemptFetch(
 	url: string,
 	timeoutMs: number,
 	resolveHost: ResolveHost | undefined,
+	fetchImpl: typeof fetch,
 ): Promise<FetchFeedResult> {
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -62,7 +75,7 @@ async function attemptFetch(
 	try {
 		for (let hop = 0; ; hop++) {
 			await assertPublicUrl(currentUrl, resolveHost);
-			response = await fetch(currentUrl, {
+			response = await fetchImpl(currentUrl, {
 				headers,
 				signal: controller.signal,
 				redirect: 'manual',
@@ -77,7 +90,7 @@ async function attemptFetch(
 	} catch (err) {
 		if (err instanceof BlockedUrlError || err instanceof FeedFetchError) throw err;
 		if (err instanceof Error && err.name === 'AbortError') {
-			throw new FeedFetchError(`Request timed out after ${timeoutMs / 1000}s`);
+			throw new FeedTimeoutError(timeoutMs);
 		}
 		throw new FeedFetchError(`Network error: ${err instanceof Error ? err.message : String(err)}`);
 	} finally {
@@ -108,19 +121,24 @@ export async function fetchFeed(
 	url: string,
 	options: FetchFeedOptions = {},
 ): Promise<FetchFeedResult> {
-	const { timeoutMs = 10_000, resolveHost } = options;
+	const {
+		timeoutMs = 10_000,
+		resolveHost,
+		fetch: fetchImpl = fetch,
+		retryDelaysMs = RETRY_DELAYS_MS,
+	} = options;
 	let lastError: unknown;
 
-	for (const delay of RETRY_DELAYS_MS) {
+	for (const delay of retryDelaysMs) {
 		if (delay > 0) await sleep(delay);
 
 		try {
-			return await attemptFetch(url, timeoutMs, resolveHost);
+			return await attemptFetch(url, timeoutMs, resolveHost, fetchImpl);
 		} catch (err) {
 			// Never retry on 304 (not modified), blocked URLs or timeouts
 			if (err instanceof FeedNotModifiedError) throw err;
 			if (err instanceof BlockedUrlError) throw err;
-			if (err instanceof FeedFetchError && err.name === 'AbortError') throw err;
+			if (err instanceof FeedTimeoutError) throw err;
 
 			// Never retry on 4xx HTTP errors
 			if (

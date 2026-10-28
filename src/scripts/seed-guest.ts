@@ -285,7 +285,10 @@ async function main() {
 
 					const CHUNK = 100;
 					for (let i = 0; i < newItems.length; i += CHUNK) {
-						await db.insert(feedItem).values(newItems.slice(i, i + CHUNK));
+						await db
+							.insert(feedItem)
+							.values(newItems.slice(i, i + CHUNK))
+							.onConflictDoNothing({ target: [feedItem.feedId, feedItem.guid] });
 					}
 				}
 
