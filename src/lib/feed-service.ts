@@ -6,6 +6,7 @@ import { FeedFetchError, FeedNotModifiedError, fetchFeed } from './feed-fetcher'
 import { FeedParseError, parseFeed } from './feed-parser';
 import { BlockedUrlError } from './url-guard';
 import type { Database } from './db';
+import type { FetchFeedResult } from './feed-fetcher';
 import type { NewFeedItem } from '@/db/schema';
 import { feed, feedItem } from '@/db/schema';
 
@@ -76,7 +77,15 @@ export async function addFeed(
 
 // ── Refresh a single feed owned by a user ──────────────────────────────────────
 
-export async function refreshFeed(db: Database, userId: string, feedId: string): Promise<void> {
+/** Fetches a Feed's document. Defaults to the network; tests pass a stub. */
+export type FeedFetcher = (url: string) => Promise<FetchFeedResult>;
+
+export async function refreshFeed(
+	db: Database,
+	userId: string,
+	feedId: string,
+	fetcher: FeedFetcher = fetchFeed,
+): Promise<void> {
 	const feedRows = await db
 		.select()
 		.from(feed)
@@ -89,7 +98,7 @@ export async function refreshFeed(db: Database, userId: string, feedId: string):
 	let finalUrl = feedRow.url;
 
 	try {
-		const result = await fetchFeed(feedRow.url);
+		const result = await fetcher(feedRow.url);
 		xml = result.xml;
 		finalUrl = result.finalUrl;
 	} catch (err) {

@@ -19,7 +19,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { toErrors } from '@/lib/form-utils';
 
@@ -64,8 +64,9 @@ interface EditFeedFormProps {
 	onSuccess: () => void;
 }
 
+// An empty display name is allowed: the server then clears the custom title.
 const schema = z.object({
-	title: z.string().min(1, 'Display name cannot be empty'),
+	title: z.string(),
 	categoryId: z.string(),
 });
 
@@ -132,7 +133,11 @@ function EditFeedForm({ feed, categories, onOpenChange, onSuccess }: EditFeedFor
 										}
 									}}
 									aria-invalid={isInvalid}
+									aria-describedby={`${field.name}-description`}
 								/>
+								<FieldDescription id={`${field.name}-description`}>
+									Leave empty to use the feed&rsquo;s own title.
+								</FieldDescription>
 								{isInvalid && <FieldError errors={toErrors(field.state.meta.errors)} />}
 							</Field>
 						);
