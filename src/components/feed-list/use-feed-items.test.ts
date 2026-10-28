@@ -69,27 +69,46 @@ describe('handleMarkRead (mark-read intent)', () => {
 	it('marks an unread item read', async () => {
 		const { result } = await renderWithItems('u1', [makeItem('a', false)]);
 
-		act(() => result.current.handleMarkRead('a'));
+		await act(() => result.current.handleMarkRead('a'));
 
 		expect(isRead(result.current.items, 'a')).toBe(true);
 		expect(markReadFn).toHaveBeenCalledWith({ data: { itemId: 'a' } });
 	});
 
-	it('leaves an already-read item read and calls no server fn', async () => {
+	// Local state can be stale (another tab marked it unread), so the intent is
+	// still sent; the server's mark read is idempotent.
+	it('keeps an already-read item read and still tells the server', async () => {
 		const { result } = await renderWithItems('u1', [makeItem('a', true)]);
 
-		act(() => result.current.handleMarkRead('a'));
+		await act(() => result.current.handleMarkRead('a'));
 
 		expect(isRead(result.current.items, 'a')).toBe(true);
-		expect(markReadFn).not.toHaveBeenCalled();
+		expect(markReadFn).toHaveBeenCalledWith({ data: { itemId: 'a' } });
 		expect(unmarkReadFn).not.toHaveBeenCalled();
+	});
+
+	it('keeps an already-read item read when the server call fails', async () => {
+		markReadFn.mockRejectedValue(new Error('boom'));
+		const { result } = await renderWithItems('u1', [makeItem('a', true)]);
+
+		await act(() => result.current.handleMarkRead('a'));
+
+		expect(isRead(result.current.items, 'a')).toBe(true);
+	});
+
+	it('calls no server fn for an item not in the list', async () => {
+		const { result } = await renderWithItems('u1', [makeItem('a', false)]);
+
+		await act(() => result.current.handleMarkRead('missing'));
+
+		expect(markReadFn).not.toHaveBeenCalled();
 	});
 
 	it('rolls back to unread when the server call fails', async () => {
 		markReadFn.mockRejectedValue(new Error('boom'));
 		const { result } = await renderWithItems('u1', [makeItem('a', false)]);
 
-		act(() => result.current.handleMarkRead('a'));
+		await act(() => result.current.handleMarkRead('a'));
 
 		await waitFor(() => expect(isRead(result.current.items, 'a')).toBe(false));
 	});
@@ -97,18 +116,18 @@ describe('handleMarkRead (mark-read intent)', () => {
 	it('does nothing for a Guest', async () => {
 		const { result } = await renderWithItems(null, [makeItem('a', false)]);
 
-		act(() => result.current.handleMarkRead('a'));
+		await act(() => result.current.handleMarkRead('a'));
 
 		expect(isRead(result.current.items, 'a')).toBe(false);
 		expect(markReadFn).not.toHaveBeenCalled();
 	});
 });
 
-describe('handleToggleRead (explicit toggle)', () => {
+describe('handleReadToggle (explicit toggle)', () => {
 	it('toggles unread → read', async () => {
 		const { result } = await renderWithItems('u1', [makeItem('a', false)]);
 
-		act(() => result.current.handleToggleRead('a'));
+		await act(() => result.current.handleReadToggle('a'));
 
 		expect(isRead(result.current.items, 'a')).toBe(true);
 		expect(markReadFn).toHaveBeenCalledWith({ data: { itemId: 'a' } });
@@ -117,7 +136,7 @@ describe('handleToggleRead (explicit toggle)', () => {
 	it('toggles read → unread', async () => {
 		const { result } = await renderWithItems('u1', [makeItem('a', true)]);
 
-		act(() => result.current.handleToggleRead('a'));
+		await act(() => result.current.handleReadToggle('a'));
 
 		expect(isRead(result.current.items, 'a')).toBe(false);
 		expect(unmarkReadFn).toHaveBeenCalledWith({ data: { itemId: 'a' } });
