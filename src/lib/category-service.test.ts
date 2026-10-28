@@ -17,16 +17,12 @@ afterAll(async () => {
 	await db.$client.close();
 });
 
-function sidebarFeedIds(data: SidebarData): Array<string> {
-	return [...data.categories.flatMap((c) => c.feeds), ...data.uncategorized]
-		.map((f) => f.id)
-		.sort();
+function sortedIds(records: ReadonlyArray<{ id: string }>): Array<string> {
+	return records.map((r) => r.id).sort();
 }
 
-function seededIds(records: Record<string, { id: string }>): Array<string> {
-	return Object.values(records)
-		.map((r) => r.id)
-		.sort();
+function sidebarFeeds(data: SidebarData) {
+	return [...data.categories.flatMap((c) => c.feeds), ...data.uncategorized];
 }
 
 describe('getSidebarData', () => {
@@ -63,11 +59,11 @@ describe('getSidebarData', () => {
 		const b = await getSidebarData(db, userB.id);
 
 		// Both Users subscribe to the same Tech Feed URL, as separate Feed rows.
-		expect(sidebarFeedIds(a)).toEqual(seededIds(userA.feeds));
-		expect(a.categories.map((c) => c.id).sort()).toEqual(seededIds(userA.categories));
+		expect(sortedIds(sidebarFeeds(a))).toEqual(sortedIds(Object.values(userA.feeds)));
+		expect(sortedIds(a.categories)).toEqual(sortedIds(Object.values(userA.categories)));
 
-		expect(sidebarFeedIds(b)).toEqual(seededIds(userB.feeds));
-		expect(b.categories.map((c) => c.id).sort()).toEqual(seededIds(userB.categories));
+		expect(sortedIds(sidebarFeeds(b))).toEqual(sortedIds(Object.values(userB.feeds)));
+		expect(sortedIds(b.categories)).toEqual(sortedIds(Object.values(userB.categories)));
 		expect(b.totalUnread).toBe(2);
 		expect(b.bookmarkCount).toBe(1);
 	});
