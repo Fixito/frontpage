@@ -1,39 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
-import type { DigestItem } from '@/lib/ai-service';
 import { getWeeklyDigestFn } from '@/lib/ai-service';
 import { formatRelativeTime } from '@/lib/time';
 import { stripHtml } from '@/lib/utils';
+
+const weeklyDigestQueryOptions = (userId: string | null) =>
+	queryOptions({
+		queryKey: ['weekly-digest', userId],
+		queryFn: () => getWeeklyDigestFn(),
+		enabled: userId !== null,
+		// Each run is a Gemini call: reopening the digest reuses it for a while,
+		// and a failure is shown at once instead of being retried.
+		staleTime: 10 * 60 * 1000,
+		retry: false,
+		refetchOnWindowFocus: false,
+	});
 
 interface DigestViewProps {
 	userId: string | null;
 }
 
 export function DigestView({ userId }: DigestViewProps) {
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const [briefing, setBriefing] = useState<string | null>(null);
-	const [items, setItems] = useState<Array<DigestItem>>([]);
-
-	const fetchDigest = useCallback(async () => {
-		if (!userId) return;
-		setLoading(true);
-		setError(null);
-		try {
-			const result = await getWeeklyDigestFn();
-			setBriefing(result.briefing);
-			setItems(result.items);
-		} catch {
-			setError('Failed to generate digest. Please try again.');
-		} finally {
-			setLoading(false);
-		}
-	}, [userId]);
-
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching; candidate for useQuery
-		void fetchDigest();
-	}, [fetchDigest]);
+	const { data, isPending, isFetching, isError, refetch } = useQuery(
+		weeklyDigestQueryOptions(userId),
+	);
 
 	if (!userId) {
 		return (
@@ -43,7 +33,8 @@ export function DigestView({ userId }: DigestViewProps) {
 		);
 	}
 
-	if (loading) {
+	// A retry after an error keeps the error status until it settles: show the spinner meanwhile.
+	if (isPending || (isError && isFetching)) {
 		return (
 			<div className="flex flex-1 items-center justify-center gap-2 p-8">
 				<Loader2 size={16} className="animate-spin" aria-hidden />
@@ -52,14 +43,14 @@ export function DigestView({ userId }: DigestViewProps) {
 		);
 	}
 
-	if (error) {
+	if (isError) {
 		return (
 			<div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-				<p className="text-destructive text-sm">{error}</p>
+				<p className="text-destructive text-sm">Failed to generate digest. Please try again.</p>
 				<button
 					type="button"
 					onClick={() => {
-						void fetchDigest();
+						void refetch();
 					}}
 					className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
 				>
@@ -69,6 +60,8 @@ export function DigestView({ userId }: DigestViewProps) {
 			</div>
 		);
 	}
+
+	const { briefing, items } = data;
 
 	if (items.length === 0) {
 		return (
