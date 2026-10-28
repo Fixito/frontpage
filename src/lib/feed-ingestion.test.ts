@@ -5,7 +5,7 @@ import { getSidebarData } from './category-service';
 import type { SidebarData } from '@/components/sidebar/types';
 import type { Seed, TestDb } from '@/test/db';
 import { createTestDb, seedTestDb } from '@/test/db';
-import { network, serving } from '@/test/network';
+import { network, notFound, serving } from '@/test/network';
 
 let db: TestDb;
 let seed: Seed;
@@ -207,9 +207,7 @@ describe('ingestFeed', () => {
 	});
 
 	it('does not retry a client error', async () => {
-		const { options, calls } = network(() =>
-			Promise.resolve(new Response('gone', { status: 404, statusText: 'Not Found' })),
-		);
+		const { options, calls } = network(() => Promise.resolve(notFound()));
 
 		const outcome = await ingestFeed(db, techFeed(), options);
 
@@ -271,12 +269,14 @@ describe('addFeed', () => {
 	it.each([
 		[
 			'unreachable',
-			network(() =>
-				Promise.resolve(new Response('gone', { status: 404, statusText: 'Not Found' })),
-			),
-			/HTTP 404 Not Found/,
+			network(() => Promise.resolve(notFound())),
+			'Couldn’t load this feed (HTTP 404 Not Found).',
 		],
-		['not a feed', serving('<html><body><p>Oops</html>'), /feed format|parse error/i],
+		[
+			'not a feed',
+			serving('<html><body><p>Oops</html>'),
+			'This URL doesn’t point to an RSS or Atom feed.',
+		],
 	])('creates no Feed when the URL is %s', async (_case, { options }, message) => {
 		const before = sidebarFeeds(await getSidebarData(db, seed.userA.id));
 

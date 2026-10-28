@@ -1,11 +1,10 @@
-/**
- * A fake network for Feed Ingestion tests: fetch options whose `fetch` answers
- * every request with `respond`, whose DNS resolves every host to a public
- * address, and whose retries don't wait.
- */
 import type { FetchFeedOptions } from '@/lib/feed-fetcher';
 
-/** Fetch options whose network answers every request with `respond`. */
+/**
+ * A fake network for Feed Ingestion tests: fetch options whose `fetch` answers
+ * every request with `respond` (and records its URL in `calls`), whose DNS
+ * resolves every host to a public address, and whose retries don't wait.
+ */
 export function network(respond: (url: string, init?: RequestInit) => Promise<Response>) {
 	const calls: Array<string> = [];
 	const options: FetchFeedOptions = {
@@ -23,4 +22,9 @@ export function network(respond: (url: string, init?: RequestInit) => Promise<Re
 /** A network that serves `xml` at every URL. */
 export function serving(xml: string) {
 	return network(() => Promise.resolve(new Response(xml, { status: 200 })));
+}
+
+/** A 404 answer, for a Feed URL that no longer exists. */
+export function notFound() {
+	return new Response('gone', { status: 404, statusText: 'Not Found' });
 }

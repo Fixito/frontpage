@@ -23,10 +23,10 @@ export async function seedGuest(
 	db: Database,
 	{ fetchOptions, log = console.log }: SeedGuestOptions = {},
 ): Promise<string> {
-	const userId = await upsertDemoUser(db, log);
+	const userId = await findOrCreateDemoUser(db, log);
 
 	for (const [position, { name, feeds }] of sampleFeeds.categories.entries()) {
-		const categoryId = await upsertCategory(db, userId, name, position);
+		const categoryId = await findOrCreateCategory(db, userId, name, position);
 		log(`\n${name}`);
 
 		for (const { title, feedUrl } of feeds) {
@@ -46,7 +46,7 @@ export async function seedGuest(
 	return userId;
 }
 
-async function upsertDemoUser(db: Database, log: (line: string) => void): Promise<string> {
+async function findOrCreateDemoUser(db: Database, log: (line: string) => void): Promise<string> {
 	const existing = await db
 		.select({ id: user.id })
 		.from(user)
@@ -71,7 +71,7 @@ async function upsertDemoUser(db: Database, log: (line: string) => void): Promis
 	return id;
 }
 
-async function upsertCategory(
+async function findOrCreateCategory(
 	db: Database,
 	userId: string,
 	name: string,

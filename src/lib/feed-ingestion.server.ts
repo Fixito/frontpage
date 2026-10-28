@@ -13,19 +13,28 @@ import { feed, feedItem } from '@/db/schema';
 
 // ── Fetch & parse ──────────────────────────────────────────────────────────────
 
-/** A Feed document fetched and parsed, with the Feed metadata it declares. */
-interface FetchedFeed {
+/** The Feed metadata a fetched document declares, and the URL it was fetched from. */
+interface FeedMetadata {
 	finalUrl: string;
 	title: string;
 	description: string | null;
 	faviconUrl: string | null;
+}
+
+/** A Feed document fetched and parsed. */
+interface FetchedFeed extends FeedMetadata {
 	items: ParsedFeed['items'];
 }
 
 /** Throws a FeedFetchError, BlockedUrlError or FeedParseError on failure. */
 async function fetchAndParse(url: string, fetchOptions: FetchFeedOptions): Promise<FetchedFeed> {
 	const { xml, finalUrl } = await fetchFeed(url, fetchOptions);
-	const parsed = parseFeed(xml);
+	let parsed: ParsedFeed;
+	try {
+		parsed = parseFeed(xml);
+	} catch (err) {
+		throw err instanceof FeedParseError ? err : new FeedParseError('Parse failed');
+	}
 	return {
 		finalUrl,
 		title: parsed.title,
@@ -60,6 +69,7 @@ const NEW_FEED_FETCH_OPTIONS: FetchFeedOptions = { timeoutMs: 15_000 };
 /**
  * Fetches and parses a Feed for a User, rejecting it with FeedAlreadyFollowedError
  * when they already follow its URL, before fetching, or the URL it redirects to.
+ * Fetch and parse failures are rethrown with a message meant for the User.
  */
 async function fetchNewFeed(
 	db: Database,
@@ -74,7 +84,18 @@ async function fetchNewFeed(
 	};
 
 	assertNotFollowed(url);
-	const fetched = await fetchAndParse(url, fetchOptions);
+	let fetched: FetchedFeed;
+	try {
+		fetched = await fetchAndParse(url, fetchOptions);
+	} catch (err) {
+		if (err instanceof FeedParseError) {
+			throw new Error('This URL doesn’t point to an RSS or Atom feed.', { cause: err });
+		}
+		if (err instanceof FeedFetchError) {
+			throw new Error(`Couldn’t load this feed (${err.message}).`, { cause: err });
+		}
+		throw err; // BlockedUrlError messages are already written for the User.
+	}
 	assertNotFollowed(fetched.finalUrl);
 	return fetched;
 }
@@ -94,11 +115,7 @@ function normalizeFeedUrl(rawUrl: string): string {
 
 // ── Validate & preview a feed URL (no DB writes) ───────────────────────────────
 
-export interface FeedPreview {
-	title: string;
-	description: string | null;
-	faviconUrl: string | null;
-	finalUrl: string;
+export interface FeedPreview extends FeedMetadata {
 	itemCount: number;
 }
 
@@ -119,6 +136,12 @@ export async function validateAndPreviewFeed(
 
 // ── Add a feed for a user and perform initial fetch ────────────────────────────
 
+/** A Feed a User asks to add: its URL, and the category to file it in, if any. */
+export interface NewFeed {
+	url: string;
+	categoryId: string | null;
+}
+
 /**
  * Fetches a Feed the User doesn't follow yet and stores it with its Feed Items.
  * Throws, storing nothing, when the fetch or parse fails or the User already
@@ -127,7 +150,7 @@ export async function validateAndPreviewFeed(
 export async function addFeed(
 	db: Database,
 	userId: string,
-	{ url, categoryId }: { url: string; categoryId: string | null },
+	{ url, categoryId }: NewFeed,
 	fetchOptions: FetchFeedOptions = NEW_FEED_FETCH_OPTIONS,
 ): Promise<string> {
 	const fetched = await fetchNewFeed(db, userId, url, fetchOptions);
@@ -146,7 +169,13 @@ export async function addFeed(
 		})
 		.returning({ id: feed.id });
 
-	await storeItems(db, inserted.id, fetched.items);
+	try {
+		await storeItems(db, inserted.id, fetched.items);
+	} catch (err) {
+		// No transaction on neon-http: undo the insert so a failed add leaves no Feed.
+		await db.delete(feed).where(eq(feed.id, inserted.id));
+		throw err;
+	}
 	return inserted.id;
 }
 

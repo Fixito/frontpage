@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { seedGuest } from './guest-seed.server';
 import { getSidebarData } from './category-service';
 import type { TestDb } from '@/test/db';
 import { createTestDb } from '@/test/db';
-import { network } from '@/test/network';
+import { network, notFound } from '@/test/network';
 
 let db: TestDb;
 
@@ -24,7 +24,7 @@ function sampleFeedsNetwork(failing?: string) {
 	return network((url) =>
 		Promise.resolve(
 			url === failing
-				? new Response('gone', { status: 404, statusText: 'Not Found' })
+				? notFound()
 				: new Response(
 						`<?xml version="1.0"?>
 <rss version="2.0">
@@ -54,41 +54,43 @@ async function sidebarOf(userId: string) {
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
-it('seeds the Guest demo user with the sample feeds, by category', async () => {
-	const userId = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
+describe('seedGuest', () => {
+	it('seeds the Guest demo user with the sample feeds, by category', async () => {
+		const userId = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
 
-	const sidebar = await sidebarOf(userId);
-	expect(sidebar.categories).toEqual([
-		{ name: 'Frontend', feedCount: 6 },
-		{ name: 'Design', feedCount: 5 },
-		{ name: 'Backend & DevOps', feedCount: 4 },
-		{ name: 'General Tech', feedCount: 2 },
-		{ name: 'AI & ML', feedCount: 2 },
-	]);
-	expect(sidebar.urls).toContain('https://css-tricks.com/feed/');
-	expect(sidebar.urls).toContain('https://huggingface.co/blog/feed.xml');
-	expect(sidebar.totalUnread).toBe(19 * 2);
-});
-
-it('creates no duplicates when run again', async () => {
-	const first = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
-	const before = await sidebarOf(first);
-
-	const second = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
-
-	expect(second).toBe(first);
-	expect(await sidebarOf(second)).toEqual(before);
-});
-
-it('skips a sample feed that fails, and adds it on the next run', async () => {
-	const deadUrl = 'https://hnrss.org/best';
-
-	const userId = await seedGuest(db, {
-		fetchOptions: sampleFeedsNetwork(deadUrl).options,
-		log: silent,
+		const sidebar = await sidebarOf(userId);
+		expect(sidebar.categories).toEqual([
+			{ name: 'Frontend', feedCount: 6 },
+			{ name: 'Design', feedCount: 5 },
+			{ name: 'Backend & DevOps', feedCount: 4 },
+			{ name: 'General Tech', feedCount: 2 },
+			{ name: 'AI & ML', feedCount: 2 },
+		]);
+		expect(sidebar.urls).toContain('https://css-tricks.com/feed/');
+		expect(sidebar.urls).toContain('https://huggingface.co/blog/feed.xml');
+		expect(sidebar.totalUnread).toBe(19 * 2);
 	});
-	expect((await sidebarOf(userId)).urls).not.toContain(deadUrl);
 
-	await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
-	expect((await sidebarOf(userId)).urls).toContain(deadUrl);
+	it('creates no duplicates when run again', async () => {
+		const first = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
+		const before = await sidebarOf(first);
+
+		const second = await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
+
+		expect(second).toBe(first);
+		expect(await sidebarOf(second)).toEqual(before);
+	});
+
+	it('skips a sample feed that fails, and adds it on the next run', async () => {
+		const deadUrl = 'https://hnrss.org/best';
+
+		const userId = await seedGuest(db, {
+			fetchOptions: sampleFeedsNetwork(deadUrl).options,
+			log: silent,
+		});
+		expect((await sidebarOf(userId)).urls).not.toContain(deadUrl);
+
+		await seedGuest(db, { fetchOptions: sampleFeedsNetwork().options, log: silent });
+		expect((await sidebarOf(userId)).urls).toContain(deadUrl);
+	});
 });

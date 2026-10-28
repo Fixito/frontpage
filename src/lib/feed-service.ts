@@ -7,6 +7,7 @@ import {
 	refreshFeed,
 	validateAndPreviewFeed,
 } from './feed-ingestion.server';
+import type { NewFeed } from './feed-ingestion.server';
 
 export type { FeedPreview } from './feed-ingestion.server';
 
@@ -22,11 +23,9 @@ export const validateFeedUrlFn = createServerFn({ method: 'POST' })
 	);
 
 export const addFeedFn = createServerFn({ method: 'POST' })
-	.validator((data: { url: string; categoryId: string | null }) => data)
+	.validator((data: NewFeed) => data)
 	.handler(
-		withMutation(async (userId: string, data: { url: string; categoryId: string | null }) =>
-			addFeed(productionDb, userId, data),
-		),
+		withMutation(async (userId: string, data: NewFeed) => addFeed(productionDb, userId, data)),
 	);
 
 export const refreshFeedFn = createServerFn({ method: 'POST' })
