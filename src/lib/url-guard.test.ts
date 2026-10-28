@@ -36,6 +36,68 @@ describe('assertPublicUrl', () => {
 		},
 	);
 
+	// Last address inside each blocked CIDR vs. the first one just outside it
+	describe('range boundaries', () => {
+		it.each([
+			'0.255.255.255', // 0.0.0.0/8
+			'10.255.255.255', // 10.0.0.0/8
+			'100.64.0.0', // 100.64.0.0/10
+			'100.127.255.255',
+			'127.255.255.255', // 127.0.0.0/8
+			'169.254.255.255', // 169.254.0.0/16
+			'172.16.0.0', // 172.16.0.0/12
+			'172.31.255.255',
+			'192.168.255.255', // 192.168.0.0/16
+			'198.19.255.255', // 198.18.0.0/15
+			'224.0.0.0', // 224.0.0.0/4 + 240.0.0.0/4
+			'255.255.255.255',
+		])('rejects IPv4 %s', async (ip) => {
+			await expect(assertPublicUrl(`http://${ip}/feed`)).rejects.toThrow(BlockedUrlError);
+		});
+
+		it.each([
+			'1.0.0.0',
+			'9.255.255.255',
+			'11.0.0.0',
+			'100.63.255.255',
+			'100.128.0.0',
+			'126.255.255.255',
+			'128.0.0.1',
+			'169.253.255.255',
+			'169.255.0.0',
+			'172.15.255.255',
+			'172.32.0.0',
+			'192.167.255.255',
+			'192.169.0.0',
+			'198.17.255.255',
+			'198.20.0.0',
+			'223.255.255.255',
+		])('accepts IPv4 %s', async (ip) => {
+			await expect(assertPublicUrl(`http://${ip}/feed`)).resolves.toBeInstanceOf(URL);
+		});
+
+		it.each([
+			'1fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // below 2000::/3
+			'2001:0:ffff:ffff:ffff:ffff:ffff:ffff', // 2001::/32 (Teredo)
+			'2001:db8:ffff:ffff:ffff:ffff:ffff:ffff', // 2001:db8::/32
+			'2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff', // 2002::/16 (6to4)
+			'3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff', // 3fff::/20 (documentation)
+			'4000::', // above 2000::/3
+		])('rejects IPv6 %s', async (ip) => {
+			await expect(assertPublicUrl(`http://[${ip}]/feed`)).rejects.toThrow(BlockedUrlError);
+		});
+
+		it.each([
+			'2000::1',
+			'2001:db7:ffff:ffff:ffff:ffff:ffff:ffff',
+			'2001:db9::',
+			'2003::',
+			'3fff:1000::',
+		])('accepts IPv6 %s', async (ip) => {
+			await expect(assertPublicUrl(`http://[${ip}]/feed`)).resolves.toBeInstanceOf(URL);
+		});
+	});
+
 	describe('hostnames', () => {
 		const resolveTo =
 			(...addresses: Array<string>) =>

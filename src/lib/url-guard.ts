@@ -49,6 +49,7 @@ const IPV6_RANGES: ReadonlyArray<[string, number]> = [
 	['2001::', 32], // Teredo (embeds an arbitrary IPv4)
 	['2001:db8::', 32], // documentation
 	['2002::', 16], // 6to4 (embeds an arbitrary IPv4)
+	['3fff::', 20], // documentation (RFC 9637)
 ];
 
 for (const [network, prefix] of IPV4_RANGES) NON_PUBLIC_V4.addSubnet(network, prefix, 'ipv4');
