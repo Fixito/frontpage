@@ -42,6 +42,7 @@ export function FeedContentArea({
 		markingAllRead,
 		markingAllUnread,
 		handleMarkRead,
+		handleToggleRead,
 		handleBookmarkToggle,
 		handleMarkAllRead,
 		handleMarkAllUnread,
@@ -144,6 +145,7 @@ export function FeedContentArea({
 							items={items}
 							layout={layout}
 							onMarkRead={handleMarkRead}
+							onToggleRead={handleToggleRead}
 							onMarkBookmark={handleBookmarkToggle}
 							userId={userId}
 						/>

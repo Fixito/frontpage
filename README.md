@@ -290,6 +290,12 @@ pnpm dev
 | `GEMINI_API_KEY`     | Google AI Studio API key — get one at [aistudio.google.com](https://aistudio.google.com) (not Google Cloud Console) |
 | `GUEST_DEMO_USER_ID` | UUID of the seeded demo user — output by `pnpm seed`                                                                |
 
+### Tests
+
+`pnpm test` runs Vitest. No database or `.env` is needed: DB-backed tests run against an in-memory [PGLite](https://pglite.dev) database built from the Drizzle migrations in `drizzle/`.
+
+Server modules (`category-service`, `items-service`, `feed-service`) take their database as the first argument. Server fns pass the Neon instance; tests pass PGLite from `createTestDb()` and seed two Users with `seedTestDb()` (both in `src/test/db.ts`, whose doc comment has a full example). `src/lib/category-service.test.ts` is a working example.
+
 ---
 
 ## Acknowledgments
