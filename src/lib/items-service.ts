@@ -1,9 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
-import { and, count, desc, eq, inArray, isNotNull, notExists, sql } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
+import { and, count, desc, eq, inArray, notExists, sql } from 'drizzle-orm';
 import { withAuth, withMutation } from './server-fn-helpers';
 import { db as productionDb } from './db';
 import { feedDisplayTitle } from './feed-title';
+import { isBookmarkedBy, isUnreadBy, itemScopeSchema, itemsInScope } from './item-scope';
+import type { ItemScope } from './item-scope';
 import type { Database } from './db';
 import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
 
@@ -33,9 +34,9 @@ export interface FeedItemRow {
 
 export interface GetItemsParams {
 	userId: string;
-	feedId?: string;
-	categoryId?: string;
-	view?: 'all' | 'bookmarks';
+	scope: ItemScope;
+	/** Lists only the unread Feed Items of the scope. */
+	unreadOnly?: boolean;
 	page?: number;
 	pageSize?: number;
 }
@@ -55,18 +56,10 @@ export interface GetItemsResult {
 // ── getItems ─────────────────────────────────────────────────────────────────
 
 export async function getItems(db: Database, params: GetItemsParams): Promise<GetItemsResult> {
-	const { userId, feedId, categoryId, view = 'all', page = 1, pageSize = 50 } = params;
+	const { userId, scope, unreadOnly = false, page = 1, pageSize = 50 } = params;
 	const offset = (page - 1) * pageSize;
 
-	const rs = alias(readState, 'rs');
-	const bm = alias(bookmark, 'bm');
-
-	const whereClause = and(
-		eq(feed.userId, userId),
-		feedId ? eq(feedItem.feedId, feedId) : undefined,
-		categoryId ? eq(feed.categoryId, categoryId) : undefined,
-		view === 'bookmarks' ? isNotNull(bm.itemId) : undefined,
-	);
+	const whereClause = itemsInScope(userId, scope, { unreadOnly });
 
 	const rows = await db
 		.select({
@@ -84,8 +77,8 @@ export async function getItems(db: Database, params: GetItemsParams): Promise<Ge
 			publishedAt: feedItem.publishedAt,
 			fetchedAt: feedItem.fetchedAt,
 			aiSummary: feedItem.aiSummary,
-			isRead: sql<boolean>`(${rs.itemId} is not null)`,
-			isBookmarked: sql<boolean>`(${bm.itemId} is not null)`,
+			isRead: sql<boolean>`not ${isUnreadBy(userId)}`,
+			isBookmarked: sql<boolean>`${isBookmarkedBy(userId)}`,
 			categoryId: feed.categoryId,
 			categoryName: category.name,
 			categoryColor: category.color,
@@ -93,24 +86,19 @@ export async function getItems(db: Database, params: GetItemsParams): Promise<Ge
 		.from(feedItem)
 		.innerJoin(feed, eq(feed.id, feedItem.feedId))
 		.leftJoin(category, eq(category.id, feed.categoryId))
-		.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
-		.leftJoin(bm, and(eq(bm.itemId, feedItem.id), eq(bm.userId, userId)))
 		.where(whereClause)
-		.orderBy(sql`${feedItem.publishedAt} desc nulls last`, desc(feedItem.fetchedAt))
+		// id breaks ties, so offset pages never repeat or skip a Feed Item.
+		.orderBy(sql`${feedItem.publishedAt} desc nulls last`, desc(feedItem.fetchedAt), feedItem.id)
 		.limit(pageSize)
 		.offset(offset);
 
-	const countRows = await db
+	const [{ total: totalCount }] = await db
 		.select({ total: count() })
 		.from(feedItem)
-		.innerJoin(feed, eq(feed.id, feedItem.feedId))
-		.leftJoin(bm, and(eq(bm.itemId, feedItem.id), eq(bm.userId, userId)))
 		.where(whereClause);
 
-	const totalCount = countRows.length > 0 ? (countRows[0]?.total ?? 0) : 0;
-
 	let feedInfo: GetItemsResult['feedInfo'] = null;
-	if (feedId) {
+	if (scope.kind === 'feed') {
 		const feedRows = await db
 			.select({
 				id: feed.id,
@@ -119,7 +107,7 @@ export async function getItems(db: Database, params: GetItemsParams): Promise<Ge
 				errorMessage: feed.errorMessage,
 			})
 			.from(feed)
-			.where(and(eq(feed.id, feedId), eq(feed.userId, userId)))
+			.where(and(eq(feed.id, scope.feedId), eq(feed.userId, userId)))
 			.limit(1);
 		feedInfo = feedRows[0] ?? null;
 	}
@@ -318,7 +306,10 @@ export async function toggleBookmark(
 // ── Server function wrappers ──────────────────────────────────────────────────
 
 export const getItemsFn = createServerFn({ method: 'POST' })
-	.validator((data: Omit<GetItemsParams, 'userId'>) => data)
+	.validator((data: Omit<GetItemsParams, 'userId'>): Omit<GetItemsParams, 'userId'> => ({
+		...data,
+		scope: itemScopeSchema.parse(data.scope),
+	}))
 	.handler(
 		withAuth(async (userId: string, data: Omit<GetItemsParams, 'userId'>) =>
 			getItems(productionDb, { ...data, userId }),

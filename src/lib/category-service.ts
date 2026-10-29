@@ -1,12 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
-import { and, asc, eq, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, max } from 'drizzle-orm';
 import { withAuth, withMutation } from './server-fn-helpers';
 import { feedDisplayTitle } from './feed-title';
+import { itemsInScope } from './item-scope';
 import { db as productionDb } from './db';
 import type { Database } from './db';
 import type { CategoryNavItem, FeedNavItem, SidebarData } from '@/components/sidebar/types';
 import type { FeedHealth } from '@/db/schema';
-import { bookmark, category, feed, feedItem, readState } from '@/db/schema';
+import { category, feed, feedItem } from '@/db/schema';
 
 // ── getSidebarData ─────────────────────────────────────────────────────────────
 
@@ -19,13 +20,17 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 			faviconUrl: feed.faviconUrl,
 			categoryId: feed.categoryId,
 			healthStatus: feed.healthStatus,
-			unreadCount: sql<number>`cast(count(${feedItem.id}) - count(${readState.itemId}) as int)`,
 		})
 		.from(feed)
-		.leftJoin(feedItem, eq(feedItem.feedId, feed.id))
-		.leftJoin(readState, and(eq(readState.itemId, feedItem.id), eq(readState.userId, userId)))
-		.where(eq(feed.userId, userId))
-		.groupBy(feed.id);
+		.where(eq(feed.userId, userId));
+
+	// Every count goes through the Item Scope, so each badge matches its list.
+	const unreadRows = await db
+		.select({ feedId: feedItem.feedId, unread: count() })
+		.from(feedItem)
+		.where(itemsInScope(userId, { kind: 'all' }, { unreadOnly: true }))
+		.groupBy(feedItem.feedId);
+	const unreadByFeed = new Map(unreadRows.map((r) => [r.feedId, r.unread]));
 
 	const cats = await db
 		.select()
@@ -43,7 +48,7 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 			title: f.title,
 			url: f.url,
 			faviconUrl: f.faviconUrl,
-			unreadCount: Math.max(0, f.unreadCount),
+			unreadCount: unreadByFeed.get(f.id) ?? 0,
 			healthStatus: f.healthStatus as FeedHealth,
 		};
 		if (f.categoryId) {
@@ -68,13 +73,12 @@ export async function getSidebarData(db: Database, userId: string): Promise<Side
 		};
 	});
 
-	const totalUnread = feedsRaw.reduce((sum, f) => sum + Math.max(0, f.unreadCount), 0);
+	const totalUnread = unreadRows.reduce((sum, r) => sum + r.unread, 0);
 
-	const [bmRow] = await db
-		.select({ cnt: sql<number>`cast(count(*) as int)` })
-		.from(bookmark)
-		.where(eq(bookmark.userId, userId));
-	const bookmarkCount = bmRow.cnt;
+	const [{ bookmarkCount }] = await db
+		.select({ bookmarkCount: count() })
+		.from(feedItem)
+		.where(itemsInScope(userId, { kind: 'bookmarks' }));
 
 	return { categories, uncategorized, totalUnread, bookmarkCount };
 }

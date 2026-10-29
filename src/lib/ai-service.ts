@@ -1,11 +1,12 @@
 import { createServerFn } from '@tanstack/react-start';
-import { and, desc, eq, gte, isNotNull, isNull, or } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
+import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { withMutation } from './server-fn-helpers';
 import { generateArticleSummary, generateWeeklyDigest, parseAiError, suggestCategory } from './ai';
-import { db } from './db';
+import { db as productionDb } from './db';
 import { feedDisplayTitle } from './feed-title';
-import { feed, feedItem, readState } from '@/db/schema';
+import { itemsInScope } from './item-scope';
+import type { Database } from './db';
+import { feed, feedItem } from '@/db/schema';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 			): Promise<
 				{ summary: string; cached: boolean } | { summary: null; error: string; retryIn?: number }
 			> => {
-				const rows = await db
+				const rows = await productionDb
 					.select({
 						id: feedItem.id,
 						title: feedItem.title,
@@ -55,7 +56,10 @@ export const generateSummaryFn = createServerFn({ method: 'POST' })
 				try {
 					const content = item.contentHtml ?? item.description ?? '';
 					const summary = await generateArticleSummary(item.title, content);
-					await db.update(feedItem).set({ aiSummary: summary }).where(eq(feedItem.id, data.itemId));
+					await productionDb
+						.update(feedItem)
+						.set({ aiSummary: summary })
+						.where(eq(feedItem.id, data.itemId));
 					return { summary, cached: false };
 				} catch (err) {
 					console.error('[AI] generateSummaryFn error:', err);
@@ -89,6 +93,35 @@ export const suggestCategoryFn = createServerFn({ method: 'POST' })
 
 // ── getWeeklyDigestFn ─────────────────────────────────────────────────────────
 
+/** The Weekly Digest's Feed Items: the User's newest unread ones published since `since`, with text to summarise. */
+export async function selectDigestItems(
+	db: Database,
+	userId: string,
+	since: Date,
+): Promise<Array<DigestItem>> {
+	return db
+		.select({
+			id: feedItem.id,
+			title: feedItem.title,
+			url: feedItem.url,
+			feedTitle: feedDisplayTitle,
+			publishedAt: feedItem.publishedAt,
+			description: feedItem.description,
+			aiSummary: feedItem.aiSummary,
+		})
+		.from(feedItem)
+		.innerJoin(feed, eq(feed.id, feedItem.feedId))
+		.where(
+			and(
+				itemsInScope(userId, { kind: 'all' }, { unreadOnly: true }),
+				gte(feedItem.publishedAt, since),
+				or(isNotNull(feedItem.description), isNotNull(feedItem.contentHtml)),
+			),
+		)
+		.orderBy(desc(feedItem.publishedAt))
+		.limit(10);
+}
+
 export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 	.validator((data: { expectedUserId: string }) => data)
 	.handler(
@@ -100,44 +133,9 @@ export const getWeeklyDigestFn = createServerFn({ method: 'POST' })
 				if (data.expectedUserId !== userId) throw new Error('Unauthorized');
 				const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-				const rs = alias(readState, 'rs');
+				const digestItems = await selectDigestItems(productionDb, userId, sevenDaysAgo);
 
-				const rows = await db
-					.select({
-						id: feedItem.id,
-						title: feedItem.title,
-						url: feedItem.url,
-						feedTitle: feedDisplayTitle,
-						publishedAt: feedItem.publishedAt,
-						description: feedItem.description,
-						contentHtml: feedItem.contentHtml,
-						aiSummary: feedItem.aiSummary,
-					})
-					.from(feedItem)
-					.innerJoin(feed, eq(feed.id, feedItem.feedId))
-					.leftJoin(rs, and(eq(rs.itemId, feedItem.id), eq(rs.userId, userId)))
-					.where(
-						and(
-							eq(feed.userId, userId),
-							gte(feedItem.publishedAt, sevenDaysAgo),
-							isNull(rs.itemId),
-							or(isNotNull(feedItem.description), isNotNull(feedItem.contentHtml)),
-						),
-					)
-					.orderBy(desc(feedItem.publishedAt))
-					.limit(10);
-
-				const digestItems: Array<DigestItem> = rows.map((row) => ({
-					id: row.id,
-					title: row.title,
-					url: row.url,
-					feedTitle: row.feedTitle,
-					publishedAt: row.publishedAt,
-					description: row.description,
-					aiSummary: row.aiSummary,
-				}));
-
-				const briefingInput = rows.map((row) => ({
+				const briefingInput = digestItems.map((row) => ({
 					title: row.title,
 					description: row.description,
 					url: row.url,

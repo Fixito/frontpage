@@ -1,4 +1,10 @@
-import { Link, createFileRoute, redirect, useRouter } from '@tanstack/react-router';
+import {
+	Link,
+	createFileRoute,
+	redirect,
+	retainSearchParams,
+	useRouter,
+} from '@tanstack/react-router';
 import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, LogOut, Menu, RefreshCw } from 'lucide-react';
@@ -37,6 +43,8 @@ const dashboardSearchSchema = z.object({
 	categoryId: z.string().optional(),
 	feedId: z.string().optional(),
 	view: z.enum(['all', 'bookmarks', 'digest']).optional(),
+	/** `unread` lists only unread Feed Items; kept by every navigation to the dashboard. */
+	show: z.enum(['all', 'unread']).optional(),
 });
 
 const EMPTY_SIDEBAR_DATA: SidebarData = {
@@ -48,6 +56,7 @@ const EMPTY_SIDEBAR_DATA: SidebarData = {
 
 export const Route = createFileRoute('/_app/dashboard')({
 	validateSearch: dashboardSearchSchema,
+	search: { middlewares: [retainSearchParams(['show'])] },
 	beforeLoad: async ({ context }) => {
 		if (!context.user && !context.guest) {
 			const { available } = await enterGuestMode();
@@ -92,7 +101,7 @@ function getInitialLayout(): FeedLayout {
 function DashboardPage() {
 	const { user, guest } = Route.useRouteContext();
 	const { sidebarData: loaderSidebarData, preferences: loaderPreferences } = Route.useLoaderData();
-	const { categoryId, feedId, view: rawView } = Route.useSearch();
+	const { categoryId, feedId, view: rawView, show } = Route.useSearch();
 	const view = rawView ?? 'all';
 	const router = useRouter();
 	const [mobileOpen, setMobileOpen] = useState(false);
@@ -269,6 +278,13 @@ function DashboardPage() {
 		await queryClient.invalidateQueries({ queryKey: feedItemsQueryKey });
 	}
 
+	function handleUnreadOnlyChange(unreadOnly: boolean) {
+		void router.navigate({
+			to: '/dashboard',
+			search: { categoryId, feedId, view, show: unreadOnly ? 'unread' : undefined },
+		});
+	}
+
 	async function handleFeedRemoved(removedFeedId: string) {
 		if (feedId === removedFeedId) {
 			await router.navigate({ to: '/dashboard', search: { view: 'all' } });
@@ -425,6 +441,8 @@ function DashboardPage() {
 							feedId={feedId}
 							categoryId={categoryId}
 							view={view}
+							unreadOnly={show === 'unread'}
+							onUnreadOnlyChange={handleUnreadOnlyChange}
 							layout={layout}
 							onSidebarRefresh={handleRefreshSidebar}
 							onBookmarkCountChange={handleBookmarkCountChange}
